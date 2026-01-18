@@ -3,7 +3,7 @@ import { debugFor } from "../utilities/debugTool.js";
 const debug = debugFor("loadMainPanel");
 
 export async function loadMainPanel(shadowRoot) {
-  const htmlUrl = chrome.runtime.getURL("src/panel.html");
+  const htmlUrl = chrome.runtime.getURL("panel.html");
 
   const cssFiles = [
     "formatting/general.css",
@@ -24,7 +24,7 @@ export async function loadMainPanel(shadowRoot) {
 
   const [html, ...cssParts] = await Promise.all([
     fetch(htmlUrl).then((r) => r.text()),
-    ...cssFiles.map((file) => fetch(chrome.runtime.getURL(`src/css/${file}`)).then((r) => r.text())),
+    ...cssFiles.map((file) => fetch(chrome.runtime.getURL(`css/${file}`)).then((r) => r.text())),
   ]);
 
   const css = cssParts.join("\n");

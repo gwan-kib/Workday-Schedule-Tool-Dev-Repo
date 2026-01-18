@@ -1,1 +1,2 @@
 run this everytime you change any js: npm run build 
+npm i -D vite-plugin-static-copy

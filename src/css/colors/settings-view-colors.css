@@ -1,0 +1,27 @@
+/* -------------------------------------------------------------------------- */
+/* SETTINGS VIEW COLORS                                                       */
+/* -------------------------------------------------------------------------- */
+
+.widget-panel[data-panel="settings"] .settings-panel {
+  color: #401d81;
+}
+
+.widget-panel[data-panel="settings"] .settings-field .link {
+  background: #f7f2ff;
+  color: #401d81;
+
+  border-color: #cfd6e4;
+}
+
+.widget-panel[data-panel="settings"] .settings-field .link .material-symbols-rounded {
+  color: #401d81;
+}
+
+.widget-panel[data-panel="settings"] .settings-field .link:hover {
+  background: #ffffff;
+  border-color: #cdadff;
+}
+
+.widget-panel[data-panel="settings"] .settings-field .link:focus-visible {
+  outline-color: #cdadff;
+}

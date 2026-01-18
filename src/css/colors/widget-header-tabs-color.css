@@ -1,0 +1,108 @@
+/* -------------------------------------------------------------------------- */
+/* HEADER + TABS + SEARCH + BUTTON COLORS                                      */
+/* -------------------------------------------------------------------------- */
+
+.widget-header,
+.widget-tabs {
+  color: #e4d6ff;
+  background: #401d81;
+}
+
+#widget-title {
+  color: #fbf8ff;
+}
+
+/* tabs */
+.tab-button {
+  color: #fbf8ff;
+  background: #401d81;
+  opacity: 0.5;
+}
+
+.tab-button:hover {
+  background: #916ccc;
+  opacity: 0.75;
+}
+
+.tab-button.is-active {
+  opacity: 1;
+  background: #916ccc;
+}
+
+/* buttons */
+.btn {
+  border: none;
+
+  color: #fbf8ff;
+  background: #401d81;
+}
+
+.btn:hover {
+  opacity: 0.75;
+  background: #916ccc;
+}
+
+.btn:active {
+  opacity: 1;
+}
+
+/* settings/help icons */
+.settings .material-symbols-rounded {
+  color: #e6d3f5;
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.help .material-symbols-rounded {
+  color: #e6d3f5;
+  font-variation-settings: "FILL" 1, "wght" 800, "GRAD" 0, "opsz" 24;
+}
+
+.settings:hover .material-symbols-rounded {
+  text-shadow: 0 0 10px #ae7aff;
+  transition: all 0.3s ease;
+}
+
+/* search */
+#widget-search {
+  background-color: #ede2ff;
+  color: #401d81;
+  opacity: 0.5;
+
+  border-color: #6b4fd6;
+
+  transition: all 0.2s ease;
+}
+
+#widget-search::placeholder {
+  color: #401d81;
+  opacity: 0.75;
+}
+
+#widget-search:hover:not(:focus-visible) {
+  box-shadow: 0 0 8px #ede2ff;
+}
+
+#widget-search:focus-visible {
+  opacity: 1;
+}
+
+.widget-search-wrap .search-icon {
+  color: #401d81;
+  opacity: 0.5;
+  z-index: 10;
+}
+
+.widget-search-wrap:focus-within .search-icon {
+  opacity: 1;
+}
+
+/* export dropdown */
+.export-menu {
+  background: #fdf7ff;
+  border-color: #6e50c7;
+}
+
+.export-option {
+  background: #ede2ff;
+  color: #401d81;
+}
