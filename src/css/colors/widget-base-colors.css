@@ -1,24 +1,20 @@
-/* -------------------------------------------------------------------------- */
-/* WIDGET BASE COLORS                                                         */
-/* -------------------------------------------------------------------------- */
-
 .widget {
-  color: #401d81;
-  background: #fbf9ff;
-  border-color: #401d81 !important;
+  color: rgb(var(--rgb-brand-main-1));
+  background: rgb(var(--rgb-brand-accent-7));
+  border-color: rgb(var(--rgb-brand-main-1)) !important;
 }
 
 .widget-body,
 .widget-footer {
-  border-color: #401d81;
+  border-color: rgb(var(--rgb-brand-main-1));
 }
 
 .pill {
-  border-color: #e0e7ff;
+  border-color: rgb(var(--rgb-brand-accent-12));
 }
 
 .muted {
-  color: #9583d0;
+  color: rgb(var(--rgb-brand-main-7));
 }
 
 .widget :focus-visible {

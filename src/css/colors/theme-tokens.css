@@ -1,0 +1,36 @@
+/* -------------------------------------------------------------------------- */
+/* THEME TOKENS                                                               */
+/* -------------------------------------------------------------------------- */
+
+:root,
+:host {
+  --rgb-brand-main-1: 64 29 129; /* #401d81 */
+  --rgb-brand-main-2: 107 79 214; /* #6b4fd6 */
+  --rgb-brand-main-3: 110 80 199; /* #6e50c7 */
+  --rgb-brand-main-4: 143 107 206; /* #8f6bce */
+  --rgb-brand-main-5: 144 106 204; /* #906acc */
+  --rgb-brand-main-6: 145 108 204; /* #916ccc */
+  --rgb-brand-main-7: 149 131 208; /* #9583d0 */
+  --rgb-brand-main-8: 174 122 255; /* #ae7aff */
+  --rgb-brand-accent-1: 228 214 255; /* #e4d6ff */
+  --rgb-brand-accent-2: 229 214 253; /* #e5d6fd */
+  --rgb-brand-accent-3: 230 211 245; /* #e6d3f5 */
+  --rgb-brand-accent-4: 237 226 255; /* #ede2ff */
+  --rgb-brand-accent-5: 247 242 255; /* #f7f2ff */
+  --rgb-brand-accent-6: 251 248 255; /* #fbf8ff */
+  --rgb-brand-accent-7: 251 249 255; /* #fbf9ff */
+  --rgb-brand-accent-8: 253 247 255; /* #fdf7ff */
+  --rgb-brand-accent-9: 205 173 255; /* #cdadff */
+  --rgb-brand-accent-10: 205 174 252; /* #cdaefc */
+  --rgb-brand-accent-11: 207 214 228; /* #cfd6e4 */
+  --rgb-brand-accent-12: 224 231 255; /* #e0e7ff */
+  --rgb-neutral-1: 255 255 255; /* #ffffff */
+  --rgb-neutral-2: 249 250 251; /* #f9fafb */
+  --rgb-neutral-3: 243 244 246; /* #f3f4f6 */
+  --rgb-neutral-4: 229 231 235; /* #e5e7eb */
+  --rgb-neutral-5: 209 213 219; /* #d1d5db */
+  --rgb-neutral-6: 107 114 128; /* #6b7280 */
+  --rgb-danger-1: 185 28 28; /* #b91c1c */
+  --rgb-danger-2: 255 102 102; /* #ff6666 */
+  --rgb-shadow-1: 0 0 0; /* #000000 */
+}

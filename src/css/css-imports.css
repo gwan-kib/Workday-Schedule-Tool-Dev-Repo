@@ -16,6 +16,7 @@
 /* COLORS (theme / palette only)                                               */
 /* -------------------------------------------------------------------------- */
 
+@import "./colors/theme-tokens.css";
 @import "./colors/widget-base-colors.css";
 @import "./colors/widget-tabs-header-colors.css";
 @import "./colors/course-list-colors.css";

@@ -1,57 +1,56 @@
-/* -------------------------------------------------------------------------- */
-/* SCHEDULE VIEW COLORS                                                       */
-/* -------------------------------------------------------------------------- */
-
 .schedule-table-wrap {
-  border-color: #401d81;
+  border-color: rgb(var(--rgb-brand-main-1));
 }
 
 .schedule-table thead th {
-  color: #cdadff;
-  background: #401d81;
-  border-color: #401d81;
-  box-shadow: inset 0 3px #401d81, inset 0 -3px #401d81, inset 1px 0 0 #cdadff;
+  color: rgb(var(--rgb-brand-accent-9));
+  background: rgb(var(--rgb-brand-main-1));
+  border-color: rgb(var(--rgb-brand-main-1));
+  box-shadow:
+    inset 0 3px rgb(var(--rgb-brand-main-1)),
+    inset 0 -3px rgb(var(--rgb-brand-main-1)),
+    inset 1px 0 0 rgb(var(--rgb-brand-accent-9));
 }
 
 .schedule-table thead th:first-child {
-  border-left-color: #401d81;
-  box-shadow: inset 2px 0 0 #401d81;
+  border-left-color: rgb(var(--rgb-brand-main-1));
+  box-shadow: inset 2px 0 0 rgb(var(--rgb-brand-main-1));
 }
 
 .schedule-table thead th:last-child {
-  border-right-color: #401d81;
+  border-right-color: rgb(var(--rgb-brand-main-1));
 }
 
 .schedule-table :not(th) td {
-  border-color: #401d81;
+  border-color: rgb(var(--rgb-brand-main-1));
 }
 
 .schedule-table td,
 .schedule-time {
-  color: #401d81;
-  background: #fbf9ff;
+  color: rgb(var(--rgb-brand-main-1));
+  background: rgb(var(--rgb-brand-accent-7));
 }
 
 .schedule-entry-float {
-  background: #e5d6fd;
-  color: #401d81;
+  background: rgb(var(--rgb-brand-accent-2));
+  color: rgb(var(--rgb-brand-main-1));
 }
 
 /* semester buttons */
 .semester-button {
-  background: #fbf8ff;
-  color: #401d81;
+  background: rgb(var(--rgb-brand-accent-6));
+  color: rgb(var(--rgb-brand-main-1));
 }
 
 .semester-button.is-active {
-  background: #cdaefc;
-  color: #401d81;
+  background: rgb(var(--rgb-brand-accent-10));
+  color: rgb(var(--rgb-brand-main-1));
 }
 
 /* saved schedules */
 .schedule-saved-summary {
-  background: #906acc;
-  color: #fbf8ff;
+  background: rgb(var(--rgb-brand-main-5));
+  color: rgb(var(--rgb-brand-accent-6));
   opacity: 0.5;
 
   transition: all 0.2s ease;
@@ -62,36 +61,36 @@
 }
 
 .schedule-saved-menu {
-  background: #fbf8ff;
-  border-color: #6b4fd6;
-  box-shadow: 0 12px 24px rgba(64, 29, 129, 0.2);
+  background: rgb(var(--rgb-brand-accent-6));
+  border-color: rgb(var(--rgb-brand-main-2));
+  box-shadow: 0 12px 24px rgb(var(--rgb-brand-main-1) / 0.2);
 }
 
 .schedule-saved-card {
-  background: #ede2ff;
-  color: #401d81;
+  background: rgb(var(--rgb-brand-accent-4));
+  color: rgb(var(--rgb-brand-main-1));
 }
 
 .schedule-saved-action {
-  background: #8f6bce;
-  color: #fbf8ff;
+  background: rgb(var(--rgb-brand-main-4));
+  color: rgb(var(--rgb-brand-accent-6));
 }
 
 .schedule-saved-action.delete {
-  background: #ff6666;
+  background: rgb(var(--rgb-danger-2));
 }
 
 .schedule-saved-empty {
-  background: #ede2ff;
-  color: #401d81;
+  background: rgb(var(--rgb-brand-accent-4));
+  color: rgb(var(--rgb-brand-main-1));
 }
 
 /* conflict stripes */
 .schedule-conflict::after {
   background: repeating-linear-gradient(
     135deg,
-    rgba(185, 28, 28, 0.4),
-    rgba(185, 28, 28, 0.4) 8px,
+    rgb(var(--rgb-danger-1) / 0.4),
+    rgb(var(--rgb-danger-1) / 0.4) 8px,
     transparent 8px,
     transparent 16px
   ) !important;
@@ -100,8 +99,8 @@
 .schedule-entry-overlap-rect {
   background: repeating-linear-gradient(
     135deg,
-    rgba(185, 28, 28, 0.55),
-    rgba(185, 28, 28, 0.55) 6px,
+    rgb(var(--rgb-danger-1) / 0.55),
+    rgb(var(--rgb-danger-1) / 0.55) 6px,
     transparent 6px,
     transparent 12px
   );
@@ -109,37 +108,37 @@
 
 /* modal colors (moved here from widget-functionality-colors.css) */
 .schedule-modal-backdrop {
-  background: rgba(64, 29, 129, 0.4);
+  background: rgb(var(--rgb-brand-main-1) / 0.4);
 }
 
 .dialog-container {
-  background: #ede2ff;
+  background: rgb(var(--rgb-brand-accent-4));
 }
 
 .schedule-modal-dialog {
-  background: #fbf8ff;
-  color: #401d81;
+  background: rgb(var(--rgb-brand-accent-6));
+  color: rgb(var(--rgb-brand-main-1));
 
-  border-color: #401d81;
-  box-shadow: 0 18px 30px rgba(64, 29, 129, 0.25);
+  border-color: rgb(var(--rgb-brand-main-1));
+  box-shadow: 0 18px 30px rgb(var(--rgb-brand-main-1) / 0.25);
 }
 
 .schedule-modal-close {
-  background: #ede2ff;
-  color: #401d81;
+  background: rgb(var(--rgb-brand-accent-4));
+  color: rgb(var(--rgb-brand-main-1));
 }
 
 .schedule-modal-input {
-  background: #ede2ff;
-  color: #401d81;
-  border-color: #cdaefc;
+  background: rgb(var(--rgb-brand-accent-4));
+  color: rgb(var(--rgb-brand-main-1));
+  border-color: rgb(var(--rgb-brand-accent-10));
 }
 
 .schedule-modal-input::placeholder {
-  color: #401d81;
+  color: rgb(var(--rgb-brand-main-1));
   opacity: 0.6;
 }
 
 .schedule-modal-input.is-invalid {
-  border-color: #b91c1c;
+  border-color: rgb(var(--rgb-danger-1));
 }
