@@ -3,28 +3,33 @@ import { debugFor } from "../utilities/debugTool.js";
 const debug = debugFor("loadMainPanel");
 
 export async function loadMainPanel(shadowRoot) {
-  const htmlUrl = chrome.runtime.getURL("panel.html");
+  const htmlUrl = chrome.runtime.getURL("dist/panel.html");
 
   const cssFiles = [
-    "formatting/general.css",
-    "formatting/widget-shell.css",
-    "formatting/widget-buttons.css",
-    "formatting/floating-button.css",
-    "formatting/course-list.css",
+    "formatting/widget-base.css",
+    "formatting/widget-tabs-header.css",
+    "formatting/widget-header-tabs.css",
+    "formatting/course-list-view.css",
     "formatting/schedule-view.css",
-    "formatting/schedule-view-events.css",
-    "formatting/settings.css",
+    "formatting/settings-view.css",
+    "formatting/help-view.css",
+    "formatting/widget-footer.css",
+    "formatting/floating-button.css",
 
+    "colors/widget-base-colors.css",
+    "colors/widget-header-tabs-color.css",
     "colors/course-list-colors.css",
-    "colors/general-colors.css",
     "colors/schedule-view-colors.css",
-    "colors/widget-functionality-colors.css",
+    "colors/settings-view-colors.css",
+    "colors/help-view-colors.css",
+    "colors/widget-footer-colors.css",
+    "colors/floating-button-colors.css",
     "colors/settings-colors.css",
   ];
 
   const [html, ...cssParts] = await Promise.all([
     fetch(htmlUrl).then((r) => r.text()),
-    ...cssFiles.map((file) => fetch(chrome.runtime.getURL(`css/${file}`)).then((r) => r.text())),
+    ...cssFiles.map((file) => fetch(chrome.runtime.getURL(`dist/css/${file}`)).then((r) => r.text())),
   ]);
 
   const css = cssParts.join("\n");

@@ -27,7 +27,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["src/css/*.css", "src/panel.html", "src/W.svg"],
+      "resources": ["dist/css/*.css", "dist/panel.html", "dist/W.svg"],
       "matches": ["https://*.myworkday.com/*"]
     }
   ]
