@@ -198,6 +198,10 @@ import {
     // Refresh (re-extract)
     // ---------------------------
     on(ui.refreshButton, "click", async () => {
+      ui.refreshButton.classList.remove("rotate"); // reset if clicked fast
+      void ui.refreshButton.offsetWidth; // force reflow
+      ui.refreshButton.classList.add("rotate");
+
       STATE.courses = await extractCoursesData();
       filterCourses(ui.searchInput.value);
       renderAll();
@@ -313,7 +317,7 @@ import {
       debounce(() => {
         filterCourses(ui.searchInput.value);
         renderAll();
-      }, 100)
+      }, 100),
     );
 
     wireTableSorting(ui);

@@ -9,7 +9,12 @@
   "host_permissions": ["https://*.myworkday.com/*"],
 
   "action": {
-    "default_title": "Workday Course Extractor"
+    "default_title": "Workday Course Extractor",
+    "default_icon": {
+      "16": "dist/workday-extention-logo.svg",
+      "48": "dist/workday-extention-logo.svg",
+      "128": "dist/workday-extention-logo.svg"
+    }
   },
 
   "background": {
@@ -27,7 +32,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["dist/css/*.css", "dist/panel.html", "dist/W.svg"],
+      "resources": ["dist/css/*.css", "dist/panel.html", "dist/W.svg", "dist/workday-extention-logo.svg"],
       "matches": ["https://*.myworkday.com/*"]
     }
   ]
