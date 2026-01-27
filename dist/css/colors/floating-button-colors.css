@@ -1,13 +1,9 @@
-/* -------------------------------------------------------------------------- */
-/* FLOATING BUTTON COLORS                                                     */
-/* -------------------------------------------------------------------------- */
-
 .widget,
 #floating-button {
   filter: hue-rotate(0deg);
 }
 
 #floating-button {
-  color: #e4d6ff;
-  background: #401d81;
+  color: var(--hex-brand-accent-1);
+  background: var(--hex-brand-main-1);
 }

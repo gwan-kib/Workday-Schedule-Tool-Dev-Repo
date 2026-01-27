@@ -16,6 +16,7 @@ export async function loadMainPanel(shadowRoot) {
     "formatting/widget-footer.css",
     "formatting/floating-button.css",
 
+    "colors/theme-tokens.css",
     "colors/widget-base-colors.css",
     "colors/widget-header-tabs-color.css",
     "colors/course-list-colors.css",

@@ -59,7 +59,7 @@
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link:hover {
-  box-shadow: 0 6px 18px rgb(var(--rgb-shadow-1) / 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
 }
 

@@ -1,23 +1,23 @@
 .widget-panel[data-panel="settings"] .settings-panel {
-  color: rgb(var(--rgb-brand-main-1));
+  color: var(--hex-brand-main-1);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link {
-  background: rgb(var(--rgb-brand-accent-5));
-  color: rgb(var(--rgb-brand-main-1));
+  background: var(--hex-brand-accent-5);
+  color: var(--hex-brand-main-1);
 
-  border-color: rgb(var(--rgb-brand-accent-11));
+  border-color: var(--hex-brand-accent-11);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link .material-symbols-rounded {
-  color: rgb(var(--rgb-brand-main-1));
+  color: var(--hex-brand-main-1);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link:hover {
-  background: rgb(var(--rgb-neutral-1));
-  border-color: rgb(var(--rgb-brand-accent-9));
+  background: var(--hex-neutral-1);
+  border-color: var(--hex-brand-accent-9);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link:focus-visible {
-  outline-color: rgb(var(--rgb-brand-accent-9));
+  outline-color: var(--hex-brand-accent-9);
 }

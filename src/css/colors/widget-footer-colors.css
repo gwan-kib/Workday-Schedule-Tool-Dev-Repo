@@ -1,5 +1,5 @@
 .widget-footer {
-  border-top-color: rgb(var(--rgb-neutral-4));
-  background: rgb(var(--rgb-brand-accent-7));
-  color: rgb(var(--rgb-brand-main-1));
+  border-top-color: var(--hex-neutral-4);
+  background: var(--hex-brand-accent-7);
+  color: var(--hex-brand-main-1);
 }

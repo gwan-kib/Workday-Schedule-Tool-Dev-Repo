@@ -1,9 +1,9 @@
 .meeting-pill {
-    color: #401d81;
-    background: #e4d6ff;
+  color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-1);
 }
 
 [data-panel="list"] th {
-    color: #e4d6ff;
-    background: #401d81;
+  color: var(--hex-brand-accent-1);
+  background: var(--hex-brand-main-1);
 }

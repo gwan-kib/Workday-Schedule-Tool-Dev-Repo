@@ -1,27 +1,23 @@
-/* -------------------------------------------------------------------------- */
-/* SETTINGS VIEW COLORS                                                       */
-/* -------------------------------------------------------------------------- */
-
 .widget-panel[data-panel="settings"] .settings-panel {
-  color: #401d81;
+  color: var(--hex-brand-main-1);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link {
-  background: #f7f2ff;
-  color: #401d81;
+  background: var(--hex-brand-accent-5);
+  color: var(--hex-brand-main-1);
 
-  border-color: #cfd6e4;
+  border-color: var(--hex-brand-accent-11);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link .material-symbols-rounded {
-  color: #401d81;
+  color: var(--hex-brand-main-1);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link:hover {
-  background: #ffffff;
-  border-color: #cdadff;
+  background: var(--hex-neutral-1);
+  border-color: var(--hex-brand-accent-9);
 }
 
 .widget-panel[data-panel="settings"] .settings-field .link:focus-visible {
-  outline-color: #cdadff;
+  outline-color: var(--hex-brand-accent-9);
 }

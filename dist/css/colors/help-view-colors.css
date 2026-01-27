@@ -1,12 +1,8 @@
-/* -------------------------------------------------------------------------- */
-/* HELP VIEW COLORS                                                           */
-/* -------------------------------------------------------------------------- */
-
 .widget-panel[data-panel="help"] .settings-panel {
-  color: #401d81;
+  color: var(--hex-brand-main-1);
 }
 
 .widget-panel[data-panel="help"] .help-item {
-  background: #ffffff;
-  border-color: #e5e7eb;
+  background: var(--hex-neutral-1);
+  border-color: var(--hex-neutral-4);
 }

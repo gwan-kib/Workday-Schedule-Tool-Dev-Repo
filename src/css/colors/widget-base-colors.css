@@ -1,20 +1,20 @@
 .widget {
-  color: rgb(var(--rgb-brand-main-1));
-  background: rgb(var(--rgb-brand-accent-7));
-  border-color: rgb(var(--rgb-brand-main-1)) !important;
+  color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-7);
+  border-color: var(--hex-brand-main-1) !important;
 }
 
 .widget-body,
 .widget-footer {
-  border-color: rgb(var(--rgb-brand-main-1));
+  border-color: var(--hex-brand-main-1);
 }
 
 .pill {
-  border-color: rgb(var(--rgb-brand-accent-12));
+  border-color: var(--hex-brand-accent-12);
 }
 
 .muted {
-  color: rgb(var(--rgb-brand-main-7));
+  color: var(--hex-brand-main-7);
 }
 
 .widget :focus-visible {
