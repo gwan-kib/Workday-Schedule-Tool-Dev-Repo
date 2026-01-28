@@ -8,7 +8,10 @@ export default defineConfig({
       targets: [
         { src: "src/panel.html", dest: "" },
         { src: "src/css", dest: "" }, // becomes dist/css/**
-        { src: "src/workday-extention-logo.svg", dest: "" },
+        { src: "icon16.png", dest: "" },
+        { src: "icon32.png", dest: "" },
+        { src: "icon48.png", dest: "" },
+        { src: "icon128.png", dest: "" },
       ],
     }),
   ],

@@ -8,12 +8,17 @@
 
   "host_permissions": ["https://*.myworkday.com/*"],
 
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+
   "action": {
     "default_title": "Workday Course Extractor",
     "default_icon": {
-      "16": "dist/workday-extention-logo.svg",
-      "48": "dist/workday-extention-logo.svg",
-      "128": "dist/workday-extention-logo.svg"
+      "128": "icon128.png"
     }
   },
 
