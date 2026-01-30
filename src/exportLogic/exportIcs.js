@@ -206,14 +206,16 @@ const buildICSFile = (courses) => {
 // generates the ICS string from the current filtered courses, wraps it in a Blob (file-like object)
 // creates a temporary URL for it and a hidden <a> then “clicks” it to download
 // cleans up the URL + anchor afterward
-export function exportICS() {
+export function exportICS(scheduleName) {
   const ics = buildICSFile(STATE.filtered || []);
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "workday-schedule.ics";
+  // Use the schedule name if provided, otherwise use the default
+  const filename = scheduleName ? `${"[workday-schedule] " + scheduleName.replace(/[\\/:*?"<>|]/g, "-")}.ics` : "[workday-schedule].ics";
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
 

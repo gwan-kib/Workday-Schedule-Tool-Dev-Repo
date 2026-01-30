@@ -203,6 +203,7 @@ import {
       ui.refreshButton.classList.add("rotate");
 
       STATE.courses = await extractCoursesData();
+      STATE.currentScheduleName = null; // reset schedule name on refresh
       filterCourses(ui.searchInput.value);
       renderAll();
     });
@@ -211,7 +212,7 @@ import {
     // Export actions
     // ---------------------------
     const handleExport = async (type) => {
-      if (type === "ics") exportICS();
+      if (type === "ics") exportICS(STATE.currentScheduleName);
     };
 
     on(ui.exportMenu, "click", async (event) => {
@@ -284,6 +285,7 @@ import {
       }
 
       // Load
+      STATE.currentScheduleName = selected.name;
       STATE.courses = [...selected.courses];
       STATE.filtered = [...selected.courses];
       ui.searchInput.value = "";
