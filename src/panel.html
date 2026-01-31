@@ -23,26 +23,17 @@
         aria-haspopup="menu"
         aria-expanded="false"
       >
-        <span class="material-symbols-rounded export-icon" aria-hidden="true">
-          ios_share
-        </span>
+        <span class="material-symbols-rounded export-icon" aria-hidden="true"> ios_share </span>
         <span class="text">Export</span>
-        <span class="material-symbols-rounded" aria-hidden="true"
-          >expand_more</span
-        >
+        <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
       </button>
       <div class="export-menu" id="widget-export-menu" role="menu">
-        <button class="export-option" type="button" data-export="ics">
-          Download .ics
-        </button>
-        <button class="export-option" type="button" data-export="png">
-          More options soon...
-        </button>
+        <button class="export-option" type="button" data-export="ics">Download .ics</button>
+        <button class="export-option" type="button" data-export="png">More options soon...</button>
       </div>
     </div>
     <button class="btn help" type="button" aria-label="Help">
-      <span class="material-symbols-rounded"> help </span
-      ><span class="text">Help</span>
+      <span class="material-symbols-rounded"> help </span><span class="text">Help</span>
     </button>
     <button class="btn settings" type="button" aria-label="Settings">
       <span class="material-symbols-rounded">settings</span>
@@ -56,31 +47,20 @@
       <span class="text">Schedule View</span>
     </button>
     <div class="widget-search-wrap">
-      <span class="material-symbols-rounded search-icon" aria-hidden="true">
-        search
-      </span>
-      <input
-        id="widget-search"
-        placeholder="Course Name / Instructor / Week Day…"
-      />
+      <span class="material-symbols-rounded search-icon" aria-hidden="true"> search </span>
+      <input id="widget-search" placeholder="Course Name / Instructor / Week Day…" />
     </div>
     <span class="spacer"></span>
     <button id="widget-refresh" class="btn" type="button">
       <span class="material-symbols-rounded"> refresh </span>
     </button>
-    <button
-      id="widget-save-schedule"
-      class="btn schedule-save-button"
-      type="button"
-    >
+    <button id="widget-save-schedule" class="btn schedule-save-button" type="button">
       <span class="material-symbols-rounded save-icon"> save_as </span>
     </button>
     <details class="schedule-saved-dropdown" id="schedule-saved-dropdown">
       <summary class="schedule-saved-summary">
         <span class="text">Schedules</span>
-        <span class="material-symbols-rounded" aria-hidden="true"
-          >expand_more</span
-        >
+        <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
       </summary>
       <div class="schedule-saved-menu" id="schedule-saved-menu"></div>
     </details>
@@ -105,11 +85,7 @@
     <div class="widget-panel" data-panel="schedule">
       <div class="schedule-controls">
         <div class="schedule-semester-buttons">
-          <button
-            class="semester-button is-active"
-            type="button"
-            data-semester="first"
-          >
+          <button class="semester-button is-active" type="button" data-semester="first">
             <span class="text">Semester 1</span>
           </button>
           <button class="semester-button" type="button" data-semester="second">
@@ -130,9 +106,7 @@
               href="https://github.com/gwan-kib/Workday-Extension"
               target="_blank"
               rel="noopener noreferrer"
-              >GitHub Repo<span class="material-symbols-rounded"
-                >arrow_outward</span
-              ></a
+              >GitHub Repo<span class="material-symbols-rounded">arrow_outward</span></a
             >
           </label>
           <label class="settings-field">
@@ -141,68 +115,42 @@
               href="https://www.linkedin.com/in/gwantanakiboigo/"
               target="_blank"
               rel="noopener noreferrer"
-              >LinkedIn<span class="material-symbols-rounded"
-                >arrow_outward</span
-              ></a
+              >LinkedIn<span class="material-symbols-rounded">arrow_outward</span></a
             >
           </label>
         </div>
       </div>
     </div>
     <div class="widget-panel" data-panel="help">
-      <div class="settings-panel">
+      <div class="help-panel">
         <h2>Help</h2>
-        <p>Need a hand? This page will hold guides, shortcuts, and tips.</p>
+        <p>Need a hand?</pp>
         <div class="help-box">
-          <div class="help-item">
-            <strong>Getting started</strong>
-            <span class="muted"
-              >Quick walkthroughs and FAQs will live here.</span
+          <label class="settings-field">
+            <a
+              class="link"
+              href="https://docs.google.com/document/d/1D0YqHct_d3rR8WtlkHF9Dybqb3mFB7Wka0ZWsFZOda8/edit?tab=t.0"
+              role="button"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Tutorials<span class="material-symbols-rounded">arrow_outward</span></a
             >
-          </div>
-          <div class="help-item">
-            <strong>Keyboard shortcuts</strong>
-            <span class="muted">We will list time-saving shortcuts soon.</span>
-          </div>
-          <div class="help-item">
-            <strong>Support</strong>
-            <span class="muted"
-              >Add contact info or links to help resources.</span
-            >
-          </div>
+          </label>
         </div>
+        <p>Extension not working properly? Found a bug? Feel free to send me an email: gwantanak.3@gmail.com</p>
       </div>
     </div>
-    <div
-      class="schedule-modal is-hidden"
-      id="schedule-save-modal"
-      aria-hidden="true"
-    >
+    <div class="schedule-modal is-hidden" id="schedule-save-modal" aria-hidden="true">
       <div class="schedule-modal-backdrop" data-action="close"></div>
       <div class="dialog-container">
-        <div
-          class="schedule-modal-dialog"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="schedule-modal-title"
-        >
+        <div class="schedule-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
           <div class="schedule-modal-header">
-            <h3 class="schedule-modal-title" id="schedule-modal-title">
-              Save Schedule
-            </h3>
-            <button
-              class="schedule-modal-close"
-              type="button"
-              data-action="close"
-            >
-              <span class="material-symbols-rounded" aria-hidden="true"
-                >close</span
-              >
+            <h3 class="schedule-modal-title" id="schedule-modal-title">Save Schedule</h3>
+            <button class="schedule-modal-close" type="button" data-action="close">
+              <span class="material-symbols-rounded" aria-hidden="true">close</span>
             </button>
           </div>
-          <p class="schedule-modal-message" id="schedule-modal-message">
-            Name this schedule so you can find it later.
-          </p>
+          <p class="schedule-modal-message" id="schedule-modal-message">Name this schedule so you can find it later.</p>
           <label class="schedule-modal-field" id="schedule-modal-field">
             <span class="schedule-modal-label">Schedule name</span>
             <input
@@ -213,20 +161,8 @@
             />
           </label>
           <div class="schedule-modal-actions">
-            <button
-              class="btn schedule-modal-cancel"
-              type="button"
-              data-action="cancel"
-            >
-              Cancel
-            </button>
-            <button
-              class="btn schedule-modal-confirm"
-              type="button"
-              data-action="confirm"
-            >
-              Save
-            </button>
+            <button class="btn schedule-modal-cancel" type="button" data-action="cancel">Cancel</button>
+            <button class="btn schedule-modal-confirm" type="button" data-action="confirm">Save</button>
           </div>
         </div>
       </div>
@@ -235,8 +171,6 @@
   <div class="widget-footer">
     <span id="widget-conflicts" class="widget-conflicts"></span>
     <span class="spacer"></span>
-    <span class="footer-tip"
-      ><span class="muted">Tip: Click headers to sort</span></span
-    >
+    <span class="footer-tip"><span class="muted">Tip: Click headers to sort</span></span>
   </div>
 </div>
