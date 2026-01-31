@@ -214,7 +214,7 @@ export function exportICS(scheduleName) {
   const a = document.createElement("a");
   a.href = url;
   // Use the schedule name if provided, otherwise use the default
-  const filename = scheduleName ? `${"[workday-schedule] " + scheduleName.replace(/[\\/:*?"<>|]/g, "-")}.ics` : "[workday-schedule].ics";
+  const filename = scheduleName ? `${"[WST] " + scheduleName.replace(/[\\/:*?"<>|]/g, "-")}.ics` : "[WST] Schedule.ics";
   a.download = filename;
   document.body.appendChild(a);
   a.click();

@@ -1,18 +1,15 @@
-# Workday Schedule Extractor
+# Workday - Schedule Tool
 
-A powerful Chrome extension that transforms your Workday course registration page into an interactive schedule management tool. Extract, organize, filter, and export your registered courses in a single click.
+A Chrome extension that allows you to view, extract, and export your Workday courses and schedules with ease.
 
-## 🎯 Features
+## Features
 
-- **Course Extraction**: Automatically parse and extract course data from Workday's "View My Courses" page
-- **Interactive Schedule View**: Visualize your courses in a calendar-style grid layout
-- **Advanced Filtering & Sorting**: Filter courses by code, name, or credits; sort by any column
-- **Multiple Schedule Snapshots**: Save and manage multiple schedule versions to compare different registration options
-- **iCalendar Export**: Download your schedule as `.ics` file for use with Google Calendar, Outlook, Apple Calendar, and other calendar apps
-- **Professional UI**: Dark/light theme support with custom styling specific to Workday's interface
-- **Real-time Updates**: Reactive UI that updates instantly when you filter, sort, or switch views
+- **Schedule View**: Visualize your courses in a calendar-style grid layout
+- **Filtering & Sorting**: Filter courses by code, name, or credits
+- **Save Multiple Schedules**: Save and manage multiple schedule versions to compare different registration options
+- **Calendar Export**: Download your schedule as `.ics` file for use with Google Calendar, Outlook, Apple Calendar, ect.
 
-## 🚀 Quick Start
+## Want to work on the extension?
 
 1. **Clone the repository**
 
@@ -27,6 +24,11 @@ A powerful Chrome extension that transforms your Workday course registration pag
    npm install
    ```
 
+   The extension uses two separate Vite configurations:
+
+- `vite.content.config.js` - Bundles content scripts injected into Workday pages
+- `vite.background.config.js` - Bundles background service worker
+
 3. **Build the extension**
 
    ```bash
@@ -40,11 +42,9 @@ A powerful Chrome extension that transforms your Workday course registration pag
    - Select the project directory
 
 5. **Use the extension**
-   - Navigate to your Workday instance (https://\*.myworkday.com)
-   - Click the extension icon to open the course extraction panel
-   - View, filter, sort, and export your schedule
+   - Navigate to any Workday instance (https://\*.myworkday.com) and have fun
 
-## 📚 What I Learned Building This
+## What I Learned Building This
 
 ### Architecture & JavaScript
 
@@ -55,24 +55,19 @@ A powerful Chrome extension that transforms your Workday course registration pag
 
 ### Web Scraping & Data Processing
 
-- **DOM Parsing**: Built sophisticated grid parsing logic to extract structured data from unstructured HTML tables
+- **DOM Parsing**: Built grid parsing logic to extract structured data from HTML tables
 - **Text Normalization**: Handled messy Workday data with regex patterns and text parsing utilities to extract meeting times, dates, instructors, and course codes
 - **Data Transformation**: Converted raw course data into structured objects with proper typing and validation
 
 ### Calendar & Time Handling
 
 - **iCalendar Format (RFC 5545)**: Generated valid `.ics` files with proper timezone handling, recurring events (RRULE), and UTC/local time conversions
-- **Date Manipulation**: Complex date parsing and formatting for multiple calendar systems and timezone awareness
-
-### Build Tools & Module Systems
-
-- **Vite Bundler**: Configured multiple Vite builds for content scripts and background workers with asset copying and code splitting
-- **ES6 Modules**: Organized code into modular, reusable components with clear dependency injection
+- **Date Manipulation**: Date parsing and formatting for multiple calendar systems and timezone awareness
 
 ### UI/UX Development
 
-- **Component-Based UI**: Built reusable UI components for different views (course list, schedule grid, settings, help)
-- **CSS Architecture**: Organized styling into logical modules (colors, formatting, themes) with CSS variables for maintainability
+- **Component-Based UI**: Built reusable UI components (buttons, links) for the different extension panel views (course list, schedule grid, settings, help)
+- **CSS Architecture**: Organized styling into logical modules (colours, formatting, themes) with CSS variables for maintainability
 - **Responsive Design**: Created an interface that works within Chrome's extension constraints
 
 ### Development Practices
@@ -81,51 +76,22 @@ A powerful Chrome extension that transforms your Workday course registration pag
 - **Code Organization**: Structured the codebase into logical modules (extraction, mainPanel, exportLogic, utilities, css)
 - **Error Handling**: Built robust parsing with fallbacks for malformed data
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
-src/
-├── core/                    # Global state management
-├── extraction/              # Course data parsing from Workday
-│   ├── parsers/            # Specialized parsers (meeting patterns, instructors, sections)
-│   └── grid.js             # Workday table structure analysis
-├── mainPanel/              # UI rendering & interactions
-│   ├── scheduleStorage.js  # Schedule snapshots (save/load)
-│   └── scheduleView.js     # Calendar grid visualization
-├── exportLogic/            # iCalendar generation
-├── utilities/              # Shared helpers (DOM, Shadow DOM, debugging)
-└── css/                    # Styling (colors, formatting, themes)
+
 ```
 
-## 🛠️ Development
+## How It Works
 
-**Watch mode for development:**
-
-```bash
-npm run dev
-```
-
-**Build for production:**
-
-```bash
-npm run build
-```
-
-The extension uses two separate Vite configurations:
-
-- `vite.content.config.js` - Bundles content scripts injected into Workday pages
-- `vite.background.config.js` - Bundles background service worker
-
-## 📋 How It Works
-
-1. **Content Script Injection**: When you visit a Workday page, the content script initializes
-2. **Grid Detection & Parsing**: Analyzes the page's DOM to find and extract the course table
+1. **Inject Content Script**: When you visit a Workday page, the content script initializes
+2. **Grid Parsing**: Analyzes the page's DOM to find and extract the course table
 3. **Data Extraction**: Parses each row to extract course codes, names, instructors, meeting patterns, and credits
 4. **UI Rendering**: Mounts an interactive panel into a Shadow DOM to avoid style conflicts
 5. **State Management**: All interactions (filtering, sorting, switching views) update the centralized STATE
 6. **Export Generation**: When requested, generates a proper RFC 5545-compliant `.ics` file with recurring events and timezone data
 
-## ⚙️ Technical Details
+## Technical Details
 
 **Permissions & Security:**
 
@@ -137,10 +103,11 @@ The extension uses two separate Vite configurations:
 
 - Chrome 88+ (Manifest v3 required)
 
-## 📄 License
+---
+
+## License
 
 ISC
 
----
 
-**Built as a learning project to explore Chrome extension development, DOM manipulation, and calendar standards.**
+**Built as a learning project to explore Chrome extension development, DOM manipulation, and UI/UX development.**
