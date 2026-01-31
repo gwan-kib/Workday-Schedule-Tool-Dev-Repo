@@ -1,12 +1,16 @@
 import { on, debounce } from "./utilities/dom.js";
 import { STATE } from "./core/state.js";
 import { ensureMount } from "./utilities/shadowMount.js";
-import { loadPanel } from "./panel/loadPanel.js";
-import { extractAllCourses } from "./extraction/courseExtraction.js";
-import { applySearchFilter, sortBy, wireSorting } from "./panel/panelInteractions.js";
-import { renderRows } from "./panel/renderRows.js";
-import { renderSchedule } from "./panel/scheduleView.js";
-import { exportICS } from "./export-logic/export-ics.js";
+
+import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
+import { extractCoursesData } from "./extraction/index.js";
+
+import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/mainPanelInteractions.js";
+import { renderCourseRows } from "./mainPanel/renderCourseRows.js";
+import { renderSchedule } from "./mainPanel/scheduleView.js";
+
+import { exportICS } from "./exportLogic/exportIcs.js";
+
 import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
@@ -14,209 +18,215 @@ import {
   loadSavedSchedules,
   persistSavedSchedules,
   renderSavedSchedules,
-} from "./panel/scheduleStorage.js";
-import { debugFor } from "./utilities/debugTool.js";
-const debug = debugFor("content");
+} from "./mainPanel/scheduleStorage.js";
 
 (() => {
+  console.log("[WD] content script loaded");
+
   async function boot() {
-    const shadow = ensureMount();
-    const ctx = await loadPanel(shadow);
-    debug.log("Loaded panel context:", ctx);
-    ctx.button.classList.toggle("is-collapsed", ctx.widget.classList.contains("is-hidden"));
-    const updateSchedule = () => {
-      renderSchedule(ctx, STATE.filtered, STATE.view.semester);
-      debug.log("Schedule updated with filtered data:", STATE.filtered);
+    const shadowRoot = ensureMount();
+    const ui = await loadMainPanel(shadowRoot);
+
+    // ---------------------------
+    // Helpers
+    // ---------------------------
+    const updateScheduleView = () => {
+      renderSchedule(ui, STATE.filtered, STATE.view.semester);
     };
 
-    const setActivePanel = (panel) => {
-      STATE.view.panel = panel;
-      debug.log("Panel state changed:", panel);
-      ctx.panels.forEach((el) => {
-        el.classList.toggle("is-active", el.dataset.panel === panel);
-      });
-      ctx.tabButtons.forEach((btn) => {
-        btn.classList.toggle("is-active", btn.dataset.panel === panel);
-      });
-      ctx.widget.classList.toggle("is-schedule-view", panel === "schedule");
-      ctx.widget.classList.toggle("is-settings-view", panel === "settings");
-      ctx.widget.classList.toggle("is-help-view", panel === "help");
+    const renderAll = () => {
+      sortCourses(STATE.sort.key || "code");
+      renderCourseRows(ui, STATE.filtered);
+      updateScheduleView();
     };
 
-    const toggleWidget = () => {
-      ctx.widget.classList.toggle("is-hidden");
-      debug.log("Widget visibility toggled:", ctx.widget.classList.contains("is-hidden"));
-      ctx.button.classList.toggle("is-collapsed", ctx.widget.classList.contains("is-hidden"));
+    const setActiveView = (viewKey) => {
+      STATE.view.panel = viewKey;
+
+      ui.views.forEach((el) => el.classList.toggle("is-active", el.dataset.panel === viewKey));
+      ui.viewTabs.forEach((btn) => btn.classList.toggle("is-active", btn.dataset.panel === viewKey));
+
+      ui.mainPanel.classList.toggle("is-schedule-view", viewKey === "schedule");
+      ui.mainPanel.classList.toggle("is-settings-view", viewKey === "settings");
+      ui.mainPanel.classList.toggle("is-help-view", viewKey === "help");
     };
 
+    const syncFloatingButtonState = () => {
+      ui.floatingButton.classList.toggle("is-collapsed", ui.mainPanel.classList.contains("is-hidden"));
+    };
+
+    const toggleMainPanel = () => {
+      ui.mainPanel.classList.toggle("is-hidden");
+      syncFloatingButtonState();
+    };
+
+    syncFloatingButtonState();
+
+    // ---------------------------
+    // Modal (Save Schedule)
+    // ---------------------------
     let resolveScheduleModal = null;
+
     const closeScheduleModal = (value) => {
-      if (!ctx.saveModal) return;
-      ctx.saveModal.classList.add("is-hidden");
-      ctx.saveModal.setAttribute("aria-hidden", "true");
+      if (!ui.saveModal) return;
+
+      ui.saveModal.classList.add("is-hidden");
+      ui.saveModal.setAttribute("aria-hidden", "true");
 
       if (resolveScheduleModal) {
         resolveScheduleModal(value);
         resolveScheduleModal = null;
       }
-      debug.log("Schedule modal closed with value:", value);
     };
 
     const openScheduleModal = ({ title, message, confirmLabel = "Save", showInput = true, showCancel = true }) => {
-      if (!ctx.saveModal) return Promise.resolve(null);
-      ctx.saveModalTitle.textContent = title;
-      ctx.saveModalMessage.textContent = message;
-      ctx.saveModalConfirm.textContent = confirmLabel;
-      ctx.saveModalField.classList.toggle("is-hidden", !showInput);
-      ctx.saveModalCancel.classList.toggle("is-hidden", !showCancel);
-      ctx.saveModalInput.value = "";
-      ctx.saveModalInput.classList.remove("is-invalid");
-      ctx.saveModal.classList.remove("is-hidden");
-      ctx.saveModal.setAttribute("aria-hidden", "false");
-      if (showInput) {
-        ctx.saveModalInput.focus();
-      } else {
-        ctx.saveModalConfirm.focus();
-      }
-      debug.log("Opened schedule modal with title:", title);
+      if (!ui.saveModal) return Promise.resolve(null);
+
+      ui.saveModalTitle.textContent = title;
+      ui.saveModalMessage.textContent = message;
+      ui.saveModalConfirm.textContent = confirmLabel;
+
+      ui.saveModalField.classList.toggle("is-hidden", !showInput);
+      ui.saveModalCancel.classList.toggle("is-hidden", !showCancel);
+
+      ui.saveModalInput.value = "";
+      ui.saveModalInput.classList.remove("is-invalid");
+
+      ui.saveModal.classList.remove("is-hidden");
+      ui.saveModal.setAttribute("aria-hidden", "false");
+
+      if (showInput) ui.saveModalInput.focus();
+      else ui.saveModalConfirm.focus();
+
       return new Promise((resolve) => {
         resolveScheduleModal = resolve;
       });
     };
 
-    if (ctx.saveModal) {
-      on(ctx.saveModal, "click", (event) => {
-        if (event.target === ctx.saveModal) {
-          closeScheduleModal(null);
-          return;
-        }
+    if (ui.saveModal) {
+      on(ui.saveModal, "click", (event) => {
+        if (event.target === ui.saveModal) return closeScheduleModal(null);
+
         const action = event.target.closest("[data-action]")?.dataset.action;
         if (!action) return;
-        if (action === "close" || action === "cancel") {
-          closeScheduleModal(null);
-          return;
-        }
+
+        if (action === "close" || action === "cancel") return closeScheduleModal(null);
+
         if (action === "confirm") {
-          if (!ctx.saveModalField.classList.contains("is-hidden")) {
-            const value = ctx.saveModalInput.value.trim();
+          const needsInput = !ui.saveModalField.classList.contains("is-hidden");
+          if (needsInput) {
+            const value = ui.saveModalInput.value.trim();
             if (!value) {
-              ctx.saveModalInput.classList.add("is-invalid");
-              ctx.saveModalInput.focus();
+              ui.saveModalInput.classList.add("is-invalid");
+              ui.saveModalInput.focus();
               return;
             }
-            closeScheduleModal(value);
-            return;
+            return closeScheduleModal(value);
           }
-          closeScheduleModal(true);
+          return closeScheduleModal(true);
         }
       });
 
-      on(ctx.saveModalInput, "input", () => {
-        ctx.saveModalInput.classList.remove("is-invalid");
-      });
-
-      on(ctx.saveModalInput, "keydown", (event) => {
-        if (event.key === "Enter") {
-          ctx.saveModalConfirm.click();
-        }
+      on(ui.saveModalInput, "input", () => ui.saveModalInput.classList.remove("is-invalid"));
+      on(ui.saveModalInput, "keydown", (event) => {
+        if (event.key === "Enter") ui.saveModalConfirm.click();
       });
 
       on(document, "keydown", (event) => {
-        if (event.key === "Escape" && ctx.saveModal && !ctx.saveModal.classList.contains("is-hidden")) {
-          closeScheduleModal(null);
-        }
+        if (event.key === "Escape" && !ui.saveModal.classList.contains("is-hidden")) closeScheduleModal(null);
       });
     }
 
-    ctx.tabButtons.forEach((btn) => {
+    // ---------------------------
+    // Views + semester toggles
+    // ---------------------------
+    ui.viewTabs.forEach((btn) => {
       on(btn, "click", () => {
-        setActivePanel(btn.dataset.panel);
-        if (btn.dataset.panel === "schedule") updateSchedule();
+        setActiveView(btn.dataset.panel);
+        if (btn.dataset.panel === "schedule") updateScheduleView();
       });
     });
 
-    ctx.semesterButtons.forEach((btn) => {
+    ui.semesterButtons.forEach((btn) => {
       on(btn, "click", () => {
         STATE.view.semester = btn.dataset.semester;
-        debug.log("Semester state changed:", STATE.view.semester);
-        ctx.semesterButtons.forEach((semesterBtn) => {
-          semesterBtn.classList.toggle("is-active", semesterBtn.dataset.semester === STATE.view.semester);
-        });
-        updateSchedule();
+
+        ui.semesterButtons.forEach((b) => b.classList.toggle("is-active", b.dataset.semester === STATE.view.semester));
+        updateScheduleView();
       });
     });
 
-    on(ctx.button, "click", toggleWidget);
+    on(ui.floatingButton, "click", toggleMainPanel);
 
+    // ---------------------------
+    // Dropdowns (export + saved)
+    // ---------------------------
     const setExportOpen = (isOpen) => {
-      if (!ctx.exportDropdown || !ctx.exportButton) return;
-      ctx.exportDropdown.classList.toggle("is-open", isOpen);
-      ctx.exportButton.setAttribute("aria-expanded", String(isOpen));
-      debug.log("Export dropdown state changed:", isOpen);
+      if (!ui.exportDropdown || !ui.exportButton) return;
+      ui.exportDropdown.classList.toggle("is-open", isOpen);
+      ui.exportButton.setAttribute("aria-expanded", String(isOpen));
     };
 
-    on(ctx.exportButton, "click", () => {
-      const isOpen = ctx.exportDropdown?.classList.contains("is-open");
+    on(ui.exportButton, "click", () => {
+      const isOpen = ui.exportDropdown.classList.contains("is-open");
       setExportOpen(!isOpen);
     });
 
+    // Single click-outside handler (closes both export + saved dropdowns)
     on(document, "click", (event) => {
-      if (!ctx.exportDropdown?.classList.contains("is-open")) return;
       const path = event.composedPath ? event.composedPath() : [];
-      if (path.includes(ctx.exportDropdown)) return;
-      setExportOpen(false);
+
+      // Export dropdown: class-based
+      if (ui.exportDropdown?.classList.contains("is-open") && !path.includes(ui.exportDropdown)) {
+        setExportOpen(false);
+      }
+
+      // Saved dropdown: <details open>
+      if (ui.savedDropdown?.open && !path.includes(ui.savedDropdown)) {
+        ui.savedDropdown.open = false;
+      }
     });
 
-    // Close Saved Schedules dropdown if user clicks outside
-    on(document, "click", (event) => {
-      if (!ctx.savedDropdown?.open) return;
-
-      const path = event.composedPath ? event.composedPath() : [];
-      if (path.includes(ctx.savedDropdown)) return;
-
-      ctx.savedDropdown.open = false;
-    });
-
-    on(ctx.root, "click", (event) => {
-      if (!ctx.exportDropdown?.open) return;
-
-      const path = event.composedPath ? event.composedPath() : [];
-      if (path.includes(ctx.exportDropdown)) return;
-
-      ctx.exportDropdown.open = false;
-    });
-
+    // ---------------------------
+    // Messages
+    // ---------------------------
     chrome.runtime.onMessage.addListener((message) => {
-      if (message?.type === "TOGGLE_WIDGET") {
-        toggleWidget();
-        debug.log("Widget toggled by runtime message");
-      }
+      if (message?.type === "TOGGLE_WIDGET") toggleMainPanel();
     });
 
-    on(ctx.refresh, "click", async () => {
-      STATE.courses = await extractAllCourses();
-      applySearchFilter(ctx.search.value);
-      sortBy(STATE.sort.key || "code");
-      renderRows(ctx, STATE.filtered);
-      updateSchedule();
-      debug.log("Courses refreshed and schedule updated");
+    // ---------------------------
+    // Refresh (re-extract)
+    // ---------------------------
+    on(ui.refreshButton, "click", async () => {
+      ui.refreshButton.classList.remove("rotate"); // reset if clicked fast
+      void ui.refreshButton.offsetWidth; // force reflow
+      ui.refreshButton.classList.add("rotate");
+
+      STATE.courses = await extractCoursesData();
+      STATE.currentScheduleName = null; // reset schedule name on refresh
+      filterCourses(ui.searchInput.value);
+      renderAll();
     });
 
+    // ---------------------------
+    // Export actions
+    // ---------------------------
     const handleExport = async (type) => {
-      if (type === "ics") {
-        exportICS();
-        debug.log("Export triggered for ICS file");
-      }
+      if (type === "ics") exportICS(STATE.currentScheduleName);
     };
 
-    on(ctx.exportMenu, "click", async (event) => {
+    on(ui.exportMenu, "click", async (event) => {
       const action = event.target.closest("[data-export]");
       if (!action) return;
+
       setExportOpen(false);
       await handleExport(action.dataset.export);
     });
 
-    on(ctx.saveScheduleBtn, "click", async () => {
+    // ---------------------------
+    // Save schedules
+    // ---------------------------
+    on(ui.saveScheduleButton, "click", async () => {
       if (!canSaveMoreSchedules(STATE.savedSchedules)) {
         await openScheduleModal({
           title: "Schedule limit reached",
@@ -235,16 +245,19 @@ const debug = debugFor("content");
         showInput: true,
         showCancel: true,
       });
+
       if (!name) return;
 
       const snapshot = createScheduleSnapshot(name, STATE.filtered);
       STATE.savedSchedules = [snapshot, ...STATE.savedSchedules];
+
       await persistSavedSchedules(STATE.savedSchedules);
-      renderSavedSchedules(ctx, STATE.savedSchedules);
-      if (ctx.savedDropdown) ctx.savedDropdown.open = true;
+      renderSavedSchedules(ui, STATE.savedSchedules);
+
+      if (ui.savedDropdown) ui.savedDropdown.open = true;
     });
 
-    on(ctx.savedMenu, "click", async (event) => {
+    on(ui.savedMenu, "click", async (event) => {
       const actionButton = event.target.closest("[data-action]");
       if (!actionButton) return;
 
@@ -252,9 +265,10 @@ const debug = debugFor("content");
       const scheduleId = card?.dataset.id;
       if (!scheduleId) return;
 
+      const selected = STATE.savedSchedules.find((s) => s.id === scheduleId);
+      if (!selected) return;
+
       if (actionButton.dataset.action === "delete") {
-        const selected = STATE.savedSchedules.find((schedule) => schedule.id === scheduleId);
-        if (!selected) return;
         const confirmed = await openScheduleModal({
           title: "Permanently Delete Schedule?",
           message: `This action will permanently delete "${selected.name}".`,
@@ -263,59 +277,69 @@ const debug = debugFor("content");
           showCancel: true,
         });
         if (!confirmed) return;
-        STATE.savedSchedules = STATE.savedSchedules.filter((schedule) => schedule.id !== scheduleId);
+
+        STATE.savedSchedules = STATE.savedSchedules.filter((s) => s.id !== scheduleId);
         await persistSavedSchedules(STATE.savedSchedules);
-        renderSavedSchedules(ctx, STATE.savedSchedules);
+        renderSavedSchedules(ui, STATE.savedSchedules);
         return;
       }
 
-      const selected = STATE.savedSchedules.find((schedule) => schedule.id === scheduleId);
-      if (!selected) return;
-
+      // Load
+      STATE.currentScheduleName = selected.name;
       STATE.courses = [...selected.courses];
       STATE.filtered = [...selected.courses];
-      ctx.search.value = "";
-      sortBy(STATE.sort.key || "code");
-      renderRows(ctx, STATE.filtered);
-      updateSchedule();
-      setActivePanel("schedule");
-      if (ctx.savedDropdown) ctx.savedDropdown.open = false;
+      ui.searchInput.value = "";
+
+      renderAll();
+      setActiveView("schedule");
+      if (ui.savedDropdown) ui.savedDropdown.open = false;
     });
 
-    on(ctx.settingsBtn, "click", () => {
-      ctx.widget.classList.remove("is-hidden");
-      ctx.button.classList.remove("is-collapsed");
-      setActivePanel("settings");
+    // ---------------------------
+    // Settings/help shortcuts
+    // ---------------------------
+    on(ui.settingsButton, "click", () => {
+      ui.mainPanel.classList.remove("is-hidden");
+      ui.floatingButton.classList.remove("is-collapsed");
+      setActiveView("settings");
     });
 
-    on(ctx.helpBtn, "click", () => {
-      ctx.widget.classList.remove("is-hidden");
-      ctx.button.classList.remove("is-collapsed");
-      setActivePanel("help");
+    on(ui.helpButton, "click", () => {
+      ui.mainPanel.classList.remove("is-hidden");
+      ui.floatingButton.classList.remove("is-collapsed");
+      setActiveView("help");
     });
 
+    // ---------------------------
+    // Search filter
+    // ---------------------------
     on(
-      ctx.search,
+      ui.searchInput,
       "input",
       debounce(() => {
-        applySearchFilter(ctx.search.value);
-        sortBy(STATE.sort.key || "code");
-        renderRows(ctx, STATE.filtered);
-        updateSchedule();
-      }, 100)
+        filterCourses(ui.searchInput.value);
+        renderAll();
+      }, 100),
     );
 
-    wireSorting(ctx);
+    wireTableSorting(ui);
 
+    // ---------------------------
+    // Initial load
+    // ---------------------------
     STATE.savedSchedules = await loadSavedSchedules();
-    renderSavedSchedules(ctx, STATE.savedSchedules);
+    renderSavedSchedules(ui, STATE.savedSchedules);
 
-    STATE.courses = await extractAllCourses();
+    STATE.courses = await extractCoursesData();
     STATE.filtered = [...STATE.courses];
-    sortBy("code");
-    renderRows(ctx, STATE.filtered);
-    updateSchedule();
-    setActivePanel(STATE.view.panel);
+
+    STATE.sort = STATE.sort || { key: "code", dir: 1 };
+    sortCourses("code");
+
+    renderCourseRows(ui, STATE.filtered);
+    updateScheduleView();
+
+    setActiveView(STATE.view.panel);
   }
 
   if (document.readyState === "loading") {

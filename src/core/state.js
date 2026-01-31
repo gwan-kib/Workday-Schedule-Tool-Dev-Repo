@@ -12,6 +12,9 @@ export const STATE = {
   // list of user saved schedules
   savedSchedules: [],
 
+  // name of the currently loaded schedule (if any)
+  currentScheduleName: null,
+
   // tracks current sorting state, key: field name, dir: 1 ascending, -1 descending eg. STATE.sort = { key: "startTime", dir: -1 };
   sort: { key: null, dir: 1 },
 
