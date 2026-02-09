@@ -31,7 +31,7 @@
 
   transition: all 0.3s ease-in-out;
 
-  width: min(780px, 92vw);
+  width: 700px;
   height: 85vh;
 }
 

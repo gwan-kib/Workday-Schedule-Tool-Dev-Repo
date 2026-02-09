@@ -27,7 +27,7 @@ export async function extractCoursesData() {
           hasRoot: !!found.root,
           rowCount: found.rows?.length || 0,
         }
-      : null
+      : null,
   );
 
   if (found) {
@@ -130,13 +130,20 @@ export function extractFromRow(row, headerMaps) {
   const seminarLike = (s) => /\bseminar\b/i.test(String(s || ""));
   const discussionLike = (s) => /\bdiscussion\b/i.test(String(s || ""));
 
+  const getInstructionalFormatAbbr = (text) => {
+    if (labLike(text)) return "Lab";
+    if (seminarLike(text)) return "Sem";
+    if (discussionLike(text)) return "Disc";
+    return (text || "").trim();
+  };
+
   const isLab = labLike(instructionalFormatText);
   const isSeminar = seminarLike(instructionalFormatText);
   const isDiscussion = discussionLike(instructionalFormatText);
 
   let instructor = "N/A";
 
-  if (!isLab && !isSeminar) {
+  if (!isLab && !isSeminar && !isDiscussion) {
     instructor = readCellTextByHeader("instructor");
 
     if (!instructor) {
@@ -185,7 +192,7 @@ export function extractFromRow(row, headerMaps) {
     section_number,
     instructor,
     meeting: normalizeMeetingPatternsText(meeting),
-    instructionalFormat: (instructionalFormatText || "").trim(),
+    instructionalFormat: getInstructionalFormatAbbr(instructionalFormatText),
     startDate,
     meetingLines: meetingLines,
     isLab,

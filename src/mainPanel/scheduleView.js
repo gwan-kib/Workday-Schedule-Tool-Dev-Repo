@@ -98,13 +98,7 @@ function buildDayEvents(courses, semester) {
 
     const lines = course.meetingLines?.length ? course.meetingLines : [];
 
-    const label = course.isLab
-      ? "[Laboratory]"
-      : course.isSeminar
-      ? "[Seminar]"
-      : course.isDiscussion
-      ? "[Discussion]"
-      : "";
+    const label = course.isLab ? "[LAB]" : course.isSeminar ? "[SEM]" : course.isDiscussion ? "[DISC]" : "";
 
     lines.forEach((line) => {
       const parsed = parseMeetingLine(line);
@@ -310,8 +304,8 @@ function renderOverlayBlocks(wrap, eventsByDay) {
   const borderRight = parseFloat(cellStyles.borderRightWidth) || 0;
   const borderBottom = parseFloat(cellStyles.borderBottomWidth) || 0;
 
-  const borderX = (borderLeft + borderRight) / 2;
-  const borderY = (borderTop + borderBottom) / 2;
+  const borderX = (borderLeft + borderRight) / 2.0;
+  const borderY = (borderTop + borderBottom) / 2.0;
 
   DAYS.forEach((day, dayIndex) => {
     const events = eventsByDay.get(day) || [];
@@ -325,8 +319,8 @@ function renderOverlayBlocks(wrap, eventsByDay) {
       block.className = "schedule-entry-float";
       block.style.left = `${left + borderLeft}px`;
       block.style.top = `${top + borderTop}px`;
-      block.style.width = `${dayColWidth - borderX}px`;
-      block.style.height = `${height - borderY}px`;
+      block.style.width = `${dayColWidth - borderX - .1}px`;
+      block.style.height = `${height - borderY - .1}px`;
 
       const overlapLayer = document.createElement("div");
       overlapLayer.className = "schedule-entry-overlap-layer";
@@ -334,7 +328,9 @@ function renderOverlayBlocks(wrap, eventsByDay) {
 
       const text = document.createElement("div");
       text.className = "schedule-entry-text";
-      const title = ev.code || ev.title;
+      const codeMatch = String(ev.code || "").match(/^([A-Z_]+)\s*(\d+)$/);
+      const formattedCode = codeMatch ? `${codeMatch[1]}<br>${codeMatch[2]}` : ev.code || "";
+      const title = formattedCode || ev.title;
       const titleLabel = ev.label ? `${title} ${ev.label}` : title;
 
       text.innerHTML = `

@@ -20,9 +20,9 @@ function cleanLines(text) {
 }
 
 function getBadge(course) {
-  if (course.isLab) return "[Laboratory]";
-  if (course.isSeminar) return "[Seminar]";
-  if (course.isDiscussion) return "[Discussion]";
+  if (course.isLab) return "[LAB]";
+  if (course.isSeminar) return "[SEM]";
+  if (course.isDiscussion) return "[DISC]";
   return "";
 }
 
@@ -36,6 +36,26 @@ function splitMeeting(meeting) {
     .join("\n");
 
   return { main, sub };
+}
+
+function formatCourseCode(code) {
+  const match = String(code || "").match(/^([A-Z_]+)\s*(\d+)$/);
+  if (match) {
+    return `${match[1]}<br>${match[2]}`;
+  }
+  return code || "";
+}
+
+function formatInstructorName(name) {
+  const nameParts = String(name || "")
+    .trim()
+    .split(/\s+/);
+  if (nameParts.length > 1) {
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ");
+    return `${firstName}<br>${lastName}`;
+  }
+  return name || "";
 }
 
 export function renderCourseRows(ui, courses) {
@@ -53,11 +73,11 @@ export function renderCourseRows(ui, courses) {
         <div class="title-main">${escHTML(course.title || "")}</div>
         ${badge ? `<div class="muted">${escHTML(badge)}</div>` : ""}
       </td>
-      <td class="code">${escHTML(course.code || "")}</td>
+      <td class="code">${formatCourseCode(course.code || "")}</td>
       <td class="sect">${escHTML((course.section_number || "").trim())}</td>
       <td class="instructor">
         <div class="instructor-wrapper">
-          ${escHTML(course.instructor || "")}
+          ${formatInstructorName(course.instructor || "")}
           <div class="instructor-popup">
             <div class="instructor-popup-content">
               ${escHTML(course.instructor || "")}
