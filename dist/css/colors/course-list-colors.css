@@ -7,3 +7,9 @@
   color: var(--hex-brand-accent-1);
   background: var(--hex-brand-main-1);
 }
+
+.instructor-popup-content {
+  color: var(--hex-brand-accent-1);
+  background: var(--hex-brand-main-1);
+  border: 1px solid var(--hex-brand-main-2);
+}

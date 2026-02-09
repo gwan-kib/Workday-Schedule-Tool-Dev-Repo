@@ -55,7 +55,16 @@ export function renderCourseRows(ui, courses) {
       </td>
       <td class="code">${escHTML(course.code || "")}</td>
       <td class="sect">${escHTML((course.section_number || "").trim())}</td>
-      <td class="instructor">${escHTML(course.instructor || "")}</td>
+      <td class="instructor">
+        <div class="instructor-wrapper">
+          ${escHTML(course.instructor || "")}
+          <div class="instructor-popup">
+            <div class="instructor-popup-content">
+              ${escHTML(course.instructor || "")}
+            </div>
+          </div>
+        </div>
+      </td>
       <td class="meeting">
         ${meetingMain ? `<span class="meeting-pill">${escHTML(meetingMain)}</span>` : ""}
         ${meetingSub ? `<div class="meeting-sub">${escHTML(meetingSub)}</div>` : ""}
