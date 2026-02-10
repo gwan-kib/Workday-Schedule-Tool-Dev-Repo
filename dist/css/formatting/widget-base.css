@@ -106,27 +106,6 @@ input:focus-visible {
   overflow: auto;
 }
 
-/* Scrollbar styling - webkit (Chrome, Safari, Edge) */
-.widget-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.widget-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.widget-body::-webkit-scrollbar-thumb {
-  background: var(--hex-brand-main-2);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-.widget-body::-webkit-scrollbar-thumb:hover {
-  background: var(--hex-brand-main-1);
-  background-clip: content-box;
-}
-
 /* panel switching */
 .widget-panel {
   display: none;
