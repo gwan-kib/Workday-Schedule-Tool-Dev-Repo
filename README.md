@@ -86,6 +86,10 @@ cd Workday-Extension
 ```
 
 ### 2. Install dependencies
+
+[Node.js (contains npm)](https://nodejs.org/en/download/current)
+
+(write in terminal after installing Node.js)
 ```bash
 npm install
 ```
