@@ -213,7 +213,7 @@
   cursor: pointer;
   text-align: left;
 
-  background: #ede2ff;
+  background: var(--hex-brand-accent-4);
 }
 
 /* Help button */
