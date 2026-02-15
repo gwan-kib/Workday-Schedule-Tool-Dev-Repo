@@ -12,6 +12,12 @@ import { renderSchedule } from "./mainPanel/scheduleView.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
 
 import {
+  attachCourseHoverListener,
+  fetchSectionGradesWithFallback,
+  readTermCampus,
+} from "./averageGrades/gradesApiCall.js";
+
+import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
   getMaxScheduleCount,
@@ -340,6 +346,127 @@ import {
     updateScheduleView();
 
     setActiveView(STATE.view.panel);
+
+    // ---------------------------
+    // Hover averages (UBC Grades)
+    // ---------------------------
+    const hoverTooltip = document.createElement("div");
+    hoverTooltip.id = "wd-average-grade-tooltip";
+    hoverTooltip.style.position = "fixed";
+    hoverTooltip.style.zIndex = "999999";
+    hoverTooltip.style.pointerEvents = "none";
+    hoverTooltip.style.background = "rgba(20, 20, 20, 0.92)";
+    hoverTooltip.style.color = "#fff";
+    hoverTooltip.style.padding = "6px 8px";
+    hoverTooltip.style.borderRadius = "6px";
+    hoverTooltip.style.fontSize = "12px";
+    hoverTooltip.style.fontFamily = "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif";
+    hoverTooltip.style.maxWidth = "260px";
+    hoverTooltip.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.18)";
+    hoverTooltip.style.opacity = "0";
+    hoverTooltip.style.transition = "opacity 120ms ease";
+    document.body.appendChild(hoverTooltip);
+
+    let termCampus = readTermCampus();
+    let lastKey = null;
+    let activeAbort = null;
+
+    const setTooltip = (text) => {
+      hoverTooltip.textContent = text;
+      hoverTooltip.style.opacity = "1";
+    };
+
+    const hideTooltip = () => {
+      hoverTooltip.style.opacity = "0";
+      hoverTooltip.textContent = "";
+    };
+
+    const updateTooltipPosition = (event) => {
+      const offset = 14;
+      const x = Math.min(window.innerWidth - 20, event.clientX + offset);
+      const y = Math.min(window.innerHeight - 20, event.clientY + offset);
+      hoverTooltip.style.left = `${x}px`;
+      hoverTooltip.style.top = `${y}px`;
+    };
+
+    const extractAverage = (data) => {
+      if (!data || typeof data !== "object") return null;
+      const direct =
+        data.average ??
+        data.avg ??
+        data.average_grade ??
+        data.averagePercent ??
+        data.avgPercent ??
+        data.mean ??
+        null;
+      if (typeof direct === "number") return direct;
+      if (typeof direct === "string" && direct.trim()) return direct.trim();
+
+      const nested =
+        data?.grades?.average ??
+        data?.grades?.avg ??
+        data?.summary?.average ??
+        data?.summary?.avg ??
+        null;
+      if (typeof nested === "number") return nested;
+      if (typeof nested === "string" && nested.trim()) return nested.trim();
+
+      return null;
+    };
+
+    const buildAverageLabel = (average) => {
+      if (average == null) return "Average: N/A";
+      if (typeof average === "number") return `Average: ${average.toFixed(1)}`;
+      return `Average: ${average}`;
+    };
+
+    const cleanupHover = attachCourseHoverListener({
+      onCourse: async ({ subject, course, section }) => {
+        termCampus = termCampus || readTermCampus();
+        if (!termCampus) return;
+
+        const key = [termCampus.campus, termCampus.yearsession, subject, course, section].join("|");
+        if (key === lastKey) return;
+        lastKey = key;
+
+        if (activeAbort) activeAbort.abort();
+        activeAbort = new AbortController();
+
+        setTooltip("Average: loading...");
+
+        try {
+          const data = await fetchSectionGradesWithFallback(
+            {
+              campus: termCampus.campus,
+              yearsession: termCampus.yearsession,
+              subject,
+              course,
+              section,
+            },
+            { signal: activeAbort.signal },
+          );
+
+          const avg = extractAverage(data);
+          setTooltip(buildAverageLabel(avg));
+        } catch (error) {
+          if (error?.name === "AbortError") return;
+          setTooltip("Average: unavailable");
+        }
+      },
+    });
+
+    on(document, "mousemove", updateTooltipPosition);
+    on(document, "mouseout", (event) => {
+      const leaving = event.target?.closest?.('[data-automation-id="promptOption"]');
+      if (leaving) hideTooltip();
+    });
+
+    window.addEventListener("beforeunload", () => {
+      cleanupHover();
+      hideTooltip();
+      hoverTooltip.remove();
+      if (activeAbort) activeAbort.abort();
+    });
   }
 
   if (document.readyState === "loading") {
