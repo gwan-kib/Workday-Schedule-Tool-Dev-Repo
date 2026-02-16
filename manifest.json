@@ -30,6 +30,10 @@
     {
       "matches": ["https://*.myworkday.com/*"],
       "js": ["dist/content.js"],
+      "css": [
+        "dist/css/formatting/average-grade-tooltip.css",
+        "dist/css/colors/average-grade-tooltip-colors.css"
+      ],
       "run_at": "document_idle",
       "all_frames": true
     }

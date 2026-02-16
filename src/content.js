@@ -350,37 +350,35 @@ import {
     // ---------------------------
     // Hover averages (UBC Grades)
     // ---------------------------
+    // Inputs: course hover events on the Workday prompt list.
+    // Outputs: a tooltip showing average grade text, e.g. "Average: 74.3".
     const hoverTooltip = document.createElement("div");
     hoverTooltip.id = "wd-average-grade-tooltip";
-    hoverTooltip.style.position = "fixed";
-    hoverTooltip.style.zIndex = "999999";
-    hoverTooltip.style.pointerEvents = "none";
-    hoverTooltip.style.background = "rgba(20, 20, 20, 0.92)";
-    hoverTooltip.style.color = "#fff";
-    hoverTooltip.style.padding = "6px 8px";
-    hoverTooltip.style.borderRadius = "6px";
-    hoverTooltip.style.fontSize = "12px";
-    hoverTooltip.style.fontFamily = "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif";
-    hoverTooltip.style.maxWidth = "260px";
-    hoverTooltip.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.18)";
-    hoverTooltip.style.opacity = "0";
-    hoverTooltip.style.transition = "opacity 120ms ease";
+    hoverTooltip.className = "wd-average-grade-tooltip";
     document.body.appendChild(hoverTooltip);
 
+    // termCampus example: { campus:"UBCV", yearsession:"2024W" }
     let termCampus = readTermCampus();
+    // Prevent repeat requests for the same course/section hover.
     let lastKey = null;
+    // AbortController for the in-flight API request.
     let activeAbort = null;
 
+    // Input: "Average: loading..."
+    // Output: tooltip text updated and visible.
     const setTooltip = (text) => {
       hoverTooltip.textContent = text;
-      hoverTooltip.style.opacity = "1";
+      hoverTooltip.classList.add("is-visible");
     };
 
+    // Output: tooltip hidden and cleared.
     const hideTooltip = () => {
-      hoverTooltip.style.opacity = "0";
+      hoverTooltip.classList.remove("is-visible");
       hoverTooltip.textContent = "";
     };
 
+    // Input: MouseEvent with clientX/clientY.
+    // Output: tooltip positioned near cursor.
     const updateTooltipPosition = (event) => {
       const offset = 14;
       const x = Math.min(window.innerWidth - 20, event.clientX + offset);
@@ -389,8 +387,19 @@ import {
       hoverTooltip.style.top = `${y}px`;
     };
 
+    // Input: API payload object (varies by endpoint).
+    // Output: number/string average or null.
+    // Example output: 74.3 or "74.3"
     const extractAverage = (data) => {
-      if (!data || typeof data !== "object") return null;
+      if (!data) return null;
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          const avg = extractAverage(item);
+          if (avg != null) return avg;
+        }
+        return null;
+      }
+      if (typeof data !== "object") return null;
       const direct =
         data.average ??
         data.avg ??
@@ -408,18 +417,26 @@ import {
         data?.summary?.average ??
         data?.summary?.avg ??
         null;
-      if (typeof nested === "number") return nested;
-      if (typeof nested === "string" && nested.trim()) return nested.trim();
+        if (typeof nested === "number") return nested;
+        if (typeof nested === "string" && nested.trim()) return nested.trim();
 
       return null;
     };
 
+    // Input: average value (number|string|null).
+    // Output: label string, e.g. "Average: 74.3" or "Average: N/A".
     const buildAverageLabel = (average) => {
       if (average == null) return "Average: N/A";
       if (typeof average === "number") return `Average: ${average.toFixed(1)}`;
       return `Average: ${average}`;
     };
 
+    // Input: API payload.
+    // Output: boolean; true when a usable average exists.
+    const hasValidAverage = (data) => extractAverage(data) != null;
+
+    // Inputs: hover events from prompt options.
+    // Output: API fetch + tooltip updates. Example tooltip: "Average: 73.8".
     const cleanupHover = attachCourseHoverListener({
       onCourse: async ({ subject, course, section }) => {
         termCampus = termCampus || readTermCampus();
@@ -443,10 +460,20 @@ import {
               course,
               section,
             },
-            { signal: activeAbort.signal },
+            { signal: activeAbort.signal, isValid: hasValidAverage },
           );
 
+          if (!data) {
+            setTooltip("Average: unavailable");
+            return;
+          }
+
           const avg = extractAverage(data);
+          if (avg == null) {
+            setTooltip("Average: unavailable");
+            return;
+          }
+
           setTooltip(buildAverageLabel(avg));
         } catch (error) {
           if (error?.name === "AbortError") return;
