@@ -1,0 +1,14 @@
+.wd-average-grade-button {
+  color: #333;
+  background-color: #eef1f2;
+  box-shadow: 0 0 0 1px #ced3d9;
+}
+
+.wd-average-grade-button:hover {
+  background-color: #ced3d9;
+  box-shadow: 0 0 0 1px #9da9af;
+}
+
+.wd-average-grade-button[disabled] {
+  color: #666;
+}

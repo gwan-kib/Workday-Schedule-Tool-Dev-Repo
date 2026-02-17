@@ -12,8 +12,8 @@ import { renderSchedule } from "./mainPanel/scheduleView.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
 
 import {
-  attachCourseHoverListener,
   fetchSectionGradesWithFallback,
+  parseCourseInfoFromPromptText,
   readTermCampus,
 } from "./averageGrades/gradesApiCall.js";
 
@@ -348,44 +348,13 @@ import {
     setActiveView(STATE.view.panel);
 
     // ---------------------------
-    // Hover averages (UBC Grades)
+    // Average grade buttons (UBC Grades)
     // ---------------------------
-    // Inputs: course hover events on the Workday prompt list.
-    // Outputs: a tooltip showing average grade text, e.g. "Average: 74.3".
-    const hoverTooltip = document.createElement("div");
-    hoverTooltip.id = "wd-average-grade-tooltip";
-    hoverTooltip.className = "wd-average-grade-tooltip";
-    document.body.appendChild(hoverTooltip);
+    // Behavior: Adds a "Find avg grades" button next to each section in the prompt list.
+    // On click, fetches the average grade and replaces the button text.
 
     // termCampus example: { campus:"UBCV", yearsession:"2024W" }
     let termCampus = readTermCampus();
-    // Prevent repeat requests for the same course/section hover.
-    let lastKey = null;
-    // AbortController for the in-flight API request.
-    let activeAbort = null;
-
-    // Input: "Average: loading..."
-    // Output: tooltip text updated and visible.
-    const setTooltip = (text) => {
-      hoverTooltip.textContent = text;
-      hoverTooltip.classList.add("is-visible");
-    };
-
-    // Output: tooltip hidden and cleared.
-    const hideTooltip = () => {
-      hoverTooltip.classList.remove("is-visible");
-      hoverTooltip.textContent = "";
-    };
-
-    // Input: MouseEvent with clientX/clientY.
-    // Output: tooltip positioned near cursor.
-    const updateTooltipPosition = (event) => {
-      const offset = 14;
-      const x = Math.min(window.innerWidth - 20, event.clientX + offset);
-      const y = Math.min(window.innerHeight - 20, event.clientY + offset);
-      hoverTooltip.style.left = `${x}px`;
-      hoverTooltip.style.top = `${y}px`;
-    };
 
     // Input: API payload object (varies by endpoint).
     // Output: number/string average or null.
@@ -401,24 +370,13 @@ import {
       }
       if (typeof data !== "object") return null;
       const direct =
-        data.average ??
-        data.avg ??
-        data.average_grade ??
-        data.averagePercent ??
-        data.avgPercent ??
-        data.mean ??
-        null;
+        data.average ?? data.avg ?? data.average_grade ?? data.averagePercent ?? data.avgPercent ?? data.mean ?? null;
       if (typeof direct === "number") return direct;
       if (typeof direct === "string" && direct.trim()) return direct.trim();
 
-      const nested =
-        data?.grades?.average ??
-        data?.grades?.avg ??
-        data?.summary?.average ??
-        data?.summary?.avg ??
-        null;
-        if (typeof nested === "number") return nested;
-        if (typeof nested === "string" && nested.trim()) return nested.trim();
+      const nested = data?.grades?.average ?? data?.grades?.avg ?? data?.summary?.average ?? data?.summary?.avg ?? null;
+      if (typeof nested === "number") return nested;
+      if (typeof nested === "string" && nested.trim()) return nested.trim();
 
       return null;
     };
@@ -426,73 +384,112 @@ import {
     // Input: average value (number|string|null).
     // Output: label string, e.g. "Average: 74.3" or "Average: N/A".
     const buildAverageLabel = (average) => {
-      if (average == null) return "Average: N/A";
-      if (typeof average === "number") return `Average: ${average.toFixed(1)}`;
-      return `Average: ${average}`;
+      if (average == null) return "Average:\nN/A";
+      if (typeof average === "number") return `Average:\n${average.toFixed(1)}`;
+      return `Average:\n${average}`;
     };
 
     // Input: API payload.
     // Output: boolean; true when a usable average exists.
     const hasValidAverage = (data) => extractAverage(data) != null;
 
-    // Inputs: hover events from prompt options.
-    // Output: API fetch + tooltip updates. Example tooltip: "Average: 73.8".
-    const cleanupHover = attachCourseHoverListener({
-      onCourse: async ({ subject, course, section }) => {
-        termCampus = termCampus || readTermCampus();
-        if (!termCampus) return;
+    const createAverageButton = (promptOption, courseInfo) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "wd-average-grade-button";
+      button.textContent = "Find avg grades";
 
-        const key = [termCampus.campus, termCampus.yearsession, subject, course, section].join("|");
-        if (key === lastKey) return;
-        lastKey = key;
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-        if (activeAbort) activeAbort.abort();
-        activeAbort = new AbortController();
+        if (button.dataset.loading === "true") return;
+        button.dataset.loading = "true";
+        button.textContent = "Average:\nloading...";
+        button.disabled = true;
 
-        setTooltip("Average: loading...");
+        termCampus = readTermCampus() || termCampus;
+        if (!termCampus) {
+          button.textContent = "Average:\nunavailable";
+          button.disabled = false;
+          button.dataset.loading = "false";
+          return;
+        }
 
         try {
           const data = await fetchSectionGradesWithFallback(
             {
               campus: termCampus.campus,
               yearsession: termCampus.yearsession,
-              subject,
-              course,
-              section,
+              subject: courseInfo.subject,
+              course: courseInfo.course,
+              section: courseInfo.section,
             },
-            { signal: activeAbort.signal, isValid: hasValidAverage },
+            { isValid: hasValidAverage },
           );
 
           if (!data) {
-            setTooltip("Average: unavailable");
-            return;
+            button.textContent = "Average:\nunavailable";
+          } else {
+            const avg = extractAverage(data);
+            button.textContent = buildAverageLabel(avg);
           }
-
-          const avg = extractAverage(data);
-          if (avg == null) {
-            setTooltip("Average: unavailable");
-            return;
-          }
-
-          setTooltip(buildAverageLabel(avg));
         } catch (error) {
-          if (error?.name === "AbortError") return;
-          setTooltip("Average: unavailable");
+          button.textContent = "Average:\nunavailable";
+        } finally {
+          button.disabled = false;
+          button.dataset.loading = "false";
         }
-      },
+      });
+
+      return button;
+    };
+
+    const ensureAverageButton = (headerWrapper) => {
+      if (!headerWrapper || !(headerWrapper instanceof Element)) return;
+      if (headerWrapper.previousElementSibling?.classList?.contains("wd-average-grade-button")) return;
+
+      const parentElement = headerWrapper.parentElement;
+      if (parentElement) {
+        parentElement.style.display = "flex";
+        parentElement.style.alignItems = "center";
+      }
+
+      const promptOption = headerWrapper.querySelector?.('[data-automation-id="promptOption"]') || headerWrapper;
+      const str =
+        promptOption.getAttribute?.("data-automation-label") ||
+        promptOption.getAttribute?.("title") ||
+        promptOption.getAttribute?.("aria-label") ||
+        promptOption.textContent ||
+        "";
+
+      const courseInfo = parseCourseInfoFromPromptText(str);
+      if (!courseInfo) return;
+
+      const button = createAverageButton(headerWrapper, courseInfo);
+      headerWrapper.parentNode?.insertBefore(button, headerWrapper);
+    };
+
+    const handleAverageButtonNodes = (node) => {
+      if (!(node instanceof Element)) return;
+      if (node.matches?.("div.WHPF.WFPF")) {
+        ensureAverageButton(node);
+      }
+      const matches = node.querySelectorAll?.("div.WHPF.WFPF") || [];
+      matches.forEach((el) => ensureAverageButton(el));
+    };
+
+    const avgButtonObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type !== "childList" || mutation.addedNodes.length === 0) return;
+        mutation.addedNodes.forEach((node) => handleAverageButtonNodes(node));
+      });
     });
 
-    on(document, "mousemove", updateTooltipPosition);
-    on(document, "mouseout", (event) => {
-      const leaving = event.target?.closest?.('[data-automation-id="promptOption"]');
-      if (leaving) hideTooltip();
-    });
+    avgButtonObserver.observe(document.body, { childList: true, subtree: true });
 
     window.addEventListener("beforeunload", () => {
-      cleanupHover();
-      hideTooltip();
-      hoverTooltip.remove();
-      if (activeAbort) activeAbort.abort();
+      avgButtonObserver.disconnect();
     });
   }
 

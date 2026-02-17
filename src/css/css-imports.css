@@ -12,6 +12,7 @@
 @import "./formatting/widget-footer.css";
 @import "./formatting/floating-button.css";
 @import "./formatting/average-grade-tooltip.css";
+@import "./formatting/average-grade-button.css";
 
 /* -------------------------------------------------------------------------- */
 /* COLORS (theme / palette only)                                               */
@@ -27,6 +28,7 @@
 @import "./colors/widget-footer-colors.css";
 @import "./colors/floating-button-colors.css";
 @import "./colors/average-grade-tooltip-colors.css";
+@import "./colors/average-grade-button-colors.css";
 
 /* -------------------------------------------------------------------------- */
 /* STATE COLORS (view-specific overrides)                                     */
