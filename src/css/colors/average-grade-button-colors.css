@@ -1,14 +1,17 @@
 .wd-average-grade-button {
-  color: #333;
-  background-color: #eef1f2;
-  box-shadow: 0 0 0 1px #ced3d9;
+  color: var(--hex-brand-main-1);
+  background-color: var(--hex-brand-accent-4);
+  box-shadow: 0 0 0 1px var(--hex-brand-main-2);
 }
 
 .wd-average-grade-button:hover {
-  background-color: #ced3d9;
-  box-shadow: 0 0 0 1px #9da9af;
+  background-color: var(--hex-brand-accent-9);
+  box-shadow: 0 0 0 1px var(--hex-brand-main-3);
 }
 
 .wd-average-grade-button[disabled] {
-  color: #666;
+  color: var(--hex-neutral-6);
+  background-color: var(--hex-neutral-3);
+  box-shadow: 0 0 0 1px var(--hex-neutral-5);
+  opacity: 0.9;
 }

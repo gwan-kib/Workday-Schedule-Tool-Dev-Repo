@@ -31,6 +31,7 @@
       "matches": ["https://*.myworkday.com/*"],
       "js": ["dist/content.js"],
       "css": [
+        "dist/css/colors/theme-tokens.css",
         "dist/css/formatting/average-grade-tooltip.css",
         "dist/css/colors/average-grade-tooltip-colors.css",
         "dist/css/formatting/average-grade-button.css",

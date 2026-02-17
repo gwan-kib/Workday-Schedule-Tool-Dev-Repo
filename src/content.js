@@ -397,7 +397,7 @@ import {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "wd-average-grade-button";
-      button.textContent = "Find avg grades";
+      button.textContent = "Class Average\n(past 5 years)";
 
       button.addEventListener("click", async (event) => {
         event.preventDefault();
@@ -405,7 +405,7 @@ import {
 
         if (button.dataset.loading === "true") return;
         button.dataset.loading = "true";
-        button.textContent = "Average:\nloading...";
+        button.textContent = "loading...";
         button.disabled = true;
 
         termCampus = readTermCampus() || termCampus;
