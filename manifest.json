@@ -32,7 +32,9 @@
       "js": ["dist/content.js"],
       "css": [
         "dist/css/formatting/average-grade-tooltip.css",
-        "dist/css/colors/average-grade-tooltip-colors.css"
+        "dist/css/colors/average-grade-tooltip-colors.css",
+        "dist/css/formatting/average-grade-button.css",
+        "dist/css/colors/average-grade-button-colors.css"
       ],
       "run_at": "document_idle",
       "all_frames": true
