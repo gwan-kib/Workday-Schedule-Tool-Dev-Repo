@@ -40,6 +40,37 @@ const days_REGEX = /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g;
 
 const padNumbers = (value) => String(value).padStart(2, "0");
 
+// Escapes text per RFC 5545. Input: string. Output: escaped string.
+const escapeIcsText = (value) => {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r\n|\r|\n/g, "\\n")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,");
+};
+
+// Folds a line to 75 octets with CRLF + space. Input: string. Output: folded string.
+const foldIcsLine = (line) => {
+  const max = 75;
+  if (!line || line.length <= max) return line;
+
+  let out = "";
+  let idx = 0;
+  while (idx < line.length) {
+    const chunk = line.slice(idx, idx + max);
+    out += chunk;
+    idx += max;
+    if (idx < line.length) out += "\r\n ";
+  }
+  return out;
+};
+
+// Builds a property line with escaping + folding. Input: name, value. Output: line string.
+const buildPropLine = (name, value) => {
+  const escaped = escapeIcsText(value);
+  return foldIcsLine(`${name}:${escaped}`);
+};
+
 // Formats a date as YYYYMMDD. Input: Date. Output: string.
 const formatDate = (date) => {
   const year = date.getFullYear();
@@ -118,6 +149,25 @@ const extractLocation = (line) => {
   return "";
 };
 
+// Extracts building, floor, and room from a meeting line. Input: line string. Output: { building, floor, room }.
+const extractBuildingFloorRoom = (line) => {
+  const raw = String(line || "");
+  const parts = raw
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const building = parts.find((part) => /\([A-Z]{2,}\)/.test(part)) || "";
+
+  const floorMatch = raw.match(/\bfloor\b\s*[:\-]?\s*(-?[A-Za-z0-9]+)/i);
+  const roomMatch = raw.match(/\b(room|rm)\b\s*[:\-]?\s*([A-Za-z0-9]+)/i);
+
+  const floor = floorMatch ? floorMatch[1] : "";
+  const room = roomMatch ? roomMatch[2] : "";
+
+  return { building, floor, room };
+};
+
 // Finds the first valid date matching a day code. Input: start date string, day codes array. Output: Date.
 const findFirstValidDate = (startDate, dayCodes) => {
   const start = new Date(`${startDate}T00:00:00`);
@@ -144,14 +194,16 @@ const buildClassEvent = (course, line) => {
   const endDate = new Date(firstDate);
   endDate.setHours(parsed.endTime.hours, parsed.endTime.minutes, 0, 0);
 
+  const { building, floor, room } = extractBuildingFloorRoom(line);
+
   const summaryParts = [course.code, course.title].filter(Boolean);
   const descriptionLines = [
-    course.title ? `Title: ${course.title}` : null,
-    course.code ? `Code: ${course.code}` : null,
     course.section_number ? `Section: ${course.section_number}` : null,
     course.instructor ? `Instructor: ${course.instructor}` : null,
     course.instructionalFormat ? `Format: ${course.instructionalFormat}` : null,
-    course.meeting ? `Meeting: ${course.meeting}` : null,
+    building ? `Building: ${building}` : null,
+    floor ? `Floor: ${floor}` : null,
+    room ? `Room: ${room}` : null,
   ].filter(Boolean);
 
   const untilLocal = new Date(`${parsed.endDate}T23:59:59`);
@@ -160,7 +212,7 @@ const buildClassEvent = (course, line) => {
   const result = {
     uid: `${course.code || "course"}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     summary: summaryParts.join(" - ") || "Scheduled Course",
-    description: descriptionLines.join("\\n"),
+    description: descriptionLines.join("\n"),
     location: extractLocation(line),
     dtstart: formatDateTime(startDate),
     dtend: formatDateTime(endDate),
@@ -193,13 +245,13 @@ const buildICSFile = (courses) => {
 
   events.forEach((event) => {
     lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${event.uid}`);
-    lines.push(`SUMMARY:${event.summary}`);
-    if (event.description) lines.push(`DESCRIPTION:${event.description}`);
-    if (event.location) lines.push(`LOCATION:${event.location}`);
-    lines.push(`DTSTART;TZID=${tzid}:${event.dtstart}`);
-    lines.push(`DTEND;TZID=${tzid}:${event.dtend}`);
-    lines.push(`RRULE:${event.rrule}`);
+    lines.push(buildPropLine("UID", event.uid));
+    lines.push(buildPropLine("SUMMARY", event.summary));
+    if (event.description) lines.push(buildPropLine("DESCRIPTION", event.description));
+    if (event.location) lines.push(buildPropLine("LOCATION", event.location));
+    lines.push(foldIcsLine(`DTSTART;TZID=${tzid}:${event.dtstart}`));
+    lines.push(foldIcsLine(`DTEND;TZID=${tzid}:${event.dtend}`));
+    lines.push(foldIcsLine(`RRULE:${event.rrule}`));
     lines.push("END:VEVENT");
   });
 
