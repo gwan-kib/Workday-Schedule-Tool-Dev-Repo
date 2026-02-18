@@ -97,7 +97,5 @@ export function renderCourseRows(ui, courses) {
 
   ui.tableBody.appendChild(frag);
 
-  debug.log({ id: "renderCourseRows.done" }, "Rendered course rows", {
-    count: (courses || []).length,
-  });
+  debug.log({ id: "renderCourseRows.done" }, "Rendered course rows", courses || []);
 }

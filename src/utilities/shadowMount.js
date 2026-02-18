@@ -9,7 +9,7 @@ export function ensureMount() {
   let host = document.getElementById(EXT_ID);
 
   if (host) {
-    debug.log("Returning existing shadow root:", host);
+    debug.log("Returning existing shadow root:", host.shadowRoot);
     return host.shadowRoot;
   }
 
@@ -24,6 +24,6 @@ export function ensureMount() {
   host.attachShadow({ mode: "open" });
   document.documentElement.appendChild(host);
 
-  debug.log("Mounted new extension container:", host);
+  debug.log("Mounted new extension container:", host.shadowRoot);
   return host.shadowRoot;
 }

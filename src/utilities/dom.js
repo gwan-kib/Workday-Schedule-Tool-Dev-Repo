@@ -3,14 +3,16 @@ const debug = debugFor("dom");
 
 // shortcut for querySelector in shadowDom
 export const $ = (root, sel) => {
-  debug.log("Querying single element:", { root, sel });
-  return root.querySelector(sel);
+  const result = root.querySelector(sel);
+  debug.log("Querying single element:", result);
+  return result;
 };
 
 // shortcut for querySelectorAll in shadowDom, turns result into an array
 export const $$ = (root, sel) => {
-  debug.log("Querying multiple elements:", { root, sel });
-  return Array.from(root.querySelectorAll(sel));
+  const result = Array.from(root.querySelectorAll(sel));
+  debug.log("Querying multiple elements:", result);
+  return result;
 };
 
 // if el exists, attaches event listener to el

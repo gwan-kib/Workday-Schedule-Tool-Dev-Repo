@@ -4,7 +4,7 @@ const debug = debugFor("instructorInfo");
 
 export function extractInstructorNamesFromCell(instructorEl) {
   if (!instructorEl) {
-    debug.log({ id: "extractInstructorNamesFromCell.missing" }, "No instructor element provided");
+    debug.log({ id: "extractInstructorNamesFromCell.missing" }, "");
     return "";
   }
 
@@ -15,10 +15,7 @@ export function extractInstructorNamesFromCell(instructorEl) {
     ""
   ).trim();
 
-  debug.log({ id: "extractInstructorNamesFromCell.result" }, "Extracted instructor text:", {
-    hasPrompt: !!prompt,
-    txt,
-  });
+  debug.log({ id: "extractInstructorNamesFromCell.result" }, "Extracted instructor text:", txt);
 
   return txt;
 }

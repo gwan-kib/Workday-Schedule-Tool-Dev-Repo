@@ -142,7 +142,7 @@ export function renderSavedSchedules(ui, schedules) {
     ui.savedMenu.appendChild(card);
   });
 
-  debug.log({ id: "renderSavedSchedules.done" }, "Rendered saved schedules", { count: schedules.length });
+  debug.log({ id: "renderSavedSchedules.done" }, "Rendered saved schedules", schedules);
 }
 
 export function canSaveMoreSchedules(schedules) {

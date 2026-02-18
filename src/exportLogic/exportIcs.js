@@ -14,8 +14,9 @@ const formatDateTimeUTC = (date) => {
   const hh = padNumbers(date.getUTCHours());
   const mm = padNumbers(date.getUTCMinutes());
   const ss = padNumbers(date.getUTCSeconds());
-  debug.log("Formatting UTC Date:", { y, m, d, hh, mm, ss });
-  return `${y}${m}${d}T${hh}${mm}${ss}Z`;
+  const result = `${y}${m}${d}T${hh}${mm}${ss}Z`;
+  debug.log("Formatting UTC Date:", result);
+  return result;
 };
 
 // maps ui's day labels to iCalendar day codes
@@ -42,8 +43,9 @@ const formatDate = (date) => {
   const year = date.getFullYear();
   const month = padNumbers(date.getMonth() + 1);
   const day = padNumbers(date.getDate());
-  debug.log("Formatted Date:", { year, month, day });
-  return `${year}${month}${day}`;
+  const result = `${year}${month}${day}`;
+  debug.log("Formatted Date:", result);
+  return result;
 };
 
 // ICS datetime format (local): YYYYMMDDTHHMMSS
@@ -52,8 +54,9 @@ const formatDateTime = (date) => {
   const hours = padNumbers(date.getHours());
   const minutes = padNumbers(date.getMinutes());
 
-  debug.log("Formatted DateTime:", { datePart, hours, minutes });
-  return `${datePart}T${hours}${minutes}00`;
+  const result = `${datePart}T${hours}${minutes}00`;
+  debug.log("Formatted DateTime:", result);
+  return result;
 };
 
 // “p” adds 12, unless it’s 12pm already, “a” turns 12am into 0
@@ -63,12 +66,12 @@ const parseTime = (hoursToken, minutesToken, periodToken) => {
   const minutes = Number.parseInt(minutesToken, 10);
   const period = periodToken.toLowerCase();
 
-  debug.log("Parsing Time:", { hours, minutes, period });
-
   if (period === "p" && hours !== 12) hours += 12;
   if (period === "a" && hours === 12) hours = 0;
 
-  return { hours, minutes };
+  const result = { hours, minutes };
+  debug.log("Parsing Time:", result);
+  return result;
 };
 
 // parses meeting line into structured data
@@ -79,8 +82,6 @@ const parseMeetingLine = (line) => {
 
   if (!dateMatch || !timeMatch || !days.length) return null;
 
-  debug.log("Parsed Meeting Line:", { dateMatch, timeMatch, days });
-
   const startDate = dateMatch[1];
   const endDate = dateMatch[2];
 
@@ -89,13 +90,15 @@ const parseMeetingLine = (line) => {
 
   const uniqueDays = [...new Set(days.map((day) => DAY_CODES[day]).filter(Boolean))];
 
-  return {
+  const result = {
     startDate,
     endDate,
     days: uniqueDays,
     startTime,
     endTime,
   };
+  debug.log("Parsed Meeting Line:", result);
+  return result;
 };
 
 // finds location from meeting line
@@ -153,9 +156,7 @@ const buildClassEvent = (course, line) => {
   const untilLocal = new Date(`${parsed.endDate}T23:59:59`);
   const untilDate = formatDateTimeUTC(untilLocal);
 
-  debug.log("Built Class Event:", { course, parsed, startDate, endDate, summaryParts, descriptionLines, untilDate });
-
-  return {
+  const result = {
     uid: `${course.code || "course"}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     summary: summaryParts.join(" - ") || "Scheduled Course",
     description: descriptionLines.join("\\n"),
@@ -164,6 +165,8 @@ const buildClassEvent = (course, line) => {
     dtend: formatDateTime(endDate),
     rrule: `FREQ=WEEKLY;BYDAY=${parsed.days.join(",")};UNTIL=${untilDate}`,
   };
+  debug.log("Built Class Event:", result);
+  return result;
 };
 
 // loops through every course in the schedule and builds the full ICS file
@@ -199,8 +202,9 @@ const buildICSFile = (courses) => {
   });
 
   lines.push("END:VCALENDAR");
-  debug.log("ICS File Generated:", lines);
-  return lines.join("\r\n");
+  const result = lines.join("\r\n");
+  debug.log("ICS File Generated:", result);
+  return result;
 };
 
 // generates the ICS string from the current filtered courses, wraps it in a Blob (file-like object)

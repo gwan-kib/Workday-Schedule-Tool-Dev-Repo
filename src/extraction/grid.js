@@ -28,7 +28,7 @@ function getHeaderKey(el) {
 export function buildHeaderMaps(gridRoot) {
   const headerEls = Array.from(gridRoot.querySelectorAll('th[data-automation-id^="columnHeader"]'));
 
-  debug.log({ id: "buildHeaderMaps.headers" }, "Header elements found:", headerEls.length);
+  debug.log({ id: "buildHeaderMaps.headers" }, "Header elements found:", headerEls);
 
   const headers = headerEls
     .map((el, pos) => {
@@ -95,7 +95,7 @@ export function findWorkdayGrid() {
 `
   );
 
-  debug.log({ id: "findWorkdayGrid.roots" }, "Candidate roots found:", roots.length);
+  debug.log({ id: "findWorkdayGrid.roots" }, "Candidate roots found:", roots);
 
   for (const root of roots) {
     const headerEls = $$(
@@ -119,17 +119,13 @@ export function findWorkdayGrid() {
         headerText.some((t) => t.includes("format")) ||
         headerText.some((t) => t.includes("status")));
 
-    debug.log({ id: "findWorkdayGrid.scanRoot" }, "Scanning root:", {
-      headerCount: headerEls.length,
-      looksRight,
-      headerText,
-    });
+    debug.log({ id: "findWorkdayGrid.scanRoot" }, "Scanning root:", { headerEls, looksRight, headerText });
 
     if (!looksRight) continue;
 
     const rows = $$(root, "tbody tr, [role='rowgroup'] [role='row'], .wd-GridRow, .grid-row");
 
-    debug.log({ id: "findWorkdayGrid.rows" }, "Rows found for matching root:", rows.length);
+    debug.log({ id: "findWorkdayGrid.rows" }, "Rows found for matching root:", rows);
 
     if (rows.length) return { root, rows };
   }

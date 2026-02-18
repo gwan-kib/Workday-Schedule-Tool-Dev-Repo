@@ -16,9 +16,7 @@ export function createRowCellReader(rowEl, headerMaps) {
 
   const cellsInRow = $$(rowEl, "td, [role='gridcell']");
 
-  debug.log({ id: "createRowCellReader.start" }, "Creating row cell reader:", {
-    cellCount: cellsInRow.length,
-  });
+  debug.log({ id: "createRowCellReader.start" }, "Creating row cell reader:", cellsInRow);
 
   const cellByCol = new Map();
   cellsInRow.forEach((cell) => {

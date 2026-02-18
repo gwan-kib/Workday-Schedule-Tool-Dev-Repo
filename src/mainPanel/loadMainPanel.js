@@ -92,11 +92,7 @@ export async function loadMainPanel(shadowRoot) {
     settingsButton: shadowRoot.querySelector(".settings"),
   };
 
-  debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", {
-    hasMainPanel: !!ui.mainPanel,
-    hasFloatingButton: !!ui.floatingButton,
-    hasTable: !!ui.tableBody && !!ui.tableHead,
-  });
+  debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", ui);
 
   return ui;
 }

@@ -19,16 +19,7 @@ export async function extractCoursesData() {
   const found = findWorkdayGrid();
   let courses = [];
 
-  debug.log(
-    { id: "extractCoursesData.tables" },
-    "findWorkdayGrid() result:",
-    found
-      ? {
-          hasRoot: !!found.root,
-          rowCount: found.rows?.length || 0,
-        }
-      : null,
-  );
+  debug.log({ id: "extractCoursesData.tables" }, "findWorkdayGrid() result:", found);
 
   if (found) {
     const headerMaps = buildHeaderMaps(found.root);
@@ -43,10 +34,7 @@ export async function extractCoursesData() {
 
   const unique = removeDuplicateCourses(courses);
 
-  debug.log({ id: "extractCoursesData.done" }, "Extraction complete:", {
-    total: courses.length,
-    unique: unique.length,
-  });
+  debug.log({ id: "extractCoursesData.done" }, "Extraction complete:", unique);
 
   return unique;
 }
@@ -64,11 +52,7 @@ function removeDuplicateCourses(allCourses) {
     }
   }
 
-  debug.log({ id: "removeDuplicateCourses" }, "Deduped courses:", {
-    allCourses: allCourses,
-    UniqueCourses: uniqueCourses,
-    removed: allCourses.length - uniqueCourses.length,
-  });
+  debug.log({ id: "removeDuplicateCourses" }, "Deduped courses:", uniqueCourses);
 
   return uniqueCourses;
 }
@@ -101,14 +85,14 @@ export function extractFromRow(row, headerMaps) {
   const sectionDetails = parseSectionLinkString(sectionLinkText);
   if (!sectionDetails) {
     debug.warn({ id: "extractFromRow.skip" }, "Skipping row: no parsable promptOption", {
-      promptOptions: allLinksInRow.length,
+      promptOptions: allLinksInRow,
       sectionLinkString: sectionLinkText,
     });
     return null;
   }
 
   debug.log({ id: "extractFromRow.sectionLink" }, "Section link:", {
-    promptOptions: allLinksInRow.length,
+    promptOptions: allLinksInRow,
     hasMatch: !!sectionLinkEl,
     sectionLinkString: sectionLinkText,
   });
@@ -200,15 +184,7 @@ export function extractFromRow(row, headerMaps) {
     isDiscussion,
   };
 
-  debug.log({ id: "extractFromRow.result" }, "Extracted course:", {
-    code: result.code,
-    title: result.title,
-    section_number: result.section_number,
-    isLab: result.isLab,
-    isSeminar: result.isSeminar,
-    isDiscussion: result.isDiscussion,
-    isOnline,
-  });
+  debug.log({ id: "extractFromRow.result" }, "Extracted course:", result);
 
   return result;
 }
