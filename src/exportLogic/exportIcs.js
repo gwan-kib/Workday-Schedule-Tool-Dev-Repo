@@ -3,7 +3,13 @@ import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("export-ics");
 
-const TZID = "America/Vancouver";
+const getLocalTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+};
 
 // Formats a date as UTC datetime string. Input: Date. Output: string.
 const formatDateTimeUTC = (date) => {
@@ -176,12 +182,13 @@ const buildICSFile = (courses) => {
     });
   });
 
+  const tzid = getLocalTimeZone();
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Workday Extension//Schedule Export//EN",
     "CALSCALE:GREGORIAN",
-    `X-WR-TIMEZONE:${TZID}`,
+    `X-WR-TIMEZONE:${tzid}`,
   ];
 
   events.forEach((event) => {
@@ -190,8 +197,8 @@ const buildICSFile = (courses) => {
     lines.push(`SUMMARY:${event.summary}`);
     if (event.description) lines.push(`DESCRIPTION:${event.description}`);
     if (event.location) lines.push(`LOCATION:${event.location}`);
-    lines.push(`DTSTART;TZID=${TZID}:${event.dtstart}`);
-    lines.push(`DTEND;TZID=${TZID}:${event.dtend}`);
+    lines.push(`DTSTART;TZID=${tzid}:${event.dtstart}`);
+    lines.push(`DTEND;TZID=${tzid}:${event.dtend}`);
     lines.push(`RRULE:${event.rrule}`);
     lines.push("END:VEVENT");
   });
