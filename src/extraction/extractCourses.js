@@ -13,6 +13,7 @@ import { createRowCellReader } from "./rowCellReader.js";
 
 const debug = debugFor("courseExtraction");
 
+// Extracts courses from the Workday grid. Input: none. Output: array of course objects.
 export async function extractCoursesData() {
   debug.log({ id: "extractCoursesData.start" }, "Starting course extraction");
 
@@ -39,6 +40,7 @@ export async function extractCoursesData() {
   return unique;
 }
 
+// Deduplicates courses by code/title/section. Input: array of courses. Output: array of unique courses.
 function removeDuplicateCourses(allCourses) {
   const key = (course) => [course.code, course.title, course.section_number].join("|").toLowerCase();
   const seen = new Set();
@@ -57,6 +59,7 @@ function removeDuplicateCourses(allCourses) {
   return uniqueCourses;
 }
 
+// Extracts a course from a grid row. Input: row element and header maps. Output: course object or null.
 export function extractFromRow(row, headerMaps) {
   const { getCellByHeader, readCellTextByHeader } = createRowCellReader(row, headerMaps);
 

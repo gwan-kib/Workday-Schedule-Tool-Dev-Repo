@@ -5,6 +5,7 @@ import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("mainPanelInteractions");
 
+// Filters courses into STATE.filtered by query. Input: query string. Output: none.
 export function filterCourses(query) {
   const q = (query || "").trim().toLowerCase();
 
@@ -24,6 +25,7 @@ export function filterCourses(query) {
   );
 }
 
+// Sorts STATE.filtered by a key and updates STATE.sort. Input: key string. Output: none.
 export function sortCourses(key) {
   if (!key) return;
 
@@ -34,6 +36,7 @@ export function sortCourses(key) {
   STATE.filtered.sort((a, b) => dir * collator.compare(a?.[key] || "", b?.[key] || ""));
 }
 
+// Wires sorting handlers to table headers. Input: ui object. Output: none.
 export function wireTableSorting(ui) {
   const headCells = $$(ui.tableHead, "th[data-key]");
 

@@ -3,10 +3,9 @@ import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("export-ics");
 
-// calendar timezone for DTSTART/DTEND (local class times) and RRULE UNTIL (UTC "Z" per spec)
 const TZID = "America/Vancouver";
 
-// converts a Date object into this format: YYYYMMDDTHHMMSSZ
+// Formats a date as UTC datetime string. Input: Date. Output: string.
 const formatDateTimeUTC = (date) => {
   const y = date.getUTCFullYear();
   const m = padNumbers(date.getUTCMonth() + 1);
@@ -19,7 +18,6 @@ const formatDateTimeUTC = (date) => {
   return result;
 };
 
-// maps ui's day labels to iCalendar day codes
 const DAY_CODES = {
   Mon: "MO",
   Tue: "TU",
@@ -30,15 +28,13 @@ const DAY_CODES = {
   Sun: "SU",
 };
 
-// used to extract dates, times, and days from a meeting line string
 const date_range_REGEX = /(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/;
 const time_range_REGEX = /(\d{1,2}):(\d{2})\s*([ap])\.?m\.?\s*-\s*(\d{1,2}):(\d{2})\s*([ap])\.?m\.?/i;
 const days_REGEX = /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g;
 
-// forces numbers to two digits
 const padNumbers = (value) => String(value).padStart(2, "0");
 
-// ICS date format: YYYYMMDD
+// Formats a date as YYYYMMDD. Input: Date. Output: string.
 const formatDate = (date) => {
   const year = date.getFullYear();
   const month = padNumbers(date.getMonth() + 1);
@@ -48,7 +44,7 @@ const formatDate = (date) => {
   return result;
 };
 
-// ICS datetime format (local): YYYYMMDDTHHMMSS
+// Formats a date as local datetime string. Input: Date. Output: string.
 const formatDateTime = (date) => {
   const datePart = formatDate(date);
   const hours = padNumbers(date.getHours());
@@ -59,8 +55,7 @@ const formatDateTime = (date) => {
   return result;
 };
 
-// “p” adds 12, unless it’s 12pm already, “a” turns 12am into 0
-// eg. parseTime("11","30","p") -> { hours: 23, minutes: 30 }
+// Parses time tokens into 24h time. Input: hour token, minute token, period token. Output: { hours, minutes }.
 const parseTime = (hoursToken, minutesToken, periodToken) => {
   let hours = Number.parseInt(hoursToken, 10);
   const minutes = Number.parseInt(minutesToken, 10);
@@ -74,7 +69,7 @@ const parseTime = (hoursToken, minutesToken, periodToken) => {
   return result;
 };
 
-// parses meeting line into structured data
+// Parses a meeting line into structured data. Input: line string. Output: parsed object or null.
 const parseMeetingLine = (line) => {
   const dateMatch = String(line || "").match(date_range_REGEX);
   const timeMatch = String(line || "").match(time_range_REGEX);
@@ -101,7 +96,7 @@ const parseMeetingLine = (line) => {
   return result;
 };
 
-// finds location from meeting line
+// Extracts a location label from a meeting line. Input: line string. Output: string.
 const extractLocation = (line) => {
   const parts = String(line || "")
     .split("|")
@@ -117,7 +112,7 @@ const extractLocation = (line) => {
   return "";
 };
 
-// finds the first calendar date on/after startDate that matches one of the meeting days
+// Finds the first valid date matching a day code. Input: start date string, day codes array. Output: Date.
 const findFirstValidDate = (startDate, dayCodes) => {
   const start = new Date(`${startDate}T00:00:00`);
 
@@ -131,7 +126,7 @@ const findFirstValidDate = (startDate, dayCodes) => {
   return start;
 };
 
-// builds an event object from course and meeting line data
+// Builds a calendar event object. Input: course object and meeting line string. Output: event object or null.
 const buildClassEvent = (course, line) => {
   const parsed = parseMeetingLine(line);
   if (!parsed) return null;
@@ -169,7 +164,7 @@ const buildClassEvent = (course, line) => {
   return result;
 };
 
-// loops through every course in the schedule and builds the full ICS file
+// Builds a full ICS file string from courses. Input: array of courses. Output: string.
 const buildICSFile = (courses) => {
   const events = [];
 
@@ -207,9 +202,7 @@ const buildICSFile = (courses) => {
   return result;
 };
 
-// generates the ICS string from the current filtered courses, wraps it in a Blob (file-like object)
-// creates a temporary URL for it and a hidden <a> then “clicks” it to download
-// cleans up the URL + anchor afterward
+// Exports the current schedule as an ICS download. Input: schedule name string or null. Output: none.
 export function exportICS(scheduleName) {
   const ics = buildICSFile(STATE.filtered || []);
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
@@ -217,7 +210,6 @@ export function exportICS(scheduleName) {
 
   const a = document.createElement("a");
   a.href = url;
-  // Use the schedule name if provided, otherwise use the default
   const filename = scheduleName ? `${"[WST] " + scheduleName.replace(/[\\/:*?"<>|]/g, "-")}.ics` : "[WST] Schedule.ics";
   a.download = filename;
   document.body.appendChild(a);

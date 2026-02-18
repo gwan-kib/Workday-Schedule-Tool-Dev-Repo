@@ -4,28 +4,19 @@ import { parseSectionLinkString } from "../extraction/parsers/sectionLinkInfo.js
 const debug = debugFor("gradesApiCall");
 debugLog({ local: { gradesApiCall: true } });
 
-// Base endpoint for grade lookups.
-// Example output: when version="v3", campus="UBCV", yearsession="2024W",
-// subject="CPSC", course="110" -> "https://ubcgrades.com/api/v3/grades/UBCV/2024W/CPSC/110"
 const API_BASE = "https://ubcgrades.com/api";
 const DEFAULT_API_VERSION = "v3";
 
-// Input: page text containing "2024-25 Winter Term 1 (UBC-V)"
-// Output: captures year, season, and campus code for parsing.
 const TERM_CAMPUS_RE = /(\d{4})-\d{2}\s+(Winter|Summer)\s+Term\s+\d+\s+\((UBC-[VO])\)/i;
 
-// Input: "CPSC 110" or "BIOL_ 200"
-// Output: subject="CPSC"/"BIOL_", course="110"/"200"
 const SUBJECT_COURSE_RE = /^\s*([A-Z][A-Z0-9_]{1,8})\s*(\d{3}[A-Z]?)\s*$/;
 
-// In-memory cache for API responses to avoid repeated network calls.
-// Example key: "v3|UBCV|2024W|CPSC|110|101"
 const responseCache = new Map();
 
-// Input: "BIOL_V" -> Output: "BIOL"
+// Normalizes a subject code by removing campus suffix. Input: string. Output: string.
 const normalizeSubject = (raw) => String(raw || "").replace(/_[VO]$/i, "");
 
-// Input: " 101 " -> Output: "101", Input: "L1A" -> Output: "L1A"
+// Normalizes a section token to uppercase and max length 3. Input: string. Output: string.
 const normalizeSection = (raw) => {
   const str = String(raw || "")
     .trim()
@@ -34,26 +25,21 @@ const normalizeSection = (raw) => {
   return str.length > 3 ? str.slice(0, 3) : str;
 };
 
-// Input: { version:"v3", campus:"UBCV", yearsession:"2024W", subject:"CPSC", course:"110", section:"101" }
-// Output: "https://ubcgrades.com/api/v3/grades/UBCV/2024W/CPSC/110/101"
+// Builds the grades API URL. Input: params object. Output: URL string.
 const buildGradesUrl = ({ version, campus, yearsession, subject, course, section }) => {
   const base = `${API_BASE}/${version}/grades/${campus}/${yearsession}/${subject}/${course}`;
   return section ? `${base}/${section}` : base;
 };
 
-// Input: { version:"v3", campus:"UBCV" }
-// Output: "https://ubcgrades.com/api/v3/yearsessions/UBCV/"
+// Builds the yearsessions API URL. Input: params object. Output: URL string.
 const buildYearsessionsUrl = ({ version, campus }) =>
   `${API_BASE}/${version}/yearsessions/${campus}/`;
 
-// Input: ("v3","UBCV","2024W","CPSC","110","101")
-// Output: "v3|UBCV|2024W|CPSC|110|101"
+// Builds a cache key for API responses. Input: version, campus, yearsession, subject, course, section. Output: string.
 const cacheKey = (version, campus, yearsession, subject, course, section) =>
   [version, campus, yearsession, subject, course, section].filter(Boolean).join("|");
 
-// Input: url string, optional AbortSignal.
-// Output: parsed JSON object or throws on non-2xx.
-// Example output: { average: 74.3, ... }
+// Fetches JSON from a URL. Input: URL string and optional options. Output: parsed JSON object.
 async function fetchJson(url, { signal } = {}) {
   const resp = await fetch(url, { signal });
   if (!resp.ok) {
@@ -66,8 +52,7 @@ async function fetchJson(url, { signal } = {}) {
   return resp.json();
 }
 
-// Input: { campus:"UBCV", version? }, optional { signal, useCache }
-// Output: yearsession list response, e.g. ["2024W","2024S",...]
+// Fetches yearsessions list. Input: params object and optional options. Output: yearsessions data or null.
 async function fetchYearsessions(
   { campus, version = DEFAULT_API_VERSION },
   { signal, useCache = true } = {},
@@ -86,8 +71,7 @@ async function fetchYearsessions(
   return data;
 }
 
-// Input: API response list or { yearsessions: [...] }
-// Output: ["2024W","2024S"]
+// Normalizes a yearsessions response to an array. Input: API data. Output: array of strings.
 function normalizeYearsessionsList(data) {
   if (!data) return [];
   if (Array.isArray(data)) return data.filter(Boolean).map(String);
@@ -95,8 +79,7 @@ function normalizeYearsessionsList(data) {
   return [];
 }
 
-// Input: requested="2024W", available=["2023W","2024S"]
-// Output: "2024S" (closest available prior/near match)
+// Resolves a fallback yearsession from available list. Input: requested string, available array. Output: string.
 function resolveFallbackYearsession(requested, available) {
   if (!requested || !available.length) return requested || null;
   if (available.includes(requested)) return requested;
@@ -121,8 +104,7 @@ function resolveFallbackYearsession(requested, available) {
   return parsed.length ? parsed[parsed.length - 1].value : requested;
 }
 
-// Input: requested="2024W", minYear=2022
-// Output: ["2024W","2023W","2022W"]
+// Builds descending fallback yearsession candidates. Input: requested string, minYear number. Output: array of strings.
 function buildYearsessionFallbacks(requested, minYear = 2020) {
   const req = String(requested || "").toUpperCase();
   const year = Number(req.slice(0, 4));
@@ -136,8 +118,7 @@ function buildYearsessionFallbacks(requested, minYear = 2020) {
   return out;
 }
 
-// Input: requested="2024W", available=["2022W","2024S","2023W"]
-// Output: ["2023W","2022W","2024S"] (same season first, recent to older)
+// Builds ordered candidate list from available yearsessions. Input: requested string, available array. Output: array.
 function buildAvailableYearsessionCandidates(requested, available) {
   if (!available.length) return [];
 
@@ -166,8 +147,7 @@ function buildAvailableYearsessionCandidates(requested, available) {
   return [...sameSeason, ...remaining];
 }
 
-// Input: "CPSC 110"
-// Output: { subject:"CPSC", course:"110" }
+// Parses a course code string. Input: code string. Output: { subject, course } or null.
 export function parseCourseCode(code) {
   const str = String(code || "")
     .trim()
@@ -181,8 +161,7 @@ export function parseCourseCode(code) {
   return { subject, course };
 }
 
-// Input: "CPSC 110 101 - Intro to CS"
-// Output: { subject:"CPSC", course:"110", section:"101", title:"Intro to CS", full:"..." }
+// Parses a course prompt string. Input: prompt text string. Output: course info object or null.
 export function parseCourseInfoFromPromptText(promptText) {
   const parsed = parseSectionLinkString(promptText);
   if (!parsed) return null;
@@ -198,8 +177,7 @@ export function parseCourseInfoFromPromptText(promptText) {
   };
 }
 
-// Input: page text containing "2024-25 Winter Term 1 (UBC-V)"
-// Output: { campus:"UBCV", yearsession:"2024W" }
+// Reads term campus info from text. Input: page text string. Output: { campus, yearsession } or null.
 export function readTermCampusFromText(text) {
   const m = String(text || "").match(TERM_CAMPUS_RE);
   if (!m) return null;
@@ -214,16 +192,13 @@ export function readTermCampusFromText(text) {
   return { campus, yearsession };
 }
 
-// Input: none (uses document.body.innerText)
-// Output: { campus:"UBCV", yearsession:"2024W" } or null
+// Reads term campus info from the document body. Input: none. Output: { campus, yearsession } or null.
 export function readTermCampus() {
   const text = document?.body?.innerText || "";
   return readTermCampusFromText(text);
 }
 
-// Input: { onCourse: ({ subject, course, section, title, full }) => void }
-// Output: cleanup function to remove the listener.
-// Example output: onCourse({ subject:"CPSC", course:"110", section:"101", title:"Intro to CS" })
+// Attaches a hover listener for course prompt elements. Input: { onCourse } callback. Output: cleanup function.
 export function attachCourseHoverListener({ onCourse }) {
   if (typeof onCourse !== "function") return () => {};
 
@@ -248,9 +223,7 @@ export function attachCourseHoverListener({ onCourse }) {
   return () => document.removeEventListener("mouseover", handler);
 }
 
-// Input: { campus:"UBCV", yearsession:"2024W", subject:"CPSC", course:"110", section:"101" }
-// Output: API JSON for the section, or null if inputs missing.
-// Example output: { average: 74.3, ... }
+// Fetches section grades. Input: params object and optional options. Output: API JSON or null.
 export async function fetchSectionGrades(
   { campus, yearsession, subject, course, section, version = DEFAULT_API_VERSION },
   { signal, useCache = true } = {},
@@ -288,9 +261,7 @@ export async function fetchSectionGrades(
   return data;
 }
 
-// Input: { campus:"UBCV", yearsession:"2024W", subject:"CPSC", course:"110" }
-// Output: API JSON for the course, or null if inputs missing.
-// Example output: { average: 73.8, ... }
+// Fetches course grades. Input: params object and optional options. Output: API JSON or null.
 export async function fetchCourseGrades(
   { campus, yearsession, subject, course, version = DEFAULT_API_VERSION },
   { signal, useCache = true } = {},
@@ -326,9 +297,7 @@ export async function fetchCourseGrades(
   return data;
 }
 
-// Input: { campus, yearsession, subject, course, section }, optional { signal, useCache, isValid }
-// Output: first valid course-level JSON from fallback yearsessions, or null.
-// Example output: { average: 73.8, ... }
+// Fetches course grades with yearsession fallback. Input: params object and optional options. Output: API JSON or null.
 export async function fetchSectionGradesWithFallback(
   { campus, yearsession, subject, course, section },
   { signal, useCache = true, isValid } = {},

@@ -2,6 +2,7 @@ import { debugFor } from "../../utilities/debugTool.js";
 
 const debug = debugFor("instructorInfo");
 
+// Extracts instructor names from a cell. Input: element. Output: string.
 export function extractInstructorNamesFromCell(instructorEl) {
   if (!instructorEl) {
     debug.log({ id: "extractInstructorNamesFromCell.missing" }, "");

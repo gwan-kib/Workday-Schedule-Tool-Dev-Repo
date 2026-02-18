@@ -3,6 +3,7 @@ import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("grid");
 
+// Normalizes text for matching. Input: string. Output: normalized lowercased string.
 export const normalizeText = (s) =>
   String(s || "")
     .replace(/\u00A0/g, " ")
@@ -10,6 +11,7 @@ export const normalizeText = (s) =>
     .trim()
     .toLowerCase();
 
+// Extracts readable header text from a header element. Input: header element. Output: string.
 export function getHeaderText(headerEl) {
   if (!headerEl) return "";
 
@@ -19,12 +21,14 @@ export function getHeaderText(headerEl) {
   return (headerEl.textContent || "").trim();
 }
 
+// Extracts the Workday header key from a header element. Input: element. Output: string or null.
 function getHeaderKey(el) {
   const a = el?.getAttribute?.("data-automation-id") || "";
   const m = a.match(/^columnHeader(\d+\.\d+)$/);
-  return m ? m[1] : null; // "252.9"
+  return m ? m[1] : null;
 }
 
+// Builds header maps for a Workday grid. Input: grid root element. Output: { colMap, posMap }.
 export function buildHeaderMaps(gridRoot) {
   const headerEls = Array.from(gridRoot.querySelectorAll('th[data-automation-id^="columnHeader"]'));
 
@@ -33,7 +37,7 @@ export function buildHeaderMaps(gridRoot) {
   const headers = headerEls
     .map((el, pos) => {
       const text = getHeaderText(el);
-      const key = getHeaderKey(el); // "252.9"
+      const key = getHeaderKey(el);
       return { el, pos, key, text, norm: normalizeText(text) };
     })
     .filter((h) => h.text);
@@ -67,7 +71,7 @@ export function buildHeaderMaps(gridRoot) {
 
   for (const [key, needles] of Object.entries(KEYS)) {
     const hit = findHeader(needles);
-    colMap[key] = hit ? hit.key : null; // store "252.9"
+    colMap[key] = hit ? hit.key : null;
     posMap[key] = hit ? hit.pos : -1;
 
     debug.log({ id: "buildHeaderMaps.map" }, "Mapped header:", {
@@ -80,6 +84,7 @@ export function buildHeaderMaps(gridRoot) {
   return { colMap, posMap };
 }
 
+// Finds the Workday grid root and rows. Input: none. Output: { root, rows } or null.
 export function findWorkdayGrid() {
   const roots = $$(
     document,

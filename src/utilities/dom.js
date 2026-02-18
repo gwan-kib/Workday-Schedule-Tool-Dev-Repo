@@ -1,21 +1,21 @@
 import { debugFor } from "./debugTool.js";
 const debug = debugFor("dom");
 
-// shortcut for querySelector in shadowDom
+// Returns the first matching element within root. Input: root Element/Document, selector string. Output: Element or null.
 export const $ = (root, sel) => {
   const result = root.querySelector(sel);
   debug.log("Querying single element:", result);
   return result;
 };
 
-// shortcut for querySelectorAll in shadowDom, turns result into an array
+// Returns all matching elements within root. Input: root Element/Document, selector string. Output: array of Elements.
 export const $$ = (root, sel) => {
   const result = Array.from(root.querySelectorAll(sel));
   debug.log("Querying multiple elements:", result);
   return result;
 };
 
-// if el exists, attaches event listener to el
+// Attaches an event listener if the element exists. Input: element, event name, handler, options. Output: none.
 export const on = (el, ev, fn, opts) => {
   if (el) {
     debug.log("Attaching event listener:", { el, ev, opts });
@@ -23,7 +23,7 @@ export const on = (el, ev, fn, opts) => {
   }
 };
 
-// limits how often a function is called, sets a timer and function can only be called again after timer is complete
+// Returns a debounced function that delays invocation. Input: function, delay ms. Output: debounced function.
 export const debounce = (fn, ms = 300) => {
   let t;
   return (...a) => {

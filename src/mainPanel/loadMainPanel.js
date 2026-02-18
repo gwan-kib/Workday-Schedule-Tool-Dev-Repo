@@ -2,6 +2,7 @@ import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("loadMainPanel");
 
+// Loads panel HTML and CSS into the shadow root and returns UI references. Input: ShadowRoot. Output: ui object.
 export async function loadMainPanel(shadowRoot) {
   const htmlUrl = chrome.runtime.getURL("dist/panel.html");
 

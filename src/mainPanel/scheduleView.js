@@ -22,6 +22,7 @@ const SEMESTER_MONTHS = {
   second: ["01", "12"],
 };
 
+// Parses a time token into minutes since midnight. Input: token string. Output: minutes number or null.
 function parseTimeToken(token) {
   const match = String(token || "")
     .trim()
@@ -38,6 +39,7 @@ function parseTimeToken(token) {
   return hours * 60 + minutes;
 }
 
+// Parses a meeting line into days and time range. Input: line string. Output: parsed object or null.
 function parseMeetingLine(line) {
   const days = String(line || "").match(DAY_REGEX) || [];
   const timeTokens = String(line || "").match(TIME_REGEX) || [];
@@ -57,6 +59,7 @@ function parseMeetingLine(line) {
   };
 }
 
+// Maps a start date to a semester key. Input: date string (YYYY-MM-DD). Output: "first", "second", or null.
 function getSemester(startDate) {
   if (!startDate) return null;
   const month = startDate.split("-")[1];
@@ -66,24 +69,29 @@ function getSemester(startDate) {
   return null;
 }
 
+// Clamps minutes to grid bounds. Input: minutes number. Output: minutes number.
 function clampToGrid(minutes) {
   const min = START_HOUR * 60;
   const max = END_HOUR * 60;
   return Math.max(min, Math.min(max, minutes));
 }
 
+// Snaps minutes down to the nearest slot. Input: minutes number. Output: minutes number.
 function snapDownToSlot(minutes) {
   return Math.floor(minutes / SLOT_MINUTES) * SLOT_MINUTES;
 }
 
+// Snaps minutes up to the nearest slot. Input: minutes number. Output: minutes number.
 function snapUpToSlot(minutes) {
   return Math.ceil(minutes / SLOT_MINUTES) * SLOT_MINUTES;
 }
 
+// Returns the slot index for a minute value. Input: minutes number. Output: index number.
 function slotIndexOf(minutes) {
   return SLOTS.indexOf(minutes);
 }
 
+// Builds events grouped by day for a semester. Input: courses array, semester key. Output: Map of day to events array.
 function buildDayEvents(courses, semester) {
   const eventsByDay = new Map();
   DAYS.forEach((d) => eventsByDay.set(d, []));
@@ -142,6 +150,7 @@ function buildDayEvents(courses, semester) {
   return eventsByDay;
 }
 
+// Groups events into conflict blocks. Input: events-by-day Map. Output: Map of day to groups array.
 function addConflicts(eventsByDay) {
   const groupedByDay = new Map();
 
@@ -186,6 +195,7 @@ function addConflicts(eventsByDay) {
   return groupedByDay;
 }
 
+// Computes human-friendly conflict summaries. Input: grouped-by-day Map. Output: array of code arrays.
 function getConflictSummaries(groupedByDay) {
   const seen = new Set();
   const conflicts = [];
@@ -210,6 +220,7 @@ function getConflictSummaries(groupedByDay) {
   return conflicts;
 }
 
+// Updates the conflict footer display. Input: ui object, conflicts array. Output: none.
 function updateConflictFooter(ui, conflicts) {
   if (!ui?.footerConflicts) return;
 
@@ -222,12 +233,14 @@ function updateConflictFooter(ui, conflicts) {
   ui.footerConflicts.textContent = `⚠️ The following classes are in conflict: ${conflictList}`;
 }
 
+// Formats a time label for a slot. Input: minutes number. Output: string.
 function formatSlotLabel(minutes) {
   const h24 = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${String(h24)}:${String(m).padStart(2, "0")}`;
 }
 
+// Builds the base schedule table DOM. Input: none. Output: wrapper element.
 function buildScheduleTable() {
   const wrap = document.createElement("div");
   wrap.className = "schedule-table-wrap";
@@ -282,6 +295,7 @@ function buildScheduleTable() {
   return wrap;
 }
 
+// Renders overlay blocks for events. Input: wrapper element, events-by-day Map. Output: none.
 function renderOverlayBlocks(wrap, eventsByDay) {
   const overlay = wrap.querySelector(".schedule-overlay");
   overlay.innerHTML = "";
@@ -344,6 +358,7 @@ function renderOverlayBlocks(wrap, eventsByDay) {
   });
 }
 
+// Renders the schedule view for a semester. Input: ui object, courses array, semester key. Output: none.
 export function renderSchedule(ui, courses, semester) {
   const host = ui?.scheduleGrid || ui?.schedulePanel || ui?.scheduleContainer || ui?.scheduleView || ui?.schedule;
   if (!host) {

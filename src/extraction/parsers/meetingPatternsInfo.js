@@ -6,6 +6,7 @@ const DATE_RE = /\b\d{4}-\d{2}-\d{2}\s*-\s*\d{4}-\d{2}-\d{2}\b/;
 const TIME_RE = /\b\d{1,2}:\d{2}\s*[ap]\.?m\.?\b/i;
 const DAY_RE = /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i;
 
+// Extracts meeting lines from a container element. Input: element. Output: array of strings.
 export function extractMeetingLines(containerEl) {
   if (!containerEl) {
     debug.log({ id: "extractMeetingLines.missing" }, []);
@@ -24,6 +25,7 @@ export function extractMeetingLines(containerEl) {
   return filtered;
 }
 
+// Determines whether a delivery mode cell indicates online learning. Input: element. Output: boolean.
 export function isOnlineDelivery(deliveryModeCellEl) {
   if (!deliveryModeCellEl) {
     debug.log({ id: "isOnlineDelivery.missing" }, false);
@@ -48,6 +50,7 @@ export function isOnlineDelivery(deliveryModeCellEl) {
   return matched;
 }
 
+// Formats a meeting line for display. Input: line string. Output: { days, time, location }.
 export function formatMeetingLineForPanel(line) {
   const raw = String(line || "");
 
@@ -80,6 +83,7 @@ export function formatMeetingLineForPanel(line) {
   return formatted;
 }
 
+// Normalizes meeting patterns text. Input: string. Output: normalized string.
 export function normalizeMeetingPatternsText(text) {
   const normalized = String(text || "")
     .split(/\r?\n(.*)/s)
@@ -93,6 +97,7 @@ export function normalizeMeetingPatternsText(text) {
   return normalized;
 }
 
+// Extracts a start date from a line. Input: string. Output: date string.
 export function extractStartDate(line) {
   const match = String(line || "").match(/\b(\d{4}-\d{2}-\d{2})\b/);
   const out = match ? match[1] : "";

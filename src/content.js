@@ -26,6 +26,7 @@ import {
   renderSavedSchedules,
 } from "./mainPanel/scheduleStorage.js";
 
+// Bootstraps the content script UI and event wiring. Input: none. Output: none.
 (() => {
   console.log("[WD] content script loaded");
 
@@ -33,9 +34,6 @@ import {
     const shadowRoot = ensureMount();
     const ui = await loadMainPanel(shadowRoot);
 
-    // ---------------------------
-    // Helpers
-    // ---------------------------
     const updateScheduleView = () => {
       renderSchedule(ui, STATE.filtered, STATE.view.semester);
     };
@@ -68,9 +66,6 @@ import {
 
     syncFloatingButtonState();
 
-    // ---------------------------
-    // Modal (Save Schedule)
-    // ---------------------------
     let resolveScheduleModal = null;
 
     const closeScheduleModal = (value) => {
@@ -143,9 +138,6 @@ import {
       });
     }
 
-    // ---------------------------
-    // Views + semester toggles
-    // ---------------------------
     ui.viewTabs.forEach((btn) => {
       on(btn, "click", () => {
         setActiveView(btn.dataset.panel);
@@ -164,9 +156,6 @@ import {
 
     on(ui.floatingButton, "click", toggleMainPanel);
 
-    // ---------------------------
-    // Dropdowns (export + saved)
-    // ---------------------------
     const setExportOpen = (isOpen) => {
       if (!ui.exportDropdown || !ui.exportButton) return;
       ui.exportDropdown.classList.toggle("is-open", isOpen);
@@ -178,45 +167,33 @@ import {
       setExportOpen(!isOpen);
     });
 
-    // Single click-outside handler (closes both export + saved dropdowns)
     on(document, "click", (event) => {
       const path = event.composedPath ? event.composedPath() : [];
 
-      // Export dropdown: class-based
       if (ui.exportDropdown?.classList.contains("is-open") && !path.includes(ui.exportDropdown)) {
         setExportOpen(false);
       }
 
-      // Saved dropdown: <details open>
       if (ui.savedDropdown?.open && !path.includes(ui.savedDropdown)) {
         ui.savedDropdown.open = false;
       }
     });
 
-    // ---------------------------
-    // Messages
-    // ---------------------------
     chrome.runtime.onMessage.addListener((message) => {
       if (message?.type === "TOGGLE_WIDGET") toggleMainPanel();
     });
 
-    // ---------------------------
-    // Refresh (re-extract)
-    // ---------------------------
     on(ui.refreshButton, "click", async () => {
-      ui.refreshButton.classList.remove("rotate"); // reset if clicked fast
-      void ui.refreshButton.offsetWidth; // force reflow
+      ui.refreshButton.classList.remove("rotate");
+      void ui.refreshButton.offsetWidth;
       ui.refreshButton.classList.add("rotate");
 
       STATE.courses = await extractCoursesData();
-      STATE.currentScheduleName = null; // reset schedule name on refresh
+      STATE.currentScheduleName = null;
       filterCourses(ui.searchInput.value);
       renderAll();
     });
 
-    // ---------------------------
-    // Export actions
-    // ---------------------------
     const handleExport = async (type) => {
       if (type === "ics") exportICS(STATE.currentScheduleName);
     };
@@ -229,9 +206,6 @@ import {
       await handleExport(action.dataset.export);
     });
 
-    // ---------------------------
-    // Save schedules
-    // ---------------------------
     on(ui.saveScheduleButton, "click", async () => {
       if (!canSaveMoreSchedules(STATE.savedSchedules)) {
         await openScheduleModal({
@@ -290,7 +264,6 @@ import {
         return;
       }
 
-      // Load
       STATE.currentScheduleName = selected.name;
       STATE.courses = [...selected.courses];
       STATE.filtered = [...selected.courses];
@@ -301,9 +274,6 @@ import {
       if (ui.savedDropdown) ui.savedDropdown.open = false;
     });
 
-    // ---------------------------
-    // Settings/help shortcuts
-    // ---------------------------
     on(ui.settingsButton, "click", () => {
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
@@ -316,9 +286,6 @@ import {
       setActiveView("help");
     });
 
-    // ---------------------------
-    // Search filter
-    // ---------------------------
     on(
       ui.searchInput,
       "input",
@@ -330,9 +297,6 @@ import {
 
     wireTableSorting(ui);
 
-    // ---------------------------
-    // Initial load
-    // ---------------------------
     STATE.savedSchedules = await loadSavedSchedules();
     renderSavedSchedules(ui, STATE.savedSchedules);
 
@@ -347,18 +311,8 @@ import {
 
     setActiveView(STATE.view.panel);
 
-    // ---------------------------
-    // Average grade buttons (UBC Grades)
-    // ---------------------------
-    // Behavior: Adds a "Find avg grades" button next to each section in the prompt list.
-    // On click, fetches the average grade and replaces the button text.
-
-    // termCampus example: { campus:"UBCV", yearsession:"2024W" }
     let termCampus = readTermCampus();
 
-    // Input: API payload object (varies by endpoint).
-    // Output: number/string average or null.
-    // Example output: 74.3 or "74.3"
     const extractAverage = (data) => {
       if (!data) return null;
       if (Array.isArray(data)) {
@@ -381,16 +335,12 @@ import {
       return null;
     };
 
-    // Input: average value (number|string|null).
-    // Output: label string, e.g. "Average: 74.3" or "Average: N/A".
     const buildAverageLabel = (average) => {
       if (average == null) return "Average:\nN/A";
       if (typeof average === "number") return `Average:\n${average.toFixed(1)}`;
       return `Average:\n${average}`;
     };
 
-    // Input: API payload.
-    // Output: boolean; true when a usable average exists.
     const hasValidAverage = (data) => extractAverage(data) != null;
 
     const createAverageButton = (promptOption, courseInfo) => {

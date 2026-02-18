@@ -2,6 +2,7 @@ import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("renderCourseRows");
 
+// Escapes HTML entities in a string. Input: string. Output: escaped string.
 const escHTML = (s) =>
   String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -10,6 +11,7 @@ const escHTML = (s) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+// Normalizes whitespace in multi-line strings. Input: string. Output: cleaned string.
 function cleanLines(text) {
   return String(text || "")
     .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, " ")
@@ -19,6 +21,7 @@ function cleanLines(text) {
     .trim();
 }
 
+// Returns a badge label for a course type. Input: course object. Output: string.
 function getBadge(course) {
   if (course.isLab) return "[LAB]";
   if (course.isSeminar) return "[SEM]";
@@ -26,6 +29,7 @@ function getBadge(course) {
   return "";
 }
 
+// Splits meeting text into main and sub lines. Input: meeting string. Output: { main, sub }.
 function splitMeeting(meeting) {
   const parts = cleanLines(meeting).split("\n");
   const main = (parts[0] || "").trim();
@@ -38,6 +42,7 @@ function splitMeeting(meeting) {
   return { main, sub };
 }
 
+// Formats a course code for display. Input: code string. Output: string.
 function formatCourseCode(code) {
   const match = String(code || "").match(/^([A-Z_]+)\s*(\d+)$/);
   if (match) {
@@ -46,6 +51,7 @@ function formatCourseCode(code) {
   return code || "";
 }
 
+// Formats an instructor name for display. Input: name string. Output: string.
 function formatInstructorName(name) {
   const nameParts = String(name || "")
     .trim()
@@ -58,6 +64,7 @@ function formatInstructorName(name) {
   return name || "";
 }
 
+// Renders course rows into the table body. Input: ui object, courses array. Output: none.
 export function renderCourseRows(ui, courses) {
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
