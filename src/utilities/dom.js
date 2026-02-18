@@ -1,13 +1,6 @@
 import { debugFor } from "./debugTool.js";
 const debug = debugFor("dom");
 
-// Returns the first matching element within root. Input: root Element/Document, selector string. Output: Element or null.
-export const $ = (root, sel) => {
-  const result = root.querySelector(sel);
-  debug.log("Querying single element:", result);
-  return result;
-};
-
 // Returns all matching elements within root. Input: root Element/Document, selector string. Output: array of Elements.
 export const $$ = (root, sel) => {
   const result = Array.from(root.querySelectorAll(sel));

@@ -148,7 +148,7 @@ function buildAvailableYearsessionCandidates(requested, available) {
 }
 
 // Parses a course code string. Input: code string. Output: { subject, course } or null.
-export function parseCourseCode(code) {
+function parseCourseCode(code) {
   const str = String(code || "")
     .trim()
     .toUpperCase();
@@ -178,7 +178,7 @@ export function parseCourseInfoFromPromptText(promptText) {
 }
 
 // Reads term campus info from text. Input: page text string. Output: { campus, yearsession } or null.
-export function readTermCampusFromText(text) {
+function readTermCampusFromText(text) {
   const m = String(text || "").match(TERM_CAMPUS_RE);
   if (!m) return null;
 
@@ -198,71 +198,8 @@ export function readTermCampus() {
   return readTermCampusFromText(text);
 }
 
-// Attaches a hover listener for course prompt elements. Input: { onCourse } callback. Output: cleanup function.
-export function attachCourseHoverListener({ onCourse }) {
-  if (typeof onCourse !== "function") return () => {};
-
-  const handler = (event) => {
-    const el = event.target.closest('[data-automation-id="promptOption"]');
-    if (!el) return;
-
-    const str =
-      el.getAttribute("data-automation-label") ||
-      el.getAttribute("title") ||
-      el.getAttribute("aria-label") ||
-      el.textContent ||
-      "";
-
-    const courseInfo = parseCourseInfoFromPromptText(str);
-    if (!courseInfo) return;
-
-    onCourse(courseInfo);
-  };
-
-  document.addEventListener("mouseover", handler);
-  return () => document.removeEventListener("mouseover", handler);
-}
-
-// Fetches section grades. Input: params object and optional options. Output: API JSON or null.
-export async function fetchSectionGrades(
-  { campus, yearsession, subject, course, section, version = DEFAULT_API_VERSION },
-  { signal, useCache = true } = {},
-) {
-  if (!campus || !yearsession || !subject || !course) return null;
-
-  const sectionValue = normalizeSection(section);
-  const cacheId = cacheKey(version, campus, yearsession, subject, course, sectionValue);
-  if (useCache && responseCache.has(cacheId)) return responseCache.get(cacheId);
-
-  const url = buildGradesUrl({
-    version,
-    campus,
-    yearsession,
-    subject,
-    course,
-    section: sectionValue,
-  });
-
-  debug.log(
-    { id: "fetchSectionGrades.request" },
-    "UBCGrades request:",
-    { version, campus, yearsession, subject, course, section: sectionValue },
-    url,
-  );
-
-  const data = await fetchJson(url, { signal });
-  debug.log(
-    { id: "fetchSectionGrades.response" },
-    "UBCGrades response:",
-    { version, campus, yearsession, subject, course, section: sectionValue },
-    data,
-  );
-  if (useCache) responseCache.set(cacheId, data);
-  return data;
-}
-
 // Fetches course grades. Input: params object and optional options. Output: API JSON or null.
-export async function fetchCourseGrades(
+async function fetchCourseGrades(
   { campus, yearsession, subject, course, version = DEFAULT_API_VERSION },
   { signal, useCache = true } = {},
 ) {
@@ -289,7 +226,7 @@ export async function fetchCourseGrades(
   const data = await fetchJson(url, { signal });
   debug.log(
     { id: "fetchCourseGrades.response" },
-    "UBCGrades course response:",
+    "UBCGrades response:",
     { version, campus, yearsession, subject, course },
     data,
   );

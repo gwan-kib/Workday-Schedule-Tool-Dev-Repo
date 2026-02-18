@@ -343,7 +343,7 @@ import {
 
     const hasValidAverage = (data) => extractAverage(data) != null;
 
-    const createAverageButton = (promptOption, courseInfo) => {
+    const createAverageButton = (courseInfo) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "wd-average-grade-button";
@@ -416,7 +416,7 @@ import {
       const courseInfo = parseCourseInfoFromPromptText(str);
       if (!courseInfo) return;
 
-      const button = createAverageButton(headerWrapper, courseInfo);
+      const button = createAverageButton(courseInfo);
       headerWrapper.parentNode?.insertBefore(button, headerWrapper);
     };
 
