@@ -1,7 +1,7 @@
 :root,
 :host {
-  --scrollbar-thumb: rgba(64, 29, 129, 0.18);
-  --scrollbar-thumb-hover: rgba(64, 29, 129, 0.35);
+  --scrollbar-thumb: var(--hex-brand-main-5);
+  --scrollbar-track: var(--hex-brand-accent-1);
 }
 
 .widget {
@@ -12,6 +12,7 @@
 
 .widget-body,
 .widget-footer {
+  background: var(--hex-brand-accent-7);
   border-color: var(--hex-brand-main-1);
 }
 

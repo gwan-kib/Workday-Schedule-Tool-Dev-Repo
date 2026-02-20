@@ -119,33 +119,27 @@ input:focus-visible {
 /* MINIMAL SCROLLBARS (COURSE + SCHEDULE VIEWS)                               */
 /* -------------------------------------------------------------------------- */
 
-.widget-body,
-.schedule-grid {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-
 .widget-body::-webkit-scrollbar,
 .schedule-grid::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  background: transparent;
 }
 
 .widget-body::-webkit-scrollbar-track,
 .schedule-grid::-webkit-scrollbar-track {
-  background: transparent;
+  border-radius: 999px;
+  background-color: var(--scrollbar-track);
 }
 
 .widget-body::-webkit-scrollbar-thumb,
 .schedule-grid::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb);
   border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background-color: var(--scrollbar-thumb);
 }
 
-.widget-body::-webkit-scrollbar-thumb:hover,
-.schedule-grid::-webkit-scrollbar-thumb:hover {
-  background-color: var(--scrollbar-thumb-hover);
+.widget-body::-webkit-scrollbar-button,
+.schedule-grid::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
 }
-
