@@ -20,15 +20,6 @@
   border-bottom-right-radius: inherit;
 }
 
-.widget-conflicts {
-  margin-right: auto;
-  font-size: 12px;
-}
-
-.widget-conflicts.is-hover {
-  font-weight: 800;
-}
-
 .footer-tip {
   margin-left: auto;
 }

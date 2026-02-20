@@ -102,7 +102,7 @@ function buildDayEvents(courses, semester) {
   (courses || []).forEach((course) => {
     const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
     const courseSemester = getSemester(startDate);
-    if (courseSemester !== semester) return;
+    if (semester && courseSemester !== semester) return;
 
     const lines = course.meetingLines?.length ? course.meetingLines : [];
 
@@ -148,89 +148,6 @@ function buildDayEvents(courses, semester) {
   });
 
   return eventsByDay;
-}
-
-// Groups events into conflict blocks. Input: events-by-day Map. Output: Map of day to groups array.
-function addConflicts(eventsByDay) {
-  const groupedByDay = new Map();
-
-  DAYS.forEach((day) => {
-    const events = (eventsByDay.get(day) || []).slice().sort((a, b) => a.startIdx - b.startIdx || a.endIdx - b.endIdx);
-
-    const groups = [];
-    let current = null;
-    let currentKey = null;
-
-    for (let r = 0; r < SLOTS.length - 1; r++) {
-      const active = events.filter((ev) => ev.startIdx <= r && ev.endIdx > r);
-      const key = active.length
-        ? active
-            .map((ev) => ev.id)
-            .sort((a, b) => a - b)
-            .join("|")
-        : null;
-
-      if (!key) {
-        if (current) groups.push(current);
-        current = null;
-        currentKey = null;
-        continue;
-      }
-
-      if (current && key === currentKey) {
-        current.end = r + 1;
-        continue;
-      }
-
-      if (current) groups.push(current);
-
-      current = { start: r, end: r + 1, events: active, hasConflict: active.length > 1 };
-      currentKey = key;
-    }
-
-    if (current) groups.push(current);
-    groupedByDay.set(day, groups);
-  });
-
-  return groupedByDay;
-}
-
-// Computes human-friendly conflict summaries. Input: grouped-by-day Map. Output: array of code arrays.
-function getConflictSummaries(groupedByDay) {
-  const seen = new Set();
-  const conflicts = [];
-
-  groupedByDay.forEach((groups) => {
-    groups.forEach((group) => {
-      if (!group.hasConflict) return;
-
-      const codes = [...new Set(group.events.map((ev) => ev.code || ev.title).filter(Boolean))];
-      if (codes.length < 2) return;
-
-      codes.sort((a, b) => a.localeCompare(b));
-
-      const key = codes.join("|");
-      if (seen.has(key)) return;
-
-      seen.add(key);
-      conflicts.push(codes);
-    });
-  });
-
-  return conflicts;
-}
-
-// Updates the conflict footer display. Input: ui object, conflicts array. Output: none.
-function updateConflictFooter(ui, conflicts) {
-  if (!ui?.footerConflicts) return;
-
-  if (!conflicts.length) {
-    ui.footerConflicts.textContent = "";
-    return;
-  }
-
-  const conflictList = conflicts.map((codes) => `[${codes.join(", ")}]`).join(" ");
-  ui.footerConflicts.textContent = `⚠️ The following classes are in conflict: ${conflictList}`;
 }
 
 // Formats a time label for a slot. Input: minutes number. Output: string.
@@ -333,8 +250,8 @@ function renderOverlayBlocks(wrap, eventsByDay) {
       block.className = "schedule-entry-float";
       block.style.left = `${left + borderLeft}px`;
       block.style.top = `${top + borderTop}px`;
-      block.style.width = `${dayColWidth - borderX - .1}px`;
-      block.style.height = `${height - borderY - .1}px`;
+      block.style.width = `${dayColWidth - borderX - 0.1}px`;
+      block.style.height = `${height - borderY - 0.1}px`;
 
       const overlapLayer = document.createElement("div");
       overlapLayer.className = "schedule-entry-overlap-layer";
@@ -367,13 +284,10 @@ export function renderSchedule(ui, courses, semester) {
   }
 
   const eventsByDay = buildDayEvents(courses || [], semester);
-  const groupedByDay = addConflicts(eventsByDay);
-  const conflicts = getConflictSummaries(groupedByDay);
 
   host.innerHTML = "";
   const tableWrap = buildScheduleTable();
   host.appendChild(tableWrap);
 
   renderOverlayBlocks(tableWrap, eventsByDay);
-  updateConflictFooter(ui, conflicts);
 }

@@ -76,7 +76,6 @@ export async function loadMainPanel(shadowRoot) {
 
     scheduleGrid: shadowRoot.querySelector("#schedule-grid"),
     semesterButtons: shadowRoot.querySelectorAll(".semester-button"),
-    footerConflicts: shadowRoot.querySelector("#widget-conflicts"),
 
     savedDropdown: shadowRoot.querySelector("#schedule-saved-dropdown"),
     savedMenu: shadowRoot.querySelector("#schedule-saved-menu"),

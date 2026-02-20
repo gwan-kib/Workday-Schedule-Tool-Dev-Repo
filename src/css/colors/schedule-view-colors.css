@@ -85,26 +85,6 @@
   color: var(--hex-brand-main-1);
 }
 
-/* conflict stripes */
-.schedule-conflict::after {
-  background: repeating-linear-gradient(
-    135deg,
-    rgba(185, 28, 28, 0.4),
-    rgba(185, 28, 28, 0.4) 8px,
-    transparent 8px,
-    transparent 16px
-  ) !important;
-}
-
-.schedule-entry-overlap-rect {
-  background: repeating-linear-gradient(
-    135deg,
-    rgba(185, 28, 28, 0.55),
-    rgba(185, 28, 28, 0.55) 6px,
-    transparent 6px,
-    transparent 12px
-  );
-}
 
 /* modal colors (moved here from widget-functionality-colors.css) */
 .schedule-modal-backdrop {

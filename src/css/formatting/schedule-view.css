@@ -429,33 +429,6 @@
   z-index: 5;
 }
 
-.schedule-entry-overlap-rect {
-  background: transparent;
-  opacity: 0.5;
-  fill: none;
-}
-
-.schedule-conflict {
-  position: absolute;
-  left: 0;
-  right: 0;
-
-  pointer-events: none;
-  z-index: 3;
-
-  font-weight: 600;
-
-  overflow: hidden;
-}
-
-.schedule-conflict::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  pointer-events: none;
-  z-index: 1;
-}
 
 /* -------------------------------------------------------------------------- */
 /* SCHEDULE VIEW: EVENT BLOCKS (IN-CELL)                                       */
@@ -534,10 +507,6 @@
   pointer-events: none;
 }
 
-.schedule-entry-overlap-rect {
-  position: absolute;
-  opacity: 0.85;
-}
 
 .schedule-entry-text {
   position: relative;
