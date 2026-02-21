@@ -288,12 +288,12 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
     block.className = "schedule-conflict-float";
     block.style.left = `${left + borderLeft}px`;
     block.style.top = `${top + borderTop}px`;
-    block.style.width = `${dayColWidth - borderX - 0.1}px`;
-    block.style.height = `${height - borderY - 0.1}px`;
+    block.style.width = `${dayColWidth - borderX}px`;
+    block.style.height = `${height - borderY}px`;
 
     const symbol = document.createElement("div");
     symbol.className = "schedule-conflict-symbol";
-    symbol.textContent = "⚠️";
+    symbol.textContent = "❗";
     block.appendChild(symbol);
 
     if (conflict.codes?.length) block.title = `Conflict: ${conflict.codes.join(", ")}`;
@@ -326,7 +326,9 @@ export function renderSchedule(ui, courses, semester) {
   }
 
   const eventsByDay = buildDayEvents(courses || [], semester);
-  const { conflictBlocks, conflictCodes } = detectScheduleConflicts(eventsByDay);
+  const allEventsByDay = buildDayEvents(courses || [], null);
+  const { conflictBlocks } = detectScheduleConflicts(eventsByDay);
+  const { conflictCodes } = detectScheduleConflicts(allEventsByDay);
 
   host.innerHTML = "";
   const tableWrap = buildScheduleTable();
