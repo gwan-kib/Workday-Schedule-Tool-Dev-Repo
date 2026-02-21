@@ -36,6 +36,13 @@
   color: var(--hex-brand-main-1);
 }
 
+.schedule-conflict-float {
+  background: rgba(255, 102, 102, 0.35);
+  color: var(--hex-danger-1);
+  border: 1px solid var(--hex-danger-1);
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
+}
+
 /* semester buttons */
 .semester-button {
   background: var(--hex-brand-accent-6);

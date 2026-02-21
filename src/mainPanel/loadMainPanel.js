@@ -90,6 +90,8 @@ export async function loadMainPanel(shadowRoot) {
 
     helpButton: shadowRoot.querySelector(".help"),
     settingsButton: shadowRoot.querySelector(".settings"),
+
+    footerAlert: shadowRoot.querySelector("#schedule-conflict-alert"),
   };
 
   debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", ui);

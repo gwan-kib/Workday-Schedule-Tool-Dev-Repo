@@ -1,5 +1,6 @@
 import { extractStartDate } from "../extraction/parsers/meetingPatternsInfo.js";
 import { debugFor } from "../utilities/debugTool.js";
+import { detectScheduleConflicts } from "./scheduleCollisions.js";
 const debug = debugFor("scheduleView");
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -213,7 +214,7 @@ function buildScheduleTable() {
 }
 
 // Renders overlay blocks for events. Input: wrapper element, events-by-day Map. Output: none.
-function renderOverlayBlocks(wrap, eventsByDay) {
+function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
   const overlay = wrap.querySelector(".schedule-overlay");
   overlay.innerHTML = "";
 
@@ -273,6 +274,47 @@ function renderOverlayBlocks(wrap, eventsByDay) {
       overlay.appendChild(block);
     });
   });
+
+  (conflictBlocks || []).forEach((conflict) => {
+    const dayIndex = DAYS.indexOf(conflict.day);
+    if (dayIndex === -1) return;
+
+    const left = timeColWidth + dayIndex * dayColWidth;
+    const top = headerHeight + conflict.rowStart * rowHeight;
+    const height = conflict.rowSpan * rowHeight;
+    if (height <= 0) return;
+
+    const block = document.createElement("div");
+    block.className = "schedule-conflict-float";
+    block.style.left = `${left + borderLeft}px`;
+    block.style.top = `${top + borderTop}px`;
+    block.style.width = `${dayColWidth - borderX - 0.1}px`;
+    block.style.height = `${height - borderY - 0.1}px`;
+
+    const symbol = document.createElement("div");
+    symbol.className = "schedule-conflict-symbol";
+    symbol.textContent = "⚠️";
+    block.appendChild(symbol);
+
+    if (conflict.codes?.length) block.title = `Conflict: ${conflict.codes.join(", ")}`;
+
+    overlay.appendChild(block);
+  });
+}
+
+function updateFooterConflictMessage(ui, conflictCodes) {
+  const alertEl = ui?.footerAlert || ui?.root?.querySelector("#schedule-conflict-alert");
+  if (!alertEl) return;
+
+  const codes = Array.isArray(conflictCodes) ? conflictCodes.filter(Boolean) : [];
+  if (!codes.length) {
+    alertEl.textContent = "";
+    alertEl.classList.add("is-hidden");
+    return;
+  }
+
+  alertEl.textContent = `⚠️ The following classes are in conflict: [${codes.join(", ")}].`;
+  alertEl.classList.remove("is-hidden");
 }
 
 // Renders the schedule view for a semester. Input: ui object, courses array, semester key. Output: none.
@@ -284,10 +326,12 @@ export function renderSchedule(ui, courses, semester) {
   }
 
   const eventsByDay = buildDayEvents(courses || [], semester);
+  const { conflictBlocks, conflictCodes } = detectScheduleConflicts(eventsByDay);
 
   host.innerHTML = "";
   const tableWrap = buildScheduleTable();
   host.appendChild(tableWrap);
 
-  renderOverlayBlocks(tableWrap, eventsByDay);
+  renderOverlayBlocks(tableWrap, eventsByDay, conflictBlocks);
+  updateFooterConflictMessage(ui, conflictCodes);
 }

@@ -20,6 +20,15 @@
   border-bottom-right-radius: inherit;
 }
 
+.footer-alert {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.footer-alert.is-hidden {
+  display: none;
+}
+
 .footer-tip {
   margin-left: auto;
 }
