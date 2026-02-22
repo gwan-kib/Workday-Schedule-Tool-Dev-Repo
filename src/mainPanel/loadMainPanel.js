@@ -66,6 +66,7 @@ export async function loadMainPanel(shadowRoot) {
     searchInput: shadowRoot.querySelector("#widget-search"),
     refreshButton: shadowRoot.querySelector("#widget-refresh"),
     saveScheduleButton: shadowRoot.querySelector("#widget-save-schedule"),
+    clearButton: shadowRoot.querySelector("#widget-clear"),
 
     exportDropdown: shadowRoot.querySelector("#widget-export"),
     exportButton: shadowRoot.querySelector("#widget-export-button"),

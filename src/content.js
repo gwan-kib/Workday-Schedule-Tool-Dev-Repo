@@ -5,7 +5,7 @@ import { ensureMount } from "./utilities/shadowMount.js";
 import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { extractCoursesData } from "./extraction/index.js";
 
-import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/mainPanelInteractions.js";
+import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courseViewSorting.js";
 import { renderCourseRows } from "./mainPanel/renderCourseRows.js";
 import { renderSchedule } from "./mainPanel/scheduleView.js";
 
@@ -191,6 +191,14 @@ import {
       STATE.courses = await extractCoursesData();
       STATE.currentScheduleName = null;
       filterCourses(ui.searchInput.value);
+      renderAll();
+    });
+
+    on(ui.clearButton, "click", () => {
+      STATE.courses = [];
+      STATE.filtered = [];
+      STATE.currentScheduleName = null;
+      ui.searchInput.value = "";
       renderAll();
     });
 

@@ -55,12 +55,6 @@ calendar_today
       <input id="widget-search" placeholder="Course Name / Instructor / Week Day…" />
     </div>
     <span class="spacer"></span>
-    <button id="widget-refresh" class="btn" type="button">
-      <span class="material-symbols-rounded"> refresh </span>
-    </button>
-    <button id="widget-save-schedule" class="btn schedule-save-button" type="button">
-      <span class="material-symbols-rounded save-icon"> save_as </span>
-    </button>
     <details class="schedule-saved-dropdown" id="schedule-saved-dropdown">
       <summary class="schedule-saved-summary">
         <span class="text">Schedules</span>
@@ -68,6 +62,15 @@ calendar_today
       </summary>
       <div class="schedule-saved-menu" id="schedule-saved-menu"></div>
     </details>
+    <button id="widget-save-schedule" class="btn schedule-save-button" type="button">
+      <span class="material-symbols-rounded save-icon"> save_as </span>
+    </button>
+    <button id="widget-refresh" class="btn" type="button">
+      <span class="material-symbols-rounded"> refresh </span>
+    </button>
+    <button id="widget-clear" class="btn" type="button">
+      <span class="material-symbols-rounded"> delete_forever </span>
+    </button>
   </div>
   <div class="widget-body">
     <div class="widget-panel is-active" data-panel="list">
