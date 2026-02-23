@@ -21,14 +21,6 @@ function cleanLines(text) {
     .trim();
 }
 
-// Returns a badge label for a course type. Input: course object. Output: string.
-function getBadge(course) {
-  if (course.isLab) return "Lab";
-  if (course.isSeminar) return "Seminar";
-  if (course.isDiscussion) return "Discussion";
-  return "";
-}
-
 // Splits meeting text into main and sub lines. Input: meeting string. Output: { main, sub }.
 function splitMeeting(meeting) {
   const parts = cleanLines(meeting).split("\n");
@@ -75,7 +67,6 @@ export function renderCourseRows(ui, courses) {
   const frag = document.createDocumentFragment();
 
   (courses || []).forEach((course) => {
-    const badge = getBadge(course);
     const formatLabel = String(course.instructionalFormat || "").trim();
     const sectionLabel = String(course.section_number || "").trim();
 
@@ -96,6 +87,7 @@ export function renderCourseRows(ui, courses) {
               : `<span class="course-code-subject">${escHTML(codeInfo.raw)}</span>`
           }
           ${sectionLabel ? `<span class="course-code-section" title="Section Number">${escHTML(sectionLabel)}</span>` : ""}
+          ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
         </div>
         <div class="course-card__instructor">
           <div class="instructor-wrapper">
@@ -109,10 +101,6 @@ export function renderCourseRows(ui, courses) {
         </div>
       </div>
       <div class="course-card__title">${escHTML(course.title || "")}</div>
-      <div class="course-card__meta">
-        ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
-        ${badge ? `<span class="course-pill is-accent">${escHTML(badge)}</span>` : ""}
-      </div>
       <div class="course-card__details">
         ${
           meetingMain

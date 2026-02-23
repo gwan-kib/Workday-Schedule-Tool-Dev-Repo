@@ -29,10 +29,6 @@
   border-color: var(--hex-brand-accent-4);
 }
 
-.course-card::before {
-  background: var(--hex-brand-main-2);
-}
-
 .course-card__code,
 .course-card__title,
 .course-card__instructor {
@@ -40,9 +36,9 @@
 }
 
 .course-code-section {
-  color: var(--hex-neutral-1);
-  background: var(--hex-brand-main-2);
-  border: 1px solid var(--hex-brand-main-2);
+  color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-5);
+  border-color: var(--hex-brand-accent-4);
 }
 
 .course-pill {
@@ -58,13 +54,13 @@
 }
 
 .course-pill.is-muted {
-  color: var(--hex-neutral-6);
-  background: var(--hex-neutral-3);
+  color: var(--hex-neutral-4);
+  background: var(--hex-neutral-4);
   border-color: var(--hex-neutral-4);
 }
 
 .course-card__detail {
-  color: var(--hex-neutral-6);
+  color: var(--hex-brand-main-1);
 }
 
 .course-card__detail .material-symbols-rounded {

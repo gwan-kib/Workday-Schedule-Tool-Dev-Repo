@@ -32,7 +32,7 @@
 }
 
 .schedule-entry-float {
-  background: var(--hex-brand-accent-2);
+  background: var(--hex-brand-accent-1);
   color: var(--hex-brand-main-1);
 }
 
@@ -50,13 +50,13 @@
 }
 
 .semester-button.is-active {
-  background: var(--hex-brand-accent-10);
+  background: var(--hex-brand-accent-9);
   color: var(--hex-brand-main-1);
 }
 
 /* saved schedules */
 .schedule-saved-summary {
-  background: var(--hex-brand-main-5);
+  background: var(--hex-brand-main-6);
   color: var(--hex-brand-accent-6);
   opacity: 0.5;
 
@@ -79,12 +79,12 @@
 }
 
 .schedule-saved-action {
-  background: var(--hex-brand-main-4);
+  background: var(--hex-brand-main-2);
   color: var(--hex-brand-accent-6);
 }
 
 .schedule-saved-action.delete {
-  background: var(--hex-danger-2);
+  background: var(--hex-danger-1);
 }
 
 .schedule-saved-empty {
@@ -118,7 +118,7 @@
 .schedule-modal-input {
   background: var(--hex-brand-accent-4);
   color: var(--hex-brand-main-1);
-  border-color: var(--hex-brand-accent-10);
+  border-color: var(--hex-brand-accent-9);
 }
 
 .schedule-modal-input::placeholder {

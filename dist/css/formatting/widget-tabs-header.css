@@ -159,8 +159,7 @@
   transition: all 0.3s ease;
 }
 
-.tab-button .text {
-  display: inline-block;
+.tab-button .text {  
   transition: all 0.3s ease;
 }
 

@@ -1,6 +1,6 @@
 :root,
 :host {
-  --scrollbar-thumb: var(--hex-brand-main-5);
+  --scrollbar-thumb: var(--hex-brand-main-6);
   --scrollbar-track: var(--hex-brand-accent-1);
 }
 
@@ -17,11 +17,11 @@
 }
 
 .pill {
-  border-color: var(--hex-brand-accent-12);
+  border-color: var(--hex-brand-accent-9);
 }
 
 .muted {
-  color: var(--hex-brand-main-7);
+  color: var(--hex-brand-main-6);
 }
 
 .widget :focus-visible {
