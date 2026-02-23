@@ -17,7 +17,7 @@
 }
 
 /* Header buttons sizing/align */
-.widget-header .btn {
+.widget-header .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -31,15 +31,13 @@
 }
 
 /* Settings icon button style */
-.settings.btn {
+.settings.button {
   background: none;
   padding: 0;
 }
 
 .settings {
   display: inline-flex;
-  height: 32px;
-  width: 32px;
   justify-content: center;
   align-items: center;
 }
@@ -141,14 +139,6 @@
   }
 }
 
-/* Save schedule button */
-.schedule-save-button {
-  height: 33px;
-  padding: 6px 12px;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
 #widget-save-schedule {
   display: flex;
   align-items: center;
@@ -217,7 +207,7 @@
 }
 
 /* Help button */
-.help.btn {
+.help.button {
   height: 34px;
   padding: 6px 12px;
 

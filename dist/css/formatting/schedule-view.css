@@ -112,15 +112,6 @@
   text-align: center;
 }
 
-#widget-save-schedule {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  height: 34px;
-  width: 34px;
-}
-
 .schedule-saved-card-header {
   display: flex;
   align-items: center;

@@ -20,7 +20,7 @@
 }
 
 /* generic header buttons */
-.btn {
+.button {
   padding: 6px 8px;
 
   border-radius: 999px;
@@ -35,7 +35,7 @@
   transition: all 0.3s ease;
 }
 
-.widget-header .btn {
+.widget-header .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -44,27 +44,14 @@
   line-height: 1;
 }
 
-#widget-refresh {
+.button.symbolOnly {
+  height: 36px;
+  width: 36px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-
-  height: 34px;
-  width: 34px;
 }
-
-/* settings icon button */
-.btn.settings {
-  background: none;
-  padding: 0;
-
-  display: inline-flex;
-  height: 32px;
-  width: 32px;
-  justify-content: center;
-  align-items: center;
-}
-
 /* -------------------------------------------------------------------------- */
 /* EXPORT DROPDOWN                                                            */
 /* -------------------------------------------------------------------------- */
@@ -126,7 +113,7 @@
 }
 
 /* help button */
-.help.btn {
+.help.button {
   height: 34px;
   padding: 6px 12px;
 

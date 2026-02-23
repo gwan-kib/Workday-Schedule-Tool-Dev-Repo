@@ -15,8 +15,8 @@ export const normalizeText = (s) =>
 export function getHeaderText(headerEl) {
   if (!headerEl) return "";
 
-  const btn = headerEl.querySelector("button[title]");
-  if (btn) return (btn.getAttribute("title") || "").trim();
+  const button = headerEl.querySelector("button[title]");
+  if (button) return (button.getAttribute("title") || "").trim();
 
   return (headerEl.textContent || "").trim();
 }
@@ -45,7 +45,7 @@ export function buildHeaderMaps(gridRoot) {
   debug.log(
     { id: "buildHeaderMaps.parsedHeaders" },
     "Parsed headers:",
-    headers.map((h) => ({ pos: h.pos, key: h.key, text: h.text, norm: h.norm }))
+    headers.map((h) => ({ pos: h.pos, key: h.key, text: h.text, norm: h.norm })),
   );
 
   function findHeader(needles) {
@@ -97,7 +97,7 @@ export function findWorkdayGrid() {
   div[data-automation-id="gridContainer"],
   div[data-automation-id="responsiveDataTable"],
   div[data-automation-id="tableContainer"]
-`
+`,
   );
 
   debug.log({ id: "findWorkdayGrid.roots" }, "Candidate roots found:", roots);
@@ -111,7 +111,7 @@ export function findWorkdayGrid() {
   div[data-automation-id*="columnHeader"],
   .wd-GridHeaderCell,
   .grid-column-header
-`
+`,
     );
 
     const headerText = headerEls.map((h) => normalizeText(getHeaderText(h)));

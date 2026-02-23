@@ -26,19 +26,19 @@
 }
 
 /* buttons */
-.btn {
+.button {
   border: none;
 
   color: var(--hex-brand-accent-6);
   background: var(--hex-brand-main-1);
 }
 
-.btn:hover {
+.button:hover {
   opacity: 0.75;
   background: var(--hex-brand-main-6);
 }
 
-.btn:active {
+.button:active {
   opacity: 1;
 }
 

@@ -48,7 +48,7 @@ import {
       STATE.view.panel = viewKey;
 
       ui.views.forEach((el) => el.classList.toggle("is-active", el.dataset.panel === viewKey));
-      ui.viewTabs.forEach((btn) => btn.classList.toggle("is-active", btn.dataset.panel === viewKey));
+      ui.viewTabs.forEach((button) => button.classList.toggle("is-active", button.dataset.panel === viewKey));
 
       ui.mainPanel.classList.toggle("is-schedule-view", viewKey === "schedule");
       ui.mainPanel.classList.toggle("is-settings-view", viewKey === "settings");
@@ -138,16 +138,16 @@ import {
       });
     }
 
-    ui.viewTabs.forEach((btn) => {
-      on(btn, "click", () => {
-        setActiveView(btn.dataset.panel);
-        if (btn.dataset.panel === "schedule") updateScheduleView();
+    ui.viewTabs.forEach((button) => {
+      on(button, "click", () => {
+        setActiveView(button.dataset.panel);
+        if (button.dataset.panel === "schedule") updateScheduleView();
       });
     });
 
-    ui.semesterButtons.forEach((btn) => {
-      on(btn, "click", () => {
-        STATE.view.semester = btn.dataset.semester;
+    ui.semesterButtons.forEach((button) => {
+      on(button, "click", () => {
+        STATE.view.semester = button.dataset.semester;
 
         ui.semesterButtons.forEach((b) => b.classList.toggle("is-active", b.dataset.semester === STATE.view.semester));
         updateScheduleView();
