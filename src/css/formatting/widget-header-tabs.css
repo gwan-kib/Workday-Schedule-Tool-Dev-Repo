@@ -46,7 +46,7 @@
 /* TABS ROW (Course List / Schedule View / Search / Actions)                   */
 /* -------------------------------------------------------------------------- */
 
-.widget-tabs {
+.widet-toolbar {
   display: flex;
   gap: 10px;
   height: 35px;

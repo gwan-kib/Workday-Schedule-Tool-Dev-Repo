@@ -1,5 +1,5 @@
 .widget-header,
-.widget-tabs {
+.widet-toolbar {
   color: var(--hex-brand-accent-1);
   background: var(--hex-brand-main-1);
 }
