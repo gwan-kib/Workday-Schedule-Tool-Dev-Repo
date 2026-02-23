@@ -36,9 +36,9 @@ export function sortCourses(key) {
   STATE.filtered.sort((a, b) => dir * collator.compare(a?.[key] || "", b?.[key] || ""));
 }
 
-// Wires sorting handlers to table headers. Input: ui object. Output: none.
+// Wires sorting handlers to sort buttons. Input: ui object. Output: none.
 export function wireTableSorting(ui) {
-  const headCells = $$(ui.tableHead, "th[data-key]");
+  const headCells = $$(ui.tableHead, "[data-key]");
 
   headCells.forEach((th) => {
     on(th, "click", () => {
@@ -49,7 +49,7 @@ export function wireTableSorting(ui) {
       headCells.forEach((h) => h.classList.remove("sorted-asc", "sorted-desc"));
       th.classList.add(STATE.sort.dir === 1 ? "sorted-asc" : "sorted-desc");
 
-      debug.log({ id: "wireTableSorting.click" }, "Sorted via header", { key, dir: STATE.sort.dir });
+      debug.log({ id: "wireTableSorting.click" }, "Sorted via list controls", { key, dir: STATE.sort.dir });
     });
   });
 }

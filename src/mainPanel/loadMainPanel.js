@@ -60,8 +60,8 @@ export async function loadMainPanel(shadowRoot) {
     root: shadowRoot,
     floatingButton: shadowRoot.querySelector("#floating-button"),
 
-    tableBody: shadowRoot.querySelector("tbody"),
-    tableHead: shadowRoot.querySelector("thead"),
+    tableBody: shadowRoot.querySelector("#course-list"),
+    tableHead: shadowRoot.querySelector("#course-sortbar"),
 
     searchInput: shadowRoot.querySelector("#widget-search"),
     refreshButton: shadowRoot.querySelector("#widget-refresh"),

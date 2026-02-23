@@ -51,7 +51,7 @@
     </button>
   </div>
   <!-- ========================= -->
-  <!-- Tabs and top controls -->
+  <!-- Toolbar -->
   <!-- ========================= -->
   <div class="widet-toolbar">
     <button class="tab-button symbolOnly is-active" type="button" data-panel="list" title="List view">
@@ -94,20 +94,19 @@ calendar_today
     <!-- List panel -->
     <!-- ========================= -->
     <div class="widget-panel is-active" data-panel="list">
-      <table>
-        <thead>
-          <tr>
-            <th data-key="title">Title</th>
-            <th data-key="code">Class Code</th>
-            <th data-key="section">Section</th>
-            <th data-key="instructor">Instructor</th>
-            <th data-key="meeting">Meeting Times</th>
-            <th data-key="instructionalFormat">Class Type</th>
-          </tr>
-        </thead>
+      <div class="course-list-toolbar">
+        <span class="course-list-label">Courses</span>
+        <div class="course-sortbar" id="course-sortbar">
+          <button class="course-sort-button" type="button" data-key="code">Code</button>
+          <button class="course-sort-button" type="button" data-key="title">Title</button>
+          <button class="course-sort-button" type="button" data-key="section_number">Section</button>
+          <button class="course-sort-button" type="button" data-key="instructor">Instructor</button>
+          <button class="course-sort-button" type="button" data-key="meeting">Meeting</button>
+          <button class="course-sort-button" type="button" data-key="instructionalFormat">Type</button>
+        </div>
+      </div>
 
-        <tbody id="widget-tbody"></tbody>
-      </table>
+      <div class="course-list" id="course-list"></div>
     </div>
     <!-- ========================= -->
     <!-- Schedule panel -->
@@ -213,6 +212,6 @@ calendar_today
   <div class="widget-footer">
     <span class="footer-alert is-hidden" id="schedule-conflict-alert" aria-live="polite"></span>
     <span class="spacer"></span>
-    <span class="footer-tip"><span class="muted">Tip: Click headers to sort</span></span>
+    <span class="footer-tip"><span class="muted">Tip: Click sort buttons to reorder</span></span>
   </div>
 </div>

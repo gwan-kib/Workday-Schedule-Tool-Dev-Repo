@@ -53,6 +53,7 @@ h3,
 
 /* icons */
 .material-symbols-rounded {
+  user-select: none;
   font-variation-settings:
     "FILL" 0,
     "wght" 400,

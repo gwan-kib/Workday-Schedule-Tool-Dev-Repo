@@ -23,9 +23,9 @@ function cleanLines(text) {
 
 // Returns a badge label for a course type. Input: course object. Output: string.
 function getBadge(course) {
-  if (course.isLab) return "[LAB]";
-  if (course.isSeminar) return "[SEM]";
-  if (course.isDiscussion) return "[DISC]";
+  if (course.isLab) return "Lab";
+  if (course.isSeminar) return "Seminar";
+  if (course.isDiscussion) return "Discussion";
   return "";
 }
 
@@ -42,13 +42,13 @@ function splitMeeting(meeting) {
   return { main, sub };
 }
 
-// Formats a course code for display. Input: code string. Output: string.
-function formatCourseCode(code) {
+// Splits a course code into subject/number. Input: code string. Output: object.
+function splitCourseCode(code) {
   const match = String(code || "").match(/^([A-Z_]+)\s*(\d+)$/);
   if (match) {
-    return `${match[1]}<br>${match[2]}`;
+    return { subject: match[1], number: match[2], raw: `${match[1]} ${match[2]}` };
   }
-  return code || "";
+  return { subject: "", number: "", raw: code || "" };
 }
 
 // Formats an instructor name for display. Input: name string. Output: string.
@@ -59,9 +59,14 @@ function formatInstructorName(name) {
   if (nameParts.length > 1) {
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(" ");
-    return `${firstName}<br>${lastName}`;
+    return `${firstName} ${lastName}`;
   }
   return name || "";
+}
+
+// Formats multiline content for HTML. Input: string. Output: HTML string.
+function formatMultiline(text) {
+  return escHTML(text || "").replace(/\n/g, "<br>");
 }
 
 // Renders course rows into the table body. Input: ui object, courses array. Output: none.
@@ -70,36 +75,65 @@ export function renderCourseRows(ui, courses) {
   const frag = document.createDocumentFragment();
 
   (courses || []).forEach((course) => {
-    const tr = document.createElement("tr");
     const badge = getBadge(course);
+    const formatLabel = String(course.instructionalFormat || "").trim();
+    const sectionLabel = String(course.section_number || "").trim();
 
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
+    const codeInfo = splitCourseCode(course.code || "");
+    const instructorName = (course.instructor || "").trim() || "TBA";
 
-    tr.innerHTML = `
-      <td class="title">
-        <div class="title-main">${escHTML(course.title || "")}</div>
-        ${badge ? `<div class="muted">${escHTML(badge)}</div>` : ""}
-      </td>
-      <td class="code">${formatCourseCode(course.code || "")}</td>
-      <td class="sect">${escHTML((course.section_number || "").trim())}</td>
-      <td class="instructor">
-        <div class="instructor-wrapper">
-          ${formatInstructorName(course.instructor || "")}
-          <div class="instructor-popup">
-            <div class="instructor-popup-content">
-              ${escHTML(course.instructor || "")}
+    const card = document.createElement("div");
+    card.className = "course-card";
+
+    card.innerHTML = `
+      <div class="course-card__top">
+        <div class="course-card__code">
+          ${
+            codeInfo.subject
+              ? `<span class="course-code-subject">${escHTML(codeInfo.subject)}</span>
+                 <span class="course-code-number">${escHTML(codeInfo.number)}</span>`
+              : `<span class="course-code-subject">${escHTML(codeInfo.raw)}</span>`
+          }
+          ${sectionLabel ? `<span class="course-code-section" title="Section Number">${escHTML(sectionLabel)}</span>` : ""}
+        </div>
+        <div class="course-card__instructor">
+          <div class="instructor-wrapper">
+            ${formatInstructorName(instructorName)}
+            <div class="instructor-popup">
+              <div class="instructor-popup-content">
+                ${escHTML(instructorName)}
+              </div>
             </div>
           </div>
         </div>
-      </td>
-      <td class="meeting">
-        ${meetingMain ? `<span class="meeting-pill">${escHTML(meetingMain)}</span>` : ""}
-        ${meetingSub ? `<div class="meeting-sub">${escHTML(meetingSub)}</div>` : ""}
-      </td>
-      <td class="instructionalFormat">${escHTML(course.instructionalFormat || "")}</td>
+      </div>
+      <div class="course-card__title">${escHTML(course.title || "")}</div>
+      <div class="course-card__meta">
+        ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
+        ${badge ? `<span class="course-pill is-accent">${escHTML(badge)}</span>` : ""}
+      </div>
+      <div class="course-card__details">
+        ${
+          meetingMain
+            ? `<div class="course-card__detail">
+                <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+                <span>${formatMultiline(meetingMain)}</span>
+              </div>`
+            : ""
+        }
+        ${
+          meetingSub
+            ? `<div class="course-card__detail">
+                <span class="material-symbols-rounded" aria-hidden="true">location_on</span>
+                <span>${formatMultiline(meetingSub)}</span>
+              </div>`
+            : ""
+        }
+      </div>
     `;
 
-    frag.appendChild(tr);
+    frag.appendChild(card);
   });
 
   ui.tableBody.appendChild(frag);

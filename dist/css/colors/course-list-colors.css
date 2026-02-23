@@ -1,11 +1,74 @@
-.meeting-pill {
-  color: var(--hex-brand-main-1);
-  background: var(--hex-brand-accent-1);
+.course-list-toolbar {
+  background: var(--hex-brand-accent-6);
+  border: 1px solid var(--hex-brand-accent-4);
 }
 
-[data-panel="list"] th {
-  color: var(--hex-brand-accent-1);
+.course-list-label {
+  color: var(--hex-brand-main-1);
+}
+
+.course-sort-button {
+  color: var(--hex-brand-main-1);
+  border-color: var(--hex-brand-main-2);
+  background: var(--hex-neutral-1);
+}
+
+.course-sort-button:hover {
+  background: var(--hex-brand-accent-5);
+}
+
+.course-sort-button.sorted-asc,
+.course-sort-button.sorted-desc {
+  color: var(--hex-neutral-1);
   background: var(--hex-brand-main-1);
+  border-color: var(--hex-brand-main-1);
+}
+
+.course-card {
+  background: var(--hex-neutral-1);
+  border-color: var(--hex-brand-accent-4);
+}
+
+.course-card::before {
+  background: var(--hex-brand-main-2);
+}
+
+.course-card__code,
+.course-card__title,
+.course-card__instructor {
+  color: var(--hex-brand-main-1);
+}
+
+.course-code-section {
+  color: var(--hex-neutral-1);
+  background: var(--hex-brand-main-2);
+  border: 1px solid var(--hex-brand-main-2);
+}
+
+.course-pill {
+  color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-5);
+  border-color: var(--hex-brand-accent-4);
+}
+
+.course-pill.is-accent {
+  color: var(--hex-neutral-1);
+  background: var(--hex-brand-main-2);
+  border-color: var(--hex-brand-main-2);
+}
+
+.course-pill.is-muted {
+  color: var(--hex-neutral-6);
+  background: var(--hex-neutral-3);
+  border-color: var(--hex-neutral-4);
+}
+
+.course-card__detail {
+  color: var(--hex-neutral-6);
+}
+
+.course-card__detail .material-symbols-rounded {
+  color: var(--hex-brand-main-2);
 }
 
 .instructor-popup-content {
