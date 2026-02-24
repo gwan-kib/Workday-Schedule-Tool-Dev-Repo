@@ -44,16 +44,28 @@
 
   background: transparent;
   cursor: pointer;
+
+  transition: all 0.2s ease;
 }
 
 .course-sort-button.sorted-asc::after {
-  content: " ^";
-  font-weight: 700;
+  content: "north";
+  margin-left: 4px;
+  font-family: "Material Symbols Rounded";
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .course-sort-button.sorted-desc::after {
-  content: " v";
-  font-weight: 700;
+  content: "south";
+  margin-left: 4px;
+  font-family: "Material Symbols Rounded";
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .course-list {

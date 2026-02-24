@@ -291,7 +291,7 @@
 .widget-panel[data-panel="schedule"] {
   height: 100%;
   flex-direction: column;
-  min-height: 0;
+  height: 520px;
 }
 
 .widget-panel[data-panel="schedule"].is-active {
@@ -299,8 +299,7 @@
 }
 
 .schedule-grid {
-  flex: 1;
-  min-height: 0;
+  height: 550px;
 
   padding: 0 12px 12px;
 

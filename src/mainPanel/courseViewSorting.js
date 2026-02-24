@@ -43,6 +43,20 @@ export function wireTableSorting(ui) {
   headCells.forEach((th) => {
     on(th, "click", () => {
       const key = th.getAttribute("data-key");
+      const isSameKey = STATE.sort.key === key;
+      const isDesc = isSameKey && STATE.sort.dir === -1;
+
+      if (isDesc) {
+        // Third click: clear sorting and restore filtered order.
+        STATE.sort = { key: null, dir: 1 };
+        filterCourses(ui.searchInput?.value || "");
+        renderCourseRows(ui, STATE.filtered);
+
+        headCells.forEach((h) => h.classList.remove("sorted-asc", "sorted-desc"));
+        debug.log({ id: "wireTableSorting.click" }, "Cleared sort via list controls", { key });
+        return;
+      }
+
       sortCourses(key);
       renderCourseRows(ui, STATE.filtered);
 

@@ -261,7 +261,7 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
       const text = document.createElement("div");
       text.className = "schedule-entry-text";
       const codeMatch = String(ev.code || "").match(/^([A-Z_]+)\s*(\d+)$/);
-      const formattedCode = codeMatch ? `${codeMatch[1]}<br>${codeMatch[2]}` : ev.code || "";
+      const formattedCode = codeMatch ? `${codeMatch[1]} ${codeMatch[2]}` : ev.code || "";
       const title = formattedCode || ev.title;
       const titleLabel = ev.label ? `${title} ${ev.label}` : title;
 
