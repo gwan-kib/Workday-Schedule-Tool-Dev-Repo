@@ -3,7 +3,6 @@
 /* -------------------------------------------------------------------------- */
 
 @import "./formatting/widget-base.css";
-@import "./formatting/widget-tabs-header.css";
 @import "./formatting/course-list-view.css";
 @import "./formatting/schedule-view.css";
 @import "./formatting/schedule-view-events.css";

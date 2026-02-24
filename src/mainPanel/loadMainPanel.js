@@ -8,7 +8,6 @@ export async function loadMainPanel(shadowRoot) {
 
   const cssFiles = [
     "formatting/widget-base.css",
-    "formatting/widget-tabs-header.css",
     "formatting/widget-header-tabs.css",
     "formatting/course-list-view.css",
     "formatting/schedule-view.css",

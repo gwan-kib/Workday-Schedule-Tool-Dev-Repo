@@ -2,7 +2,7 @@
 /* COURSE LIST VIEW: CARD STACK                                               */
 /* -------------------------------------------------------------------------- */
 
-[data-panel="list"] {
+.widget-panel {
   padding: 16px 16px 20px;
 }
 

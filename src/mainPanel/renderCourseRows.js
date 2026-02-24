@@ -105,7 +105,7 @@ export function renderCourseRows(ui, courses) {
         ${
           meetingMain
             ? `<div class="course-card__detail">
-                <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+                <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
                 <span>${formatMultiline(meetingMain)}</span>
               </div>`
             : ""
