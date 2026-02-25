@@ -66,7 +66,7 @@ export function renderCourseRows(ui, courses) {
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
 
-  (courses || []).forEach((course) => {
+  (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
     const sectionLabel = String(course.section_number || "").trim();
 
@@ -75,7 +75,8 @@ export function renderCourseRows(ui, courses) {
     const instructorName = (course.instructor || "").trim() || "TBA";
 
     const card = document.createElement("div");
-    card.className = "course-card";
+    const colorIndex = (index % 14) + 1;
+    card.className = `course-card course-card--color-${colorIndex}`;
 
     card.innerHTML = `
       <div class="course-card__top">

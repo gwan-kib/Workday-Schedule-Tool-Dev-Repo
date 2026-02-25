@@ -130,7 +130,7 @@
   cursor: pointer;
   text-align: left;
 
-  background: var(--hex-brand-accent-4);
+  background: var(--hex-brand-accent-2);
 }
 
 /* Help button */
@@ -161,8 +161,8 @@
   padding: 10px 12px;
 
   border: none;
-  border-bottom: 2px solid var(--hex-brand-accent-6);
-  border-top: 1px solid var(--hex-brand-accent-6);
+  border-bottom: 2px solid var(--hex-brand-accent-4);
+  border-top: 1px solid var(--hex-brand-accent-4);
 }
 
 /* Tab buttons */

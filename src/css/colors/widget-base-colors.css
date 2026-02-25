@@ -1,27 +1,27 @@
 :root,
 :host {
-  --scrollbar-thumb: var(--hex-brand-main-6);
+  --scrollbar-thumb: var(--hex-brand-main-3);
   --scrollbar-track: var(--hex-brand-accent-1);
 }
 
 .widget {
   color: var(--hex-brand-main-1);
-  background: var(--hex-brand-accent-7);
+  background: var(--hex-brand-accent-5);
   border-color: var(--hex-brand-main-1) !important;
 }
 
 .widget-body,
 .widget-footer {
-  background: var(--hex-brand-accent-7);
+  background: var(--hex-brand-accent-5);
   border-color: var(--hex-brand-main-1);
 }
 
 .pill {
-  border-color: var(--hex-brand-accent-9);
+  border-color: var(--hex-brand-accent-6);
 }
 
 .muted {
-  color: var(--hex-brand-main-6);
+  color: var(--hex-brand-main-3);
 }
 
 .widget :focus-visible {

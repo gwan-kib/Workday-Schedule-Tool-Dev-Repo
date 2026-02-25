@@ -6,14 +6,15 @@
 :host {
   --hex-brand-main-1: #401d81;
   --hex-brand-main-2: #6b4fd6;
-  --hex-brand-main-6: #916ccc;
+  --hex-brand-main-3: #916ccc;
   --hex-brand-accent-1: #e4d6ff;
-  --hex-brand-accent-4: #ede2ff;
-  --hex-brand-accent-5: #f7f2ff;
-  --hex-brand-accent-6: #fbf8ff;
-  --hex-brand-accent-7: #fbf9ff;
-  --hex-brand-accent-9: #cdadff;
+  --hex-brand-accent-2: #ede2ff;
+  --hex-brand-accent-3: #f7f2ff;
+  --hex-brand-accent-4: #fbf8ff;
+  --hex-brand-accent-5: #fbf9ff;
+  --hex-brand-accent-6: #cdadff;
   --hex-neutral-1: #ffffff;
-  --hex-neutral-4: #e5e7eb;
+  --hex-neutral-2: #e5e7eb;
+  --hex-neutral-3: #000000;
   --hex-danger-1: #b91c1c;
 }
