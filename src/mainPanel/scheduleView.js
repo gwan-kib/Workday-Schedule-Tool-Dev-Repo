@@ -100,7 +100,8 @@ function buildDayEvents(courses, semester) {
   const seen = new Set();
   let eventId = 0;
 
-  (courses || []).forEach((course) => {
+  (courses || []).forEach((course, courseIndex) => {
+    const colorIndex = course?.colorIndex || ((courseIndex % 14) + 1);
     const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
     const courseSemester = getSemester(startDate);
     if (semester && courseSemester !== semester) return;
@@ -131,6 +132,7 @@ function buildDayEvents(courses, semester) {
 
         eventsByDay.get(day).push({
           id: eventId++,
+          colorIndex,
           code: course.code || "",
           title: course.title || "",
           label,
@@ -248,7 +250,8 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
       const height = ev.rowSpan * rowHeight;
 
       const block = document.createElement("div");
-      block.className = "schedule-entry-float";
+      const colorClass = ev.colorIndex ? ` schedule-entry--color-${ev.colorIndex}` : "";
+      block.className = `schedule-entry-float${colorClass}`;
       block.style.left = `${left + borderLeft}px`;
       block.style.top = `${top + borderTop}px`;
       block.style.width = `${dayColWidth - borderX - 0.1}px`;

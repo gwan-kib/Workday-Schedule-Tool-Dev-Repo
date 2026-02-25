@@ -26,6 +26,21 @@ import {
   renderSavedSchedules,
 } from "./mainPanel/scheduleStorage.js";
 
+const MAX_COURSE_COLORS = 14;
+
+// Assigns stable color indices to courses if missing. Input: courses array. Output: none.
+const assignCourseColors = (courses) => {
+  if (!Array.isArray(courses)) return;
+  let colorCursor = 0;
+  courses.forEach((course) => {
+    if (course && Number.isInteger(course.colorIndex) && course.colorIndex >= 1 && course.colorIndex <= MAX_COURSE_COLORS)
+      return;
+    colorCursor += 1;
+    const colorIndex = ((colorCursor - 1) % MAX_COURSE_COLORS) + 1;
+    if (course) course.colorIndex = colorIndex;
+  });
+};
+
 // Bootstraps the content script UI and event wiring. Input: none. Output: none.
 (() => {
   console.log("[WD] content script loaded");
@@ -189,6 +204,7 @@ import {
       ui.refreshButton.classList.add("rotate");
 
       STATE.courses = await extractCoursesData();
+      assignCourseColors(STATE.courses);
       STATE.currentScheduleName = null;
       filterCourses(ui.searchInput.value);
       renderAll();
@@ -274,6 +290,7 @@ import {
 
       STATE.currentScheduleName = selected.name;
       STATE.courses = [...selected.courses];
+      assignCourseColors(STATE.courses);
       STATE.filtered = [...selected.courses];
       ui.searchInput.value = "";
 
@@ -309,6 +326,7 @@ import {
     renderSavedSchedules(ui, STATE.savedSchedules);
 
     STATE.courses = await extractCoursesData();
+    assignCourseColors(STATE.courses);
     STATE.filtered = [...STATE.courses];
 
     STATE.sort = STATE.sort || { key: "code", dir: 1 };

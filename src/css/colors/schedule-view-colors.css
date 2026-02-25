@@ -32,8 +32,9 @@
 }
 
 .schedule-entry-float {
-  background: var(--hex-brand-accent-1);
-  color: var(--hex-brand-main-1);
+  background: var(--schedule-entry-bg, var(--hex-brand-accent-1));
+  color: var(--hex-neutral-3);
+  border: 1px solid var(--schedule-entry-border, var(--hex-brand-main-1));
 }
 
 .schedule-conflict-float {
@@ -41,6 +42,77 @@
   color: var(--hex-danger-1);
   border-color: var(--hex-danger-1);
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
+}
+
+/* Schedule entry color cycle (14) */
+.schedule-entry--color-1 {
+  --schedule-entry-bg: #fce8e8;
+  --schedule-entry-border: #f5bcbc;
+}
+
+.schedule-entry--color-2 {
+  --schedule-entry-bg: #fff0e6;
+  --schedule-entry-border: #ffd3b8;
+}
+
+.schedule-entry--color-3 {
+  --schedule-entry-bg: #fff6dc;
+  --schedule-entry-border: #ffe3a6;
+}
+
+.schedule-entry--color-4 {
+  --schedule-entry-bg: #f6f3d9;
+  --schedule-entry-border: #e2d99b;
+}
+
+.schedule-entry--color-5 {
+  --schedule-entry-bg: #e9f6e3;
+  --schedule-entry-border: #bfe1b1;
+}
+
+.schedule-entry--color-6 {
+  --schedule-entry-bg: #e3f7f2;
+  --schedule-entry-border: #b4e5d7;
+}
+
+.schedule-entry--color-7 {
+  --schedule-entry-bg: #e6f5ff;
+  --schedule-entry-border: #b7ddf5;
+}
+
+.schedule-entry--color-8 {
+  --schedule-entry-bg: #e9f0ff;
+  --schedule-entry-border: #c4d4ff;
+}
+
+.schedule-entry--color-9 {
+  --schedule-entry-bg: #f1e9ff;
+  --schedule-entry-border: #d8c3ff;
+}
+
+.schedule-entry--color-10 {
+  --schedule-entry-bg: #fae8ff;
+  --schedule-entry-border: #e6bff7;
+}
+
+.schedule-entry--color-11 {
+  --schedule-entry-bg: #ffe8f1;
+  --schedule-entry-border: #f7bfd7;
+}
+
+.schedule-entry--color-12 {
+  --schedule-entry-bg: #fff1f2;
+  --schedule-entry-border: #ffd0d4;
+}
+
+.schedule-entry--color-13 {
+  --schedule-entry-bg: #f2f2f2;
+  --schedule-entry-border: #d6d6d6;
+}
+
+.schedule-entry--color-14 {
+  --schedule-entry-bg: #f2f7f7;
+  --schedule-entry-border: #c8dddd;
 }
 
 /* semester buttons */
