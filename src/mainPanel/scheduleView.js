@@ -101,7 +101,7 @@ function buildDayEvents(courses, semester) {
   let eventId = 0;
 
   (courses || []).forEach((course, courseIndex) => {
-    const colorIndex = course?.colorIndex || ((courseIndex % 14) + 1);
+    const colorIndex = course?.colorIndex || ((courseIndex % 7) + 1);
     const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
     const courseSemester = getSemester(startDate);
     if (semester && courseSemester !== semester) return;
@@ -109,6 +109,7 @@ function buildDayEvents(courses, semester) {
     const lines = course.meetingLines?.length ? course.meetingLines : [];
 
     const label = course.isLab ? "[LAB]" : course.isSeminar ? "[SEM]" : course.isDiscussion ? "[DISC]" : "";
+    const eventType = course.isLab ? "lab" : course.isSeminar ? "seminar" : course.isDiscussion ? "discussion" : "";
 
     lines.forEach((line) => {
       const parsed = parseMeetingLine(line);
@@ -133,6 +134,7 @@ function buildDayEvents(courses, semester) {
         eventsByDay.get(day).push({
           id: eventId++,
           colorIndex,
+          eventType,
           code: course.code || "",
           title: course.title || "",
           label,
@@ -251,7 +253,11 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
 
       const block = document.createElement("div");
       const colorClass = ev.colorIndex ? ` schedule-entry--color-${ev.colorIndex}` : "";
-      block.className = `schedule-entry-float${colorClass}`;
+      const subClass =
+        ev.eventType === "lab" || ev.eventType === "seminar" || ev.eventType === "discussion"
+          ? " schedule-entry--sub"
+          : "";
+      block.className = `schedule-entry-float${colorClass}${subClass}`;
       block.style.left = `${left + borderLeft}px`;
       block.style.top = `${top + borderTop}px`;
       block.style.width = `${dayColWidth - borderX - 0.1}px`;

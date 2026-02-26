@@ -39,13 +39,13 @@
 .course-code-section {
   color: var(--hex-neutral-3);
   background: var(--course-card-chip-bg, var(--hex-brand-accent-3));
-  border-color: var(--course-card-chip-border, var(--hex-brand-accent-2));
+  border-color: var(--course-card-border, var(--hex-brand-accent-2));
 }
 
 .course-pill {
   color: var(--hex-neutral-3);
   background: var(--course-card-chip-bg, var(--hex-brand-accent-3));
-  border-color: var(--course-card-chip-border, var(--hex-brand-accent-2));
+  border-color: var(--course-card-border, var(--hex-brand-accent-2));
 }
 
 .course-pill.is-accent {
@@ -68,103 +68,74 @@
   color: var(--hex-neutral-3);
 }
 
-/* Course card color cycle (14) */
+/* Course card color cycle (7) with 1 sub palette (card, chip) */
 .course-card--color-1 {
-  --course-card-bg: #fce8e8;
-  --course-card-border: #f5bcbc;
-  --course-card-chip-bg: #f9d1d1;
-  --course-card-chip-border: #f1a7a7;
+  --course-card-bg: var(--course-color-1-bg);
+  --course-card-border: var(--course-color-1-border);
+  --course-card-chip-bg: var(--course-color-1-chip);
+
+  --course-card-sub-bg: var(--course-color-1-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-1-sub-chip);
 }
 
 .course-card--color-2 {
-  --course-card-bg: #fff0e6;
-  --course-card-border: #ffd3b8;
-  --course-card-chip-bg: #ffe0cc;
-  --course-card-chip-border: #ffc2a1;
+  --course-card-bg: var(--course-color-2-bg);
+  --course-card-border: var(--course-color-2-border);
+  --course-card-chip-bg: var(--course-color-2-chip);
+
+  --course-card-sub-bg: var(--course-color-2-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-2-sub-chip);
 }
 
 .course-card--color-3 {
-  --course-card-bg: #fff6dc;
-  --course-card-border: #ffe3a6;
-  --course-card-chip-bg: #ffedc5;
-  --course-card-chip-border: #ffd890;
+  --course-card-bg: var(--course-color-3-bg);
+  --course-card-border: var(--course-color-3-border);
+  --course-card-chip-bg: var(--course-color-3-chip);
+
+  --course-card-sub-bg: var(--course-color-3-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-3-sub-chip);
 }
 
 .course-card--color-4 {
-  --course-card-bg: #f6f3d9;
-  --course-card-border: #e2d99b;
-  --course-card-chip-bg: #eee8bd;
-  --course-card-chip-border: #d6cb88;
+  --course-card-bg: var(--course-color-4-bg);
+  --course-card-border: var(--course-color-4-border);
+  --course-card-chip-bg: var(--course-color-4-chip);
+
+  --course-card-sub-bg: var(--course-color-4-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-4-sub-chip);
 }
 
 .course-card--color-5 {
-  --course-card-bg: #e9f6e3;
-  --course-card-border: #bfe1b1;
-  --course-card-chip-bg: #d4edca;
-  --course-card-chip-border: #a8d39a;
+  --course-card-bg: var(--course-color-5-bg);
+  --course-card-border: var(--course-color-5-border);
+  --course-card-chip-bg: var(--course-color-5-chip);
+
+  --course-card-sub-bg: var(--course-color-5-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-5-sub-chip);
 }
 
 .course-card--color-6 {
-  --course-card-bg: #e3f7f2;
-  --course-card-border: #b4e5d7;
-  --course-card-chip-bg: #cbeee5;
-  --course-card-chip-border: #9fdacb;
+  --course-card-bg: var(--course-color-6-bg);
+  --course-card-border: var(--course-color-6-border);
+  --course-card-chip-bg: var(--course-color-6-chip);
+
+  --course-card-sub-bg: var(--course-color-6-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-6-sub-chip);
 }
 
 .course-card--color-7 {
-  --course-card-bg: #e6f5ff;
-  --course-card-border: #b7ddf5;
-  --course-card-chip-bg: #d0ecfb;
-  --course-card-chip-border: #a1cfea;
+  --course-card-bg: var(--course-color-7-bg);
+  --course-card-border: var(--course-color-7-border);
+  --course-card-chip-bg: var(--course-color-7-chip);
+
+  --course-card-sub-bg: var(--course-color-7-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-7-sub-chip);
 }
 
-.course-card--color-8 {
-  --course-card-bg: #e9f0ff;
-  --course-card-border: #c4d4ff;
-  --course-card-chip-bg: #d6e2ff;
-  --course-card-chip-border: #b0c6ff;
-}
-
-.course-card--color-9 {
-  --course-card-bg: #f1e9ff;
-  --course-card-border: #d8c3ff;
-  --course-card-chip-bg: #e2d3ff;
-  --course-card-chip-border: #c2abff;
-}
-
-.course-card--color-10 {
-  --course-card-bg: #fae8ff;
-  --course-card-border: #e6bff7;
-  --course-card-chip-bg: #f1d4fb;
-  --course-card-chip-border: #d9a8ef;
-}
-
-.course-card--color-11 {
-  --course-card-bg: #ffe8f1;
-  --course-card-border: #f7bfd7;
-  --course-card-chip-bg: #fbd3e3;
-  --course-card-chip-border: #efabc8;
-}
-
-.course-card--color-12 {
-  --course-card-bg: #fff1f2;
-  --course-card-border: #ffd0d4;
-  --course-card-chip-bg: #ffe1e3;
-  --course-card-chip-border: #ffb9c0;
-}
-
-.course-card--color-13 {
-  --course-card-bg: #f2f2f2;
-  --course-card-border: #d6d6d6;
-  --course-card-chip-bg: #e2e2e2;
-  --course-card-chip-border: #c6c6c6;
-}
-
-.course-card--color-14 {
-  --course-card-bg: #f2f7f7;
-  --course-card-border: #c8dddd;
-  --course-card-chip-bg: #dceaea;
-  --course-card-chip-border: #b3d3d3;
+/* Sub variant overrides the base palette */
+.course-card--sub {
+  --course-card-bg: var(--course-card-sub-bg);
+  --course-card-chip-bg: var(--course-card-sub-chip-bg);
 }
 
 .instructor-popup-content {

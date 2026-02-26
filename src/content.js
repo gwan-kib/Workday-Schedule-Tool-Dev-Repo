@@ -26,18 +26,66 @@ import {
   renderSavedSchedules,
 } from "./mainPanel/scheduleStorage.js";
 
-const MAX_COURSE_COLORS = 14;
+const MAX_COURSE_COLORS = 7;
 
 // Assigns stable color indices to courses if missing. Input: courses array. Output: none.
 const assignCourseColors = (courses) => {
   if (!Array.isArray(courses)) return;
+
+  const getCourseKey = (course) => {
+    if (!course) return "";
+    const code = String(course.code || "").trim().toUpperCase();
+    const title = String(course.title || "").trim().toUpperCase();
+    if (code || title) return `${code}||${title}`;
+    return String(course.section_number || "").trim().toUpperCase();
+  };
+
+  const isLecture = (course) => !(course?.isLab || course?.isSeminar || course?.isDiscussion);
+  const hasValidColor = (course) =>
+    Number.isInteger(course?.colorIndex) && course.colorIndex >= 1 && course.colorIndex <= MAX_COURSE_COLORS;
+
   let colorCursor = 0;
-  courses.forEach((course) => {
-    if (course && Number.isInteger(course.colorIndex) && course.colorIndex >= 1 && course.colorIndex <= MAX_COURSE_COLORS)
-      return;
+  const colorByKey = new Map();
+
+  const nextColor = () => {
     colorCursor += 1;
-    const colorIndex = ((colorCursor - 1) % MAX_COURSE_COLORS) + 1;
-    if (course) course.colorIndex = colorIndex;
+    return ((colorCursor - 1) % MAX_COURSE_COLORS) + 1;
+  };
+
+  // First pass: assign base colors to lecture sections only (per course key).
+  courses.forEach((course) => {
+    if (!course) return;
+    const key = getCourseKey(course);
+    if (hasValidColor(course)) {
+      if (key && !colorByKey.has(key)) colorByKey.set(key, course.colorIndex);
+      return;
+    }
+    if (!isLecture(course)) return;
+    if (key && colorByKey.has(key)) {
+      course.colorIndex = colorByKey.get(key);
+      return;
+    }
+    const colorIndex = nextColor();
+    course.colorIndex = colorIndex;
+    if (key) colorByKey.set(key, colorIndex);
+  });
+
+  // Second pass: apply lecture color to labs/seminars/discussions (or any remaining).
+  courses.forEach((course) => {
+    if (!course) return;
+    if (hasValidColor(course)) {
+      const key = getCourseKey(course);
+      if (key && !colorByKey.has(key)) colorByKey.set(key, course.colorIndex);
+      return;
+    }
+    const key = getCourseKey(course);
+    if (key && colorByKey.has(key)) {
+      course.colorIndex = colorByKey.get(key);
+      return;
+    }
+    const colorIndex = nextColor();
+    course.colorIndex = colorIndex;
+    if (key) colorByKey.set(key, colorIndex);
   });
 };
 

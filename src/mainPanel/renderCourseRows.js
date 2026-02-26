@@ -75,8 +75,10 @@ export function renderCourseRows(ui, courses) {
     const instructorName = (course.instructor || "").trim() || "TBA";
 
     const card = document.createElement("div");
-    const colorIndex = course?.colorIndex || ((index % 14) + 1);
-    card.className = `course-card course-card--color-${colorIndex}`;
+    const colorIndex = course?.colorIndex || (index % 7) + 1;
+    const subClass =
+      course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
+    card.className = `course-card course-card--color-${colorIndex}${subClass}`;
 
     card.innerHTML = `
       <div class="course-card__top">
