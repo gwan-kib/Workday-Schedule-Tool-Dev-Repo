@@ -1,12 +1,14 @@
 _Not affiliated with or endorsed by Workday._
 
 <div align="center">
+  <img src="icon128.png" width="128px" height="128px" alt="Workday Calendar Tool logo">
 
 # Workday - Schedule Tool
 
 <h3 style="margin:0;">Simplify your semester planning.<br>Visualize your schedule clearly.<br>Export it when you're ready.</h3>
 
 Chrome Extension: https://lnkd.in/gtMCjkjs
+
 </div>
 
 ---
@@ -22,7 +24,21 @@ If you use Workday for registration, this helps you:
 
 ---
 
-## What You Get
+## How To Use
+
+1. Install the extension
+2. Open Workday
+3. Go to the View My Courses page (or any of your saved schedules)
+4. Open the extension using the button on the rightside of your screen
+5. View your course and schedule layout
+6. Save schedules in the extension
+7. Export to calendar if needed
+
+- still stuck? check out https://docs.google.com/document/d/1D0YqHct_d3rR8WtlkHF9Dybqb3mFB7Wka0ZWsFZOda8/edit?tab=t.0
+  
+---
+
+## Features
 
 ### Weekly Schedule View
 
@@ -79,6 +95,10 @@ Find the classes you need without endless scrolling.
 
 ---
 
+Want to request a feature? Let me know: gwantanak.3@gmail.com
+
+---
+
 ## Privacy and Security
 
 Your data stays on your device.
@@ -89,16 +109,6 @@ Your data stays on your device.
 - No tracking
 - No third-party analytics
 - No data collection
-
----
-
-## How To Use
-
-1. Install the extension
-2. Open your Workday course registration page
-3. Launch the extension
-4. View your schedule instantly
-5. Save snapshots or export to calendar if needed
 
 ---
 
