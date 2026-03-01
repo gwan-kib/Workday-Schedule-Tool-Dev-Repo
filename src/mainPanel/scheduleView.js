@@ -261,7 +261,7 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
       block.style.left = `${left + borderLeft}px`;
       block.style.top = `${top + borderTop}px`;
       block.style.width = `${dayColWidth - borderX - 0.1}px`;
-      block.style.height = `${height - borderY - 0.1}px`;
+      block.style.height = `${height - borderY}px`;
 
       const overlapLayer = document.createElement("div");
       overlapLayer.className = "schedule-entry-overlap-layer";

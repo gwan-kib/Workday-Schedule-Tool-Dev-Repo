@@ -16,7 +16,7 @@
   display: flex;
   left: 50%;
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .semester-button {
@@ -329,6 +329,7 @@
 
   height: 20px;
   font-size: 14px;
+  font-weight: 500;
 
   padding: 5px 6px;
 
@@ -344,10 +345,6 @@
 
 .schedule-table thead th:last-child {
   border-right: 1px solid;
-}
-
-.schedule-table th {
-  font-weight: 700;
 }
 
 .schedule-table td {
@@ -529,3 +526,4 @@
   display: block;
   text-align: center;
 }
+

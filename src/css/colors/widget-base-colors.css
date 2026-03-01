@@ -1,18 +1,18 @@
 :root,
 :host {
   --scrollbar-thumb: var(--hex-brand-main-3);
-  --scrollbar-track: var(--hex-brand-accent-1);
+  --scrollbar-track: var(--hex-brand-accent-4);
 }
 
 .widget {
   color: var(--hex-brand-main-1);
-  background: var(--hex-brand-accent-5);
+  background: var(--hex-brand-accent-1);
   border-color: var(--hex-brand-main-1) !important;
 }
 
 .widget-body,
 .widget-footer {
-  background: var(--hex-brand-accent-5);
+  background: var(--hex-brand-accent-1);
   border-color: var(--hex-brand-main-1);
 }
 
@@ -28,3 +28,4 @@
   outline: none;
   box-shadow: none;
 }
+

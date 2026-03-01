@@ -11,6 +11,7 @@ export const STATE = {
 
   view: {
     panel: "list",
+    lastMainPanel: "list",
     semester: "first",
   },
 };

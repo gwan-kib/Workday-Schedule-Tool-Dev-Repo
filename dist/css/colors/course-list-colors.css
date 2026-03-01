@@ -1,6 +1,6 @@
 .course-list-toolbar {
-  background: var(--hex-brand-accent-4);
-  border: 1px solid var(--hex-brand-accent-2);
+  background: var(--hex-brand-accent-3);
+  border: 1px solid var(--hex-brand-accent-6);
 }
 
 .course-list-label {
@@ -10,11 +10,11 @@
 .course-sort-button {
   color: var(--hex-brand-main-1);
   border-color: var(--hex-brand-main-2);
-  background: var(--hex-neutral-1);
+  background: var(--hex-brand-accent-1);
 }
 
 .course-sort-button:hover {
-  background: var(--hex-brand-accent-3);
+  background: var(--hex-brand-accent-4);
 }
 
 .course-sort-button.sorted-asc,
@@ -26,7 +26,7 @@
 
 .course-card {
   background: var(--course-card-bg, var(--hex-neutral-1));
-  border-color: var(--course-card-border, var(--hex-brand-accent-2));
+  border-color: var(--course-card-border, var(--hex-brand-accent-4));
   color: var(--hex-neutral-3);
 }
 
@@ -39,13 +39,13 @@
 .course-code-section {
   color: var(--hex-neutral-3);
   background: var(--course-card-chip-bg, var(--hex-brand-accent-3));
-  border-color: var(--course-card-border, var(--hex-brand-accent-2));
+  border-color: var(--course-card-border, var(--hex-brand-accent-4));
 }
 
 .course-pill {
   color: var(--hex-neutral-3);
   background: var(--course-card-chip-bg, var(--hex-brand-accent-3));
-  border-color: var(--course-card-border, var(--hex-brand-accent-2));
+  border-color: var(--course-card-border, var(--hex-brand-accent-4));
 }
 
 .course-pill.is-accent {
@@ -139,7 +139,7 @@
 }
 
 .instructor-popup-content {
-  color: var(--hex-brand-accent-1);
+  color: var(--hex-brand-accent-5);
   background: var(--hex-brand-main-1);
   border: 1px solid var(--hex-brand-main-2);
 }

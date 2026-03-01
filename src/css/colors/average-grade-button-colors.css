@@ -1,6 +1,6 @@
 .wd-average-grade-button {
   color: var(--hex-brand-main-1);
-  background-color: var(--hex-brand-accent-2);
+  background-color: var(--hex-brand-accent-4);
   box-shadow: 0 0 0 1px var(--hex-brand-main-2);
 }
 
@@ -15,3 +15,4 @@
   box-shadow: 0 0 0 1px var(--hex-neutral-4);
   opacity: 0.9;
 }
+

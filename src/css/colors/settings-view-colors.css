@@ -21,3 +21,4 @@
 .widget-panel[data-panel="settings"] .settings-field .link:focus-visible {
   outline-color: var(--hex-brand-accent-6);
 }
+

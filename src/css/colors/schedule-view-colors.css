@@ -3,7 +3,7 @@
 }
 
 .schedule-table thead th {
-  color: var(--hex-brand-accent-6);
+  color: var(--hex-brand-accent-3);
   background: var(--hex-brand-main-1);
   border-color: var(--hex-brand-main-1);
   box-shadow:
@@ -32,7 +32,7 @@
 }
 
 .schedule-entry-float {
-  background: var(--schedule-entry-bg, var(--hex-brand-accent-1));
+  background: var(--schedule-entry-bg, var(--hex-brand-accent-5));
   color: var(--hex-neutral-3);
   border: 1px solid var(--schedule-entry-border, var(--hex-brand-main-1));
 }
@@ -114,7 +114,7 @@
 /* saved schedules */
 .schedule-saved-summary {
   background: var(--hex-brand-main-3);
-  color: var(--hex-brand-accent-4);
+  color: var(--hex-brand-accent-2);
   opacity: 0.5;
 
   transition: all 0.2s ease;
@@ -125,19 +125,19 @@
 }
 
 .schedule-saved-menu {
-  background: var(--hex-brand-accent-4);
+  background: var(--hex-brand-accent-2);
   border-color: var(--hex-brand-main-2);
   box-shadow: 0 12px 24px rgba(var(--hex-brand-main-1), 0.2);
 }
 
 .schedule-saved-card {
-  background: var(--hex-brand-accent-2);
+  background: var(--hex-brand-accent-4);
   color: var(--hex-brand-main-1);
 }
 
 .schedule-saved-action {
   background: var(--hex-brand-main-2);
-  color: var(--hex-brand-accent-4);
+  color: var(--hex-brand-accent-2);
 }
 
 .schedule-saved-action.delete {
@@ -145,7 +145,7 @@
 }
 
 .schedule-saved-empty {
-  background: var(--hex-brand-accent-2);
+  background: var(--hex-brand-accent-4);
   color: var(--hex-brand-main-1);
 }
 
@@ -155,11 +155,11 @@
 }
 
 .dialog-container {
-  background: var(--hex-brand-accent-2);
+  background: var(--hex-brand-accent-4);
 }
 
 .schedule-modal-dialog {
-  background: var(--hex-brand-accent-4);
+  background: var(--hex-brand-accent-2);
   color: var(--hex-brand-main-1);
 
   border-color: var(--hex-brand-main-1);
@@ -167,12 +167,12 @@
 }
 
 .schedule-modal-close {
-  background: var(--hex-brand-accent-2);
+  background: var(--hex-brand-accent-4);
   color: var(--hex-brand-main-1);
 }
 
 .schedule-modal-input {
-  background: var(--hex-brand-accent-2);
+  background: var(--hex-brand-accent-4);
   color: var(--hex-brand-main-1);
   border-color: var(--hex-brand-accent-6);
 }
@@ -185,3 +185,4 @@
 .schedule-modal-input.is-invalid {
   border-color: var(--hex-danger-1);
 }
+

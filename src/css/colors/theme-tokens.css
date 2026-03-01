@@ -4,15 +4,15 @@
 
 :root,
 :host {
-  --hex-brand-main-1: #401d81;
-  --hex-brand-main-2: #6b4fd6;
-  --hex-brand-main-3: #916ccc;
-  --hex-brand-accent-1: #e4d6ff;
-  --hex-brand-accent-2: #ede2ff;
-  --hex-brand-accent-3: #f7f2ff;
-  --hex-brand-accent-4: #fbf8ff;
-  --hex-brand-accent-5: #fbf9ff;
-  --hex-brand-accent-6: #cdadff;
+  --hex-brand-main-1: #3b45a4;
+  --hex-brand-main-2: #4a59c0;
+  --hex-brand-main-3: #6471cf;
+  --hex-brand-accent-1: #f6f7fe;
+  --hex-brand-accent-2: #eef1fd;
+  --hex-brand-accent-3: #e1e5fb;
+  --hex-brand-accent-4: #b6bdf0;
+  --hex-brand-accent-5: #8f98e0;
+  --hex-brand-accent-6: #737ed6;
   --hex-neutral-1: #ffffff;
   --hex-neutral-2: #e5e7eb;
   --hex-neutral-3: #000000;

@@ -107,7 +107,12 @@ const assignCourseColors = (courses) => {
       updateScheduleView();
     };
 
+    const isMainPanel = (viewKey) => viewKey === STATE.view.panel;
+
     const setActiveView = (viewKey) => {
+      if (isMainPanel(viewKey)) {
+        STATE.view.lastMainPanel = viewKey;
+      }
       STATE.view.panel = viewKey;
 
       ui.views.forEach((el) => el.classList.toggle("is-active", el.dataset.panel === viewKey));
@@ -350,12 +355,24 @@ const assignCourseColors = (courses) => {
     on(ui.settingsButton, "click", () => {
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
+      if (STATE.view.panel === "settings") {
+        const backTo = STATE.view.lastMainPanel || "list";
+        setActiveView(backTo);
+        if (backTo === "schedule") updateScheduleView();
+        return;
+      }
       setActiveView("settings");
     });
 
     on(ui.helpButton, "click", () => {
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
+      if (STATE.view.panel === "help") {
+        const backTo = STATE.view.lastMainPanel || "list";
+        setActiveView(backTo);
+        if (backTo === "schedule") updateScheduleView();
+        return;
+      }
       setActiveView("help");
     });
 
@@ -411,8 +428,8 @@ const assignCourseColors = (courses) => {
 
     const buildAverageLabel = (average) => {
       if (average == null) return "Average:\nN/A";
-      if (typeof average === "number") return `Average:\n${average.toFixed(1)}`;
-      return `Average:\n${average}`;
+      if (typeof average === "number") return `Average:\n${average.toFixed(1)}%`;
+      return `Average:\n${average}%`;
     };
 
     const hasValidAverage = (data) => extractAverage(data) != null;
@@ -494,12 +511,14 @@ const assignCourseColors = (courses) => {
       headerWrapper.parentNode?.insertBefore(button, headerWrapper);
     };
 
+    const averageButtonSelector = "div.WHPF.WFPF, div.WHMF.WFMF";
+
     const handleAverageButtonNodes = (node) => {
       if (!(node instanceof Element)) return;
-      if (node.matches?.("div.WHPF.WFPF")) {
+      if (node.matches?.(averageButtonSelector)) {
         ensureAverageButton(node);
       }
-      const matches = node.querySelectorAll?.("div.WHPF.WFPF") || [];
+      const matches = node.querySelectorAll?.(averageButtonSelector) || [];
       matches.forEach((el) => ensureAverageButton(el));
     };
 

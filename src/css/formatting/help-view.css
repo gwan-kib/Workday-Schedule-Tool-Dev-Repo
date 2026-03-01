@@ -63,7 +63,7 @@
 }
 
 .widget-panel[data-panel="help"] .settings-field .link:hover {
-  background-color: var(--hex-brand-accent-4);
+  background-color: var(--hex-brand-accent-2);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
 }
@@ -77,3 +77,4 @@
   outline: 2px solid var(--hex-brand-main-3);
   outline-offset: 2px;
 }
+
