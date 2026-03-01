@@ -5,7 +5,7 @@ _Not affiliated with or endorsed by Workday._
 
 # Workday - Schedule Tool
 
-<h3 style="margin:0;">Simplify your semester planning.<br>Visualize your schedule clearly.<br>Export it when you're ready.</h3>
+<h3 style="margin:0;">Simplify your semester.<br>Visualize your schedule clearly.<br>Export it when you're ready.</h3>
 
 Chrome Extension: https://lnkd.in/gtMCjkjs
 
