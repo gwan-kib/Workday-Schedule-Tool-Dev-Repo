@@ -108,7 +108,7 @@
 
 .semester-button.is-active {
   background: var(--hex-brand-accent-6);
-  color: var(--hex-brand-main-1);
+  color: var(--hex-brand-accent-2);
 }
 
 /* saved schedules */
