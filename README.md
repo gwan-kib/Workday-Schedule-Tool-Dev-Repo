@@ -120,4 +120,4 @@ Your data stays on your device.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. (see `LICENSE`)
