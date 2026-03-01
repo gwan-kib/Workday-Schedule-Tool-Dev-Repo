@@ -112,6 +112,12 @@ Your data stays on your device.
 
 ---
 
+## Development / Contributing
+
+- See `DevREADME.md`
+
+---
+
 ## Browser Compatibility
 
 - Chrome (Manifest V3 compatible)
@@ -120,4 +126,4 @@ Your data stays on your device.
 
 ## License
 
-MIT. (see `LICENSE`)
+MIT (see `LICENSE.md`)
