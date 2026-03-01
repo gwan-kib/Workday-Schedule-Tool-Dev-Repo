@@ -16,7 +16,7 @@
   display: flex;
   left: 50%;
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .semester-button {
@@ -110,15 +110,6 @@
 
 .schedule-saved-summary .text {
   text-align: center;
-}
-
-#widget-save-schedule {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  height: 34px;
-  width: 34px;
 }
 
 .schedule-saved-card-header {
@@ -300,7 +291,7 @@
 .widget-panel[data-panel="schedule"] {
   height: 100%;
   flex-direction: column;
-  min-height: 0;
+  height: 520px;
 }
 
 .widget-panel[data-panel="schedule"].is-active {
@@ -308,8 +299,7 @@
 }
 
 .schedule-grid {
-  flex: 1;
-  min-height: 0;
+  height: 550px;
 
   padding: 0 12px 12px;
 
@@ -339,6 +329,7 @@
 
   height: 20px;
   font-size: 14px;
+  font-weight: 500;
 
   padding: 5px 6px;
 
@@ -354,10 +345,6 @@
 
 .schedule-table thead th:last-child {
   border-right: 1px solid;
-}
-
-.schedule-table th {
-  font-weight: 700;
 }
 
 .schedule-table td {
@@ -429,34 +416,6 @@
   z-index: 5;
 }
 
-.schedule-entry-overlap-rect {
-  background: transparent;
-  opacity: 0.5;
-  fill: none;
-}
-
-.schedule-conflict {
-  position: absolute;
-  left: 0;
-  right: 0;
-
-  pointer-events: none;
-  z-index: 3;
-
-  font-weight: 600;
-
-  overflow: hidden;
-}
-
-.schedule-conflict::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  pointer-events: none;
-  z-index: 1;
-}
-
 /* -------------------------------------------------------------------------- */
 /* SCHEDULE VIEW: EVENT BLOCKS (IN-CELL)                                       */
 /* -------------------------------------------------------------------------- */
@@ -526,17 +485,38 @@
   overflow: hidden;
 }
 
+.schedule-conflict-float {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+
+  border: 1px solid;
+  border-left: none;
+  border-right: none;
+
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.schedule-conflict-symbol {
+  opacity: 0.4;
+  font-size: 18px;
+}
+
 .schedule-entry-overlap-layer {
   position: absolute;
   inset: 0;
 
   z-index: 1;
   pointer-events: none;
-}
-
-.schedule-entry-overlap-rect {
-  position: absolute;
-  opacity: 0.85;
 }
 
 .schedule-entry-text {
@@ -546,3 +526,4 @@
   display: block;
   text-align: center;
 }
+

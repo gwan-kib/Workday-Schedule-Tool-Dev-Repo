@@ -3,7 +3,6 @@
 /* -------------------------------------------------------------------------- */
 
 @import "./formatting/widget-base.css";
-@import "./formatting/widget-tabs-header.css";
 @import "./formatting/course-list-view.css";
 @import "./formatting/schedule-view.css";
 @import "./formatting/schedule-view-events.css";
@@ -11,6 +10,8 @@
 @import "./formatting/help-view.css";
 @import "./formatting/widget-footer.css";
 @import "./formatting/floating-button.css";
+@import "./formatting/average-grade-tooltip.css";
+@import "./formatting/average-grade-button.css";
 
 /* -------------------------------------------------------------------------- */
 /* COLORS (theme / palette only)                                               */
@@ -25,9 +26,12 @@
 @import "./colors/help-view-colors.css";
 @import "./colors/widget-footer-colors.css";
 @import "./colors/floating-button-colors.css";
+@import "./colors/average-grade-tooltip-colors.css";
+@import "./colors/average-grade-button-colors.css";
 
 /* -------------------------------------------------------------------------- */
 /* STATE COLORS (view-specific overrides)                                     */
 /* -------------------------------------------------------------------------- */
 
 @import "./colors/settings-colors.css";
+
