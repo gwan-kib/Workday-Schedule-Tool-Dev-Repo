@@ -92,6 +92,9 @@ export async function loadMainPanel(shadowRoot) {
     settingsButton: shadowRoot.querySelector(".settings"),
 
     footerAlert: shadowRoot.querySelector("#schedule-conflict-alert"),
+
+    courseColorGrid: shadowRoot.querySelector("#course-color-grid"),
+    courseColorReset: shadowRoot.querySelector("#course-color-reset"),
   };
 
   debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", ui);

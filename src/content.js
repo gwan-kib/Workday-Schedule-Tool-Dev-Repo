@@ -25,6 +25,16 @@ import {
   persistSavedSchedules,
   renderSavedSchedules,
 } from "./mainPanel/scheduleStorage.js";
+import {
+  applyCourseColorAssignments,
+  captureCourseColorPalettes,
+  COURSE_COLOR_COUNT,
+  COURSE_COLOR_LABELS,
+  DEFAULT_COURSE_COLOR_ASSIGNMENTS,
+  loadCourseColorAssignments,
+  normalizeCourseColorAssignments,
+  persistCourseColorAssignments,
+} from "./mainPanel/courseColorSettings.js";
 
 const MAX_COURSE_COLORS = 7;
 
@@ -96,6 +106,85 @@ const assignCourseColors = (courses) => {
   async function boot() {
     const shadowRoot = ensureMount();
     const ui = await loadMainPanel(shadowRoot);
+
+    const courseColorTarget = ui.root?.host || ui.mainPanel;
+    const courseColorPalettes = captureCourseColorPalettes(courseColorTarget);
+    let courseColorAssignments = await loadCourseColorAssignments();
+
+    if (courseColorTarget && courseColorPalettes.length) {
+      courseColorAssignments = normalizeCourseColorAssignments(courseColorAssignments);
+      applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
+    }
+
+    const renderCourseColorSettings = () => {
+      if (!ui.courseColorGrid || !courseColorPalettes.length) return;
+      ui.courseColorGrid.innerHTML = "";
+
+      const paletteById = new Map(courseColorPalettes.map((palette) => [palette.id, palette]));
+
+      for (let index = 0; index < COURSE_COLOR_COUNT; index += 1) {
+        const courseIndex = index + 1;
+        const row = document.createElement("div");
+        row.className = "course-color-row";
+
+        const label = document.createElement("div");
+        label.className = "course-color-label";
+        label.textContent = `Course ${courseIndex}`;
+
+        const control = document.createElement("div");
+        control.className = "course-color-control";
+
+        const select = document.createElement("select");
+        select.className = "course-color-select";
+        select.dataset.courseColor = String(courseIndex);
+
+        courseColorPalettes.forEach((palette, paletteIndex) => {
+          const option = document.createElement("option");
+          option.value = String(palette.id);
+          option.textContent = COURSE_COLOR_LABELS[paletteIndex] || palette.label || `Palette ${palette.id}`;
+          if (palette.id === courseColorAssignments[index]) option.selected = true;
+          select.appendChild(option);
+        });
+
+        const swatch = document.createElement("div");
+        swatch.className = "course-color-swatch";
+
+        const updateSwatch = (paletteId) => {
+          const palette = paletteById.get(paletteId);
+          if (!palette) return;
+          swatch.style.background = palette.bg;
+          swatch.style.borderColor = palette.border;
+        };
+
+        updateSwatch(courseColorAssignments[index]);
+
+        on(select, "change", async () => {
+          const paletteId = Number(select.value);
+          courseColorAssignments[index] = paletteId;
+          courseColorAssignments = normalizeCourseColorAssignments(courseColorAssignments);
+          applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
+          updateSwatch(paletteId);
+          await persistCourseColorAssignments(courseColorAssignments);
+        });
+
+        control.appendChild(select);
+        control.appendChild(swatch);
+        row.appendChild(label);
+        row.appendChild(control);
+        ui.courseColorGrid.appendChild(row);
+      }
+    };
+
+    renderCourseColorSettings();
+
+    if (ui.courseColorReset) {
+      on(ui.courseColorReset, "click", async () => {
+        courseColorAssignments = [...DEFAULT_COURSE_COLOR_ASSIGNMENTS];
+        applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
+        await persistCourseColorAssignments(courseColorAssignments);
+        renderCourseColorSettings();
+      });
+    }
 
     const updateScheduleView = () => {
       renderSchedule(ui, STATE.filtered, STATE.view.semester);

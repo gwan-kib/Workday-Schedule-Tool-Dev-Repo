@@ -22,3 +22,23 @@
   outline-color: var(--hex-brand-accent-6);
 }
 
+.widget-panel[data-panel="settings"] .course-color-label {
+  color: var(--hex-brand-main-1);
+}
+
+.widget-panel[data-panel="settings"] .course-color-select {
+  background: var(--hex-neutral-1);
+  color: var(--hex-brand-main-1);
+  border-color: var(--hex-brand-accent-6);
+}
+
+.widget-panel[data-panel="settings"] .course-color-select:focus-visible {
+  outline: 2px solid var(--hex-brand-accent-6);
+  outline-offset: 2px;
+}
+
+.widget-panel[data-panel="settings"] .course-color-swatch {
+  background: var(--hex-brand-accent-2);
+  border-color: var(--hex-brand-accent-6);
+}
+
