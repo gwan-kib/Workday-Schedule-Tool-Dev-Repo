@@ -175,14 +175,18 @@ const assignCourseColors = (courses) => {
       }
     };
 
+    const applyAndPersistCourseColors = async (assignments, { skipPersist = false } = {}) => {
+      courseColorAssignments = normalizeCourseColorAssignments(assignments);
+      applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
+      renderCourseColorSettings();
+      if (!skipPersist) await persistCourseColorAssignments(courseColorAssignments);
+    };
+
     renderCourseColorSettings();
 
     if (ui.courseColorReset) {
       on(ui.courseColorReset, "click", async () => {
-        courseColorAssignments = [...DEFAULT_COURSE_COLOR_ASSIGNMENTS];
-        applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
-        await persistCourseColorAssignments(courseColorAssignments);
-        renderCourseColorSettings();
+        await applyAndPersistCourseColors(DEFAULT_COURSE_COLOR_ASSIGNMENTS);
       });
     }
 
@@ -394,7 +398,7 @@ const assignCourseColors = (courses) => {
 
       if (!name) return;
 
-      const snapshot = createScheduleSnapshot(name, STATE.filtered);
+      const snapshot = createScheduleSnapshot(name, STATE.filtered, courseColorAssignments);
       STATE.savedSchedules = [snapshot, ...STATE.savedSchedules];
 
       await persistSavedSchedules(STATE.savedSchedules);
@@ -431,6 +435,10 @@ const assignCourseColors = (courses) => {
       }
 
       STATE.currentScheduleName = selected.name;
+      if (selected.colorAssignments && courseColorPalettes.length) {
+        await applyAndPersistCourseColors(selected.colorAssignments);
+      }
+
       STATE.courses = [...selected.courses];
       assignCourseColors(STATE.courses);
       STATE.filtered = [...selected.courses];
