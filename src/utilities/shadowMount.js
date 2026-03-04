@@ -1,7 +1,7 @@
 import { debugFor } from "./debugTool.js";
 const debug = debugFor("shadowMount");
 
-const EXT_ID = "Workday - Schedule Tool";
+const EXT_ID = "UBC Workday - Schedule Tool";
 
 // Ensures the extension container is mounted and returns its shadow root. Input: none. Output: ShadowRoot.
 export function ensureMount() {
