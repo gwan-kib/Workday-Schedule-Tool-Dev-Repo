@@ -44,10 +44,16 @@ const assignCourseColors = (courses) => {
 
   const getCourseKey = (course) => {
     if (!course) return "";
-    const code = String(course.code || "").trim().toUpperCase();
-    const title = String(course.title || "").trim().toUpperCase();
+    const code = String(course.code || "")
+      .trim()
+      .toUpperCase();
+    const title = String(course.title || "")
+      .trim()
+      .toUpperCase();
     if (code || title) return `${code}||${title}`;
-    return String(course.section_number || "").trim().toUpperCase();
+    return String(course.section_number || "")
+      .trim()
+      .toUpperCase();
   };
 
   const isLecture = (course) => !(course?.isLab || course?.isSeminar || course?.isDiscussion);
@@ -195,13 +201,10 @@ const assignCourseColors = (courses) => {
 
       const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
       if (toggleButton) {
-        toggleButton.textContent = STATE.view.timeFormat === "ampm" ? "AM/PM" : "24H";
-        toggleButton.setAttribute(
-          "aria-pressed",
-          String(STATE.view.timeFormat === "ampm"),
-        );
+        toggleButton.textContent = STATE.view.timeFormat === "am/pm" ? "AM/PM" : "24H";
+        toggleButton.setAttribute("aria-pressed", String(STATE.view.timeFormat === "am/pm"));
         on(toggleButton, "click", () => {
-          STATE.view.timeFormat = STATE.view.timeFormat === "ampm" ? "24h" : "ampm";
+          STATE.view.timeFormat = STATE.view.timeFormat === "am/pm" ? "24h" : "am/pm";
           updateScheduleView();
         });
       }

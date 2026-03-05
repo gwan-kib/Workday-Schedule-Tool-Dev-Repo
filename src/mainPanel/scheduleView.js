@@ -100,7 +100,7 @@ function buildDayEvents(courses, semester) {
   let eventId = 0;
 
   (courses || []).forEach((course, courseIndex) => {
-    const colorIndex = course?.colorIndex || ((courseIndex % 7) + 1);
+    const colorIndex = course?.colorIndex || (courseIndex % 7) + 1;
     const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
     const courseSemester = getSemester(startDate);
     if (semester && courseSemester !== semester) return;
@@ -167,7 +167,7 @@ function buildDayEvents(courses, semester) {
 function formatTimeLabel(minutes, timeFormat) {
   const h24 = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (timeFormat === "ampm") {
+  if (timeFormat === "am/pm") {
     const period = h24 >= 12 ? "PM" : "AM";
     let h12 = h24 % 12;
     if (h12 === 0) h12 = 12;
@@ -194,7 +194,7 @@ function buildScheduleTable(timeFormat) {
   headRow.innerHTML = `
     <th class="schedule-time">
       <button class="schedule-time-toggle" type="button" title="Toggle time format">
-        ${timeFormat === "ampm" ? "AM/PM" : "24H"}
+        ${timeFormat === "am/pm" ? "AM/PM" : "24H"}
       </button>
     </th>
     ${DAYS.map((day) => `<th class="schedule-day-head" data-day="${day}">${day}</th>`).join("")}

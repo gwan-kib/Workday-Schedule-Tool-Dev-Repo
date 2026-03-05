@@ -76,8 +76,7 @@ export function renderCourseRows(ui, courses) {
 
     const card = document.createElement("div");
     const colorIndex = course?.colorIndex || (index % 7) + 1;
-    const subClass =
-      course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
+    const subClass = course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
     card.className = `course-card course-card--color-${colorIndex}${subClass}`;
 
     card.innerHTML = `
@@ -93,14 +92,7 @@ export function renderCourseRows(ui, courses) {
           ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
         </div>
         <div class="course-card__instructor">
-          <div class="instructor-wrapper">
             ${formatInstructorName(instructorName)}
-            <div class="instructor-popup">
-              <div class="instructor-popup-content">
-                ${escHTML(instructorName)}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       <div class="course-card__title">${escHTML(course.title || "")}</div>
