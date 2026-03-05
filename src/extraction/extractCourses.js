@@ -119,8 +119,8 @@ export function extractFromRow(row, headerMaps) {
 
   const getInstructionalFormatAbbr = (text) => {
     if (labLike(text)) return "Lab";
-    if (seminarLike(text)) return "Sem";
-    if (discussionLike(text)) return "Disc";
+    if (seminarLike(text)) return "Seminar";
+    if (discussionLike(text)) return "Discussion";
     return (text || "").trim();
   };
 
