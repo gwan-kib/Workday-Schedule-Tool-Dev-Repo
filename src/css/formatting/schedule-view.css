@@ -34,22 +34,6 @@
   transition: all 0.3s ease;
 }
 
-.semester-button .text {
-  display: inline-block;
-  opacity: 0.5;
-
-  transition: all 0.1s ease;
-}
-
-.semester-button:hover:not(.is-active) .text {
-  translate: 0 -0.5px;
-  opacity: 0.75;
-}
-
-.semester-button.is-active .text {
-  opacity: 1;
-}
-
 /* -------------------------------------------------------------------------- */
 /* SCHEDULE VIEW: SAVED SCHEDULES DROPDOWN                                     */
 /* -------------------------------------------------------------------------- */
