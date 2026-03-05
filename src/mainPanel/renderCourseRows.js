@@ -1,4 +1,4 @@
-import { debugFor } from "../utilities/debugTool.js";
+﻿import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("renderCourseRows");
 
@@ -88,7 +88,7 @@ export function renderCourseRows(ui, courses) {
                  <span class="course-code-number">${escHTML(codeInfo.number)}</span>`
               : `<span class="course-code-subject">${escHTML(codeInfo.raw)}</span>`
           }
-          ${sectionLabel ? `<span class="course-code-section" title="Section Number">${escHTML(sectionLabel)}</span>` : ""}
+          ${sectionLabel ? `<span class="course-code-section wd-hover-tooltip" data-tooltip="Section number">${escHTML(sectionLabel)}</span>` : ""}
           ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
         </div>
         <div class="course-card__instructor">
@@ -123,3 +123,4 @@ export function renderCourseRows(ui, courses) {
 
   debug.log({ id: "renderCourseRows.done" }, "Rendered course rows", courses || []);
 }
+

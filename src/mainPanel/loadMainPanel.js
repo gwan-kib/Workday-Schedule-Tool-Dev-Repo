@@ -1,4 +1,4 @@
-import { debugFor } from "../utilities/debugTool.js";
+﻿import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("loadMainPanel");
 
@@ -15,6 +15,7 @@ export async function loadMainPanel(shadowRoot) {
     "formatting/help-view.css",
     "formatting/widget-footer.css",
     "formatting/floating-button.css",
+    "formatting/hover-tooltip.css",
 
     "colors/theme-tokens.css",
     "colors/widget-base-colors.css",
@@ -25,6 +26,7 @@ export async function loadMainPanel(shadowRoot) {
     "colors/help-view-colors.css",
     "colors/widget-footer-colors.css",
     "colors/floating-button-colors.css",
+    "colors/hover-tooltip-colors.css",
     "colors/settings-colors.css",
   ];
 
@@ -101,3 +103,5 @@ export async function loadMainPanel(shadowRoot) {
 
   return ui;
 }
+
+

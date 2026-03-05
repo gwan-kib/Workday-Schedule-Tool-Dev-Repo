@@ -193,7 +193,7 @@ function buildScheduleTable(timeFormat) {
 
   headRow.innerHTML = `
     <th class="schedule-time">
-      <button class="schedule-time-toggle" type="button" title="Toggle time format">
+      <button class="schedule-time-toggle wd-hover-tooltip" type="button" aria-label="Time format" data-tooltip="Time format">
         ${timeFormat === "am/pm" ? "AM/PM" : "24H"}
       </button>
     </th>

@@ -1,4 +1,4 @@
-<head>
+﻿<head>
   <link
     rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
@@ -23,30 +23,48 @@
     <span class="spacer"></span>
     <div class="export-dropdown" id="widget-export">
       <button
-        class="button export-summary"
+        class="button export-summary wd-hover-tooltip"
         id="widget-export-button"
         type="button"
         aria-haspopup="menu"
         aria-expanded="false"
-        title="Export schedule"
+        aria-label="Export"
+        data-tooltip="Export"
       >
         <span class="material-symbols-rounded export-icon" aria-hidden="true"> ios_share </span>
         <span class="text">Export</span>
         <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
       </button>
       <div class="export-menu" id="widget-export-menu" role="menu">
-        <button class="export-option" type="button" data-export="ics" title="Download calendar file (.ics)">
+        <button
+          class="export-option wd-hover-tooltip"
+          type="button"
+          data-export="ics"
+          aria-label="Download .ics"
+          data-tooltip="Download .ics"
+        >
           Download .ics
         </button>
-        <button class="export-option" type="button" data-export="png" title="More export options coming soon">
+        <button
+          class="export-option wd-hover-tooltip"
+          type="button"
+          data-export="png"
+          aria-label="More options"
+          data-tooltip="More options"
+        >
           More options soon...
         </button>
       </div>
     </div>
-    <button class="button help" type="button" aria-label="Help" title="Open help">
+    <button class="button help wd-hover-tooltip" type="button" aria-label="Help" data-tooltip="Help">
       <span class="material-symbols-rounded"> help </span><span class="text">Help</span>
     </button>
-    <button class="button settings symbolOnly" type="button" aria-label="Settings" title="Open settings">
+    <button
+      class="button settings symbolOnly wd-hover-tooltip"
+      type="button"
+      aria-label="Settings"
+      data-tooltip="Settings"
+    >
       <span class="material-symbols-rounded">settings</span>
     </button>
   </div>
@@ -54,15 +72,27 @@
   <!-- Toolbar -->
   <!-- ========================= -->
   <div class="widet-toolbar">
-    <button class="tab-button symbolOnly is-active" type="button" data-panel="list" title="List view">
+    <button
+      class="tab-button symbolOnly is-active wd-hover-tooltip"
+      type="button"
+      data-panel="list"
+      aria-label="List view"
+      data-tooltip="List view"
+    >
       <span class="text"><span class="material-symbols-rounded">format_list_bulleted</span></span>
     </button>
-    <button class="tab-button symbolOnly" type="button" data-panel="schedule" title="Schedule view">
+    <button
+      class="tab-button symbolOnly wd-hover-tooltip"
+      type="button"
+      data-panel="schedule"
+      aria-label="Schedule view"
+      data-tooltip="Schedule view"
+    >
       <span class="text"><span class="material-symbols-rounded">calendar_today</span></span>
     </button>
     <div class="widget-search-wrap">
       <span class="material-symbols-rounded search-icon" aria-hidden="true"> search </span>
-      <input id="widget-search" placeholder="Course Name/Week Day/Instructor…" />
+      <input id="widget-search" placeholder="Course Name/Week Day/Instructor" />
     </div>
     <span class="spacer"></span>
     <details class="schedule-saved-dropdown" id="schedule-saved-dropdown">
@@ -72,13 +102,31 @@
       </summary>
       <div class="schedule-saved-menu" id="schedule-saved-menu"></div>
     </details>
-    <button id="widget-save-schedule" class="button schedule-save-button symbolOnly" type="button" title="Save schedule">
+    <button
+      id="widget-save-schedule"
+      class="button schedule-save-button symbolOnly wd-hover-tooltip"
+      type="button"
+      aria-label="Save schedule"
+      data-tooltip="Save schedule"
+    >
       <span class="material-symbols-rounded save-icon"> save_as </span>
     </button>
-    <button id="widget-refresh" class="button symbolOnly" type="button" title="Refresh data">
+    <button
+      id="widget-refresh"
+      class="button symbolOnly wd-hover-tooltip"
+      type="button"
+      aria-label="Refresh"
+      data-tooltip="Refresh"
+    >
       <span class="material-symbols-rounded"> refresh </span>
     </button>
-    <button id="widget-clear" class="button symbolOnly" type="button" title="Clear all entries">
+    <button
+      id="widget-clear"
+      class="button symbolOnly wd-hover-tooltip"
+      type="button"
+      aria-label="Clear schedule"
+      data-tooltip="Clear schedule"
+    >
       <span class="material-symbols-rounded"> delete_forever </span>
     </button>
   </div>
@@ -221,3 +269,4 @@
     <span class="footer-tip"><span class="muted">Click sort buttons to reorder courses</span></span>
   </div>
 </div>
+
