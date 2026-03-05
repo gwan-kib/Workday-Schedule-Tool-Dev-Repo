@@ -56,7 +56,6 @@ function parseMeetingLine(line) {
     days: [...new Set(days)],
     startMinutes,
     endMinutes,
-    timeLabel: `${timeTokens[0]} - ${timeTokens[1]}`,
   };
 }
 
@@ -127,7 +126,15 @@ function buildDayEvents(courses, semester) {
       parsed.days.forEach((day) => {
         if (!eventsByDay.has(day)) return;
 
-        const key = [day, course.code || "", course.title || "", parsed.timeLabel, startIdx, rowSpan].join("|");
+        const key = [
+          day,
+          course.code || "",
+          course.title || "",
+          parsed.startMinutes,
+          parsed.endMinutes,
+          startIdx,
+          rowSpan,
+        ].join("|");
         if (seen.has(key)) return;
         seen.add(key);
 
@@ -138,7 +145,8 @@ function buildDayEvents(courses, semester) {
           code: course.code || "",
           title: course.title || "",
           label,
-          timeLabel: parsed.timeLabel,
+          startMinutes: parsed.startMinutes,
+          endMinutes: parsed.endMinutes,
           rowStart: startIdx,
           rowSpan,
           startIdx,
@@ -156,14 +164,24 @@ function buildDayEvents(courses, semester) {
 }
 
 // Formats a time label for a slot. Input: minutes number. Output: string.
-function formatSlotLabel(minutes) {
+function formatTimeLabel(minutes, timeFormat) {
   const h24 = Math.floor(minutes / 60);
   const m = minutes % 60;
+  if (timeFormat === "ampm") {
+    const period = h24 >= 12 ? "PM" : "AM";
+    let h12 = h24 % 12;
+    if (h12 === 0) h12 = 12;
+    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+  }
   return `${String(h24)}:${String(m).padStart(2, "0")}`;
 }
 
+function formatTimeRange(startMinutes, endMinutes, timeFormat) {
+  return `${formatTimeLabel(startMinutes, timeFormat)} - ${formatTimeLabel(endMinutes, timeFormat)}`;
+}
+
 // Builds the base schedule table DOM. Input: none. Output: wrapper element.
-function buildScheduleTable() {
+function buildScheduleTable(timeFormat) {
   const wrap = document.createElement("div");
   wrap.className = "schedule-table-wrap";
 
@@ -174,7 +192,11 @@ function buildScheduleTable() {
   const headRow = document.createElement("tr");
 
   headRow.innerHTML = `
-    <th class="schedule-time"></th>
+    <th class="schedule-time">
+      <button class="schedule-time-toggle" type="button" title="Toggle time format">
+        ${timeFormat === "ampm" ? "AM/PM" : "24H"}
+      </button>
+    </th>
     ${DAYS.map((day) => `<th class="schedule-day-head" data-day="${day}">${day}</th>`).join("")}
   `;
 
@@ -188,7 +210,7 @@ function buildScheduleTable() {
 
     const timeTd = document.createElement("td");
     timeTd.className = "schedule-time";
-    timeTd.textContent = formatSlotLabel(SLOTS[r]);
+    timeTd.textContent = formatTimeLabel(SLOTS[r], timeFormat);
     row.appendChild(timeTd);
 
     DAYS.forEach((day) => {
@@ -218,7 +240,7 @@ function buildScheduleTable() {
 }
 
 // Renders overlay blocks for events. Input: wrapper element, events-by-day Map. Output: none.
-function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
+function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat = "24h") {
   const overlay = wrap.querySelector(".schedule-overlay");
   overlay.innerHTML = "";
 
@@ -274,9 +296,10 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = []) {
       const title = formattedCode || ev.title;
       const titleLabel = ev.label ? `${title} ${ev.label}` : title;
 
+      const timeLabel = formatTimeRange(ev.startMinutes, ev.endMinutes, timeFormat);
       text.innerHTML = `
         <div class="schedule-entry-title">${titleLabel}</div>
-        <div class="schedule-entry-time">${ev.timeLabel}</div>
+        <div class="schedule-entry-time">${timeLabel}</div>
       `;
       block.appendChild(text);
 
@@ -327,7 +350,7 @@ function updateFooterConflictMessage(ui, conflictCodes) {
 }
 
 // Renders the schedule view for a semester. Input: ui object, courses array, semester key. Output: none.
-export function renderSchedule(ui, courses, semester) {
+export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
   const host = ui?.scheduleGrid || ui?.schedulePanel || ui?.scheduleContainer || ui?.scheduleView || ui?.schedule;
   if (!host) {
     debug.warn("renderSchedule: no schedule host found on ui");
@@ -340,9 +363,9 @@ export function renderSchedule(ui, courses, semester) {
   const { conflictCodes } = detectScheduleConflicts(allEventsByDay);
 
   host.innerHTML = "";
-  const tableWrap = buildScheduleTable();
+  const tableWrap = buildScheduleTable(timeFormat);
   host.appendChild(tableWrap);
 
-  renderOverlayBlocks(tableWrap, eventsByDay, conflictBlocks);
+  renderOverlayBlocks(tableWrap, eventsByDay, conflictBlocks, timeFormat);
   updateFooterConflictMessage(ui, conflictCodes);
 }

@@ -191,7 +191,20 @@ const assignCourseColors = (courses) => {
     }
 
     const updateScheduleView = () => {
-      renderSchedule(ui, STATE.filtered, STATE.view.semester);
+      renderSchedule(ui, STATE.filtered, STATE.view.semester, STATE.view.timeFormat);
+
+      const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
+      if (toggleButton) {
+        toggleButton.textContent = STATE.view.timeFormat === "ampm" ? "AM/PM" : "24H";
+        toggleButton.setAttribute(
+          "aria-pressed",
+          String(STATE.view.timeFormat === "ampm"),
+        );
+        on(toggleButton, "click", () => {
+          STATE.view.timeFormat = STATE.view.timeFormat === "ampm" ? "24h" : "ampm";
+          updateScheduleView();
+        });
+      }
     };
 
     const renderAll = () => {

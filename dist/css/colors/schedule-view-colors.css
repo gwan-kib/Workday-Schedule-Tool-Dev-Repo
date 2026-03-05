@@ -31,6 +31,15 @@
   background: transparent;
 }
 
+.schedule-time-toggle {
+  background: var(--hex-brand-accent-5);
+  color: var(--hex-brand-main-1);
+}
+
+.schedule-time-toggle:hover {
+  background: var(--hex-brand-accent-4);
+}
+
 .schedule-entry-float {
   background: var(--schedule-entry-bg, var(--hex-brand-accent-5));
   color: var(--hex-neutral-3);

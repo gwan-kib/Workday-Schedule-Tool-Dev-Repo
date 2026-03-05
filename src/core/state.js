@@ -13,5 +13,6 @@ export const STATE = {
     panel: "list",
     lastMainPanel: "list",
     semester: "first",
+    timeFormat: "24h",
   },
 };
