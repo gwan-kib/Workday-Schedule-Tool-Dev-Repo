@@ -1,5 +1,10 @@
-﻿.wd-hover-tooltip {
+.wd-hover-tooltip {
   position: relative;
+}
+
+.widget.is-hover-tooltips-off .wd-hover-tooltip::after,
+.widget.is-hover-tooltips-off .wd-hover-tooltip::before {
+  display: none;
 }
 
 .wd-hover-tooltip::after,

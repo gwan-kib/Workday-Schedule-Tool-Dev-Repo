@@ -97,6 +97,8 @@ export async function loadMainPanel(shadowRoot) {
 
     courseColorGrid: shadowRoot.querySelector("#course-color-grid"),
     courseColorReset: shadowRoot.querySelector("#course-color-reset"),
+
+    hoverTipsToggle: shadowRoot.querySelector("#setting-hover-tips"),
   };
 
   debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", ui);

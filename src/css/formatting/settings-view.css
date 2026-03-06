@@ -93,6 +93,70 @@
   font-size: 12px;
 }
 
+.widget-panel[data-panel="settings"] .settings-tooltip-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 200px;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__hint {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__slider {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  transition: background 0.12s ease;
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transition: transform 0.12s ease;
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__input:checked + .settings-toggle__slider::after {
+  transform: translateX(18px);
+}
+
+.widget-panel[data-panel="settings"] .settings-toggle__input:focus-visible + .settings-toggle__slider {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
 .widget-panel[data-panel="settings"] .settings-field {
   display: block;
 }
@@ -140,4 +204,3 @@
   outline: 2px solid;
   outline-offset: 2px;
 }
-

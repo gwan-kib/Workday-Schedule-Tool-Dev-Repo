@@ -35,6 +35,7 @@ import {
   normalizeCourseColorAssignments,
   persistCourseColorAssignments,
 } from "./mainPanel/courseColorSettings.js";
+import { loadHoverTooltipSetting, persistHoverTooltipSetting } from "./mainPanel/hoverTooltipSettings.js";
 
 const MAX_COURSE_COLORS = 7;
 
@@ -193,6 +194,23 @@ const assignCourseColors = (courses) => {
     if (ui.courseColorReset) {
       on(ui.courseColorReset, "click", async () => {
         await applyAndPersistCourseColors(DEFAULT_COURSE_COLOR_ASSIGNMENTS);
+      });
+    }
+
+    const applyHoverTipsSetting = async (enabled, { skipPersist = false } = {}) => {
+      const normalized = enabled !== false;
+      STATE.view.hoverTipsEnabled = normalized;
+      ui.mainPanel?.classList.toggle("is-hover-tooltips-off", !normalized);
+      if (ui.hoverTipsToggle) ui.hoverTipsToggle.checked = normalized;
+      if (!skipPersist) await persistHoverTooltipSetting(normalized);
+    };
+
+    const hoverTipsEnabled = await loadHoverTooltipSetting();
+    await applyHoverTipsSetting(hoverTipsEnabled, { skipPersist: true });
+
+    if (ui.hoverTipsToggle) {
+      on(ui.hoverTipsToggle, "change", async () => {
+        await applyHoverTipsSetting(ui.hoverTipsToggle.checked);
       });
     }
 
