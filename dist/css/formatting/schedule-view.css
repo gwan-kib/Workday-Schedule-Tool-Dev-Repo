@@ -290,7 +290,7 @@
   display: block;
   justify-content: center;
 
-  overflow: auto;
+  overflow: visible;
   overscroll-behavior: contain;
 }
 
