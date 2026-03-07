@@ -323,7 +323,7 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
     if (height <= 0) return;
 
     const block = document.createElement("div");
-    block.className = "schedule-conflict-float";
+    block.className = "schedule-conflict-float wd-hover-tooltip";
     block.style.left = `${left + borderLeft}px`;
     block.style.top = `${top + borderTop}px`;
     block.style.width = `${dayColWidth - borderX}px`;
@@ -334,7 +334,12 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
     symbol.textContent = "❗";
     block.appendChild(symbol);
 
-    if (conflict.codes?.length) block.title = `Conflict: ${conflict.codes.join(", ")}`;
+    if (conflict.codes?.length) {
+      const tooltipText = `Classes in conflict:\n[${conflict.codes.join(", ")}]`;
+      block.dataset.tooltip = tooltipText;
+      block.setAttribute("aria-label", tooltipText);
+      block.tabIndex = 0;
+    }
 
     overlay.appendChild(block);
   });

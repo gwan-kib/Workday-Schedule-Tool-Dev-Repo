@@ -486,7 +486,7 @@
 
 .schedule-conflict-float {
   position: absolute;
-  pointer-events: none;
+  pointer-events: auto;
   z-index: 10;
 
   display: flex;
