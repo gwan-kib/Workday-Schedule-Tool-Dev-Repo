@@ -1,4 +1,4 @@
-﻿import { debugFor } from "../utilities/debugTool.js";
+import { debugFor } from "../utilities/debugTool.js";
 
 const debug = debugFor("renderCourseRows");
 
@@ -10,6 +10,12 @@ const escHTML = (s) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+const normalizeConflictToken = (value) =>
+  String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
 
 // Normalizes whitespace in multi-line strings. Input: string. Output: cleaned string.
 function cleanLines(text) {
@@ -65,6 +71,7 @@ function formatMultiline(text) {
 export function renderCourseRows(ui, courses) {
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
+  const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
 
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
@@ -78,10 +85,19 @@ export function renderCourseRows(ui, courses) {
     const colorIndex = course?.colorIndex || (index % 7) + 1;
     const subClass = course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
     card.className = `course-card course-card--color-${colorIndex}${subClass}`;
+    const courseConflictKey = normalizeConflictToken(course.code || course.title || "");
+    const conflictPartners = conflictPartnersByCode.get(courseConflictKey) || [];
+    const conflictMessage = conflictPartners.length ? `Schedule conflict with: ${conflictPartners.join(", ")}` : "";
+    const showConflictIcon = conflictPartners.length > 0;
 
     card.innerHTML = `
       <div class="course-card__top">
         <div class="course-card__code">
+          ${
+            showConflictIcon
+              ? `<span class="course-code-conflict wd-hover-tooltip" aria-label="Schedule conflict warning" data-tooltip="${escHTML(conflictMessage)}">🚩</span>`
+              : ""
+          }
           ${
             codeInfo.subject
               ? `<span class="course-code-subject">${escHTML(codeInfo.subject)}</span>
@@ -123,4 +139,3 @@ export function renderCourseRows(ui, courses) {
 
   debug.log({ id: "renderCourseRows.done" }, "Rendered course rows", courses || []);
 }
-

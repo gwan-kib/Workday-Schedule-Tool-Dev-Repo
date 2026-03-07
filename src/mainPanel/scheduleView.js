@@ -23,6 +23,12 @@ const SEMESTER_MONTHS = {
   second: ["01", "12"],
 };
 
+const normalizeConflictToken = (value) =>
+  String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
 // Parses a time token into minutes since midnight. Input: token string. Output: minutes number or null.
 function parseTimeToken(token) {
   const match = String(token || "")
@@ -334,6 +340,43 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
   });
 }
 
+function buildConflictPartnerLookup(conflictBlocks = []) {
+  const partnersByCode = new Map();
+
+  (conflictBlocks || []).forEach((block) => {
+    const uniqueCodes = [];
+    const seen = new Set();
+
+    (block?.codes || []).forEach((rawCode) => {
+      const label = String(rawCode || "").trim();
+      const normalized = normalizeConflictToken(label);
+      if (!normalized || seen.has(normalized)) return;
+      seen.add(normalized);
+      uniqueCodes.push({ normalized, label });
+    });
+
+    uniqueCodes.forEach(({ normalized: codeKey }, i) => {
+      if (!partnersByCode.has(codeKey)) partnersByCode.set(codeKey, new Map());
+      const partnerMap = partnersByCode.get(codeKey);
+
+      uniqueCodes.forEach(({ normalized: otherKey, label: otherLabel }, j) => {
+        if (i === j) return;
+        if (!partnerMap.has(otherKey)) partnerMap.set(otherKey, otherLabel);
+      });
+    });
+  });
+
+  const lookup = new Map();
+  partnersByCode.forEach((partnerMap, codeKey) => {
+    const partners = Array.from(partnerMap.values()).sort((a, b) =>
+      normalizeConflictToken(a).localeCompare(normalizeConflictToken(b)),
+    );
+    lookup.set(codeKey, partners);
+  });
+
+  return lookup;
+}
+
 function updateFooterConflictMessage(ui, conflictCodes) {
   const alertEl = ui?.footerAlert || ui?.root?.querySelector("#schedule-conflict-alert");
   if (!alertEl) return;
@@ -360,7 +403,8 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
   const eventsByDay = buildDayEvents(courses || [], semester);
   const allEventsByDay = buildDayEvents(courses || [], null);
   const { conflictBlocks } = detectScheduleConflicts(eventsByDay);
-  const { conflictCodes } = detectScheduleConflicts(allEventsByDay);
+  const { conflictBlocks: allConflictBlocks, conflictCodes } = detectScheduleConflicts(allEventsByDay);
+  ui.conflictPartnersByCode = buildConflictPartnerLookup(allConflictBlocks);
 
   host.innerHTML = "";
   const tableWrap = buildScheduleTable(timeFormat);

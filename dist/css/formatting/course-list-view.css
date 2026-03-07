@@ -123,6 +123,23 @@
   cursor: pointer;
 }
 
+.course-code-conflict {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  cursor: default;
+}
+
+.course-code-conflict.wd-hover-tooltip::after {
+  left: 380%;
+}
+
+.course-code-conflict.wd-hover-tooltip::before {
+  left: 50%;
+}
+
 .course-card__instructor {
   text-align: right;
   font-weight: 600;

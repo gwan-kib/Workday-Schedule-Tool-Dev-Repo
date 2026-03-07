@@ -230,8 +230,8 @@ const assignCourseColors = (courses) => {
 
     const renderAll = () => {
       sortCourses(STATE.sort.key || "code");
-      renderCourseRows(ui, STATE.filtered);
       updateScheduleView();
+      renderCourseRows(ui, STATE.filtered);
     };
 
     const isMainPanel = (viewKey) => viewKey === STATE.view.panel;
@@ -528,8 +528,8 @@ const assignCourseColors = (courses) => {
     STATE.sort = STATE.sort || { key: "code", dir: 1 };
     sortCourses("code");
 
-    renderCourseRows(ui, STATE.filtered);
     updateScheduleView();
+    renderCourseRows(ui, STATE.filtered);
 
     setActiveView(STATE.view.panel);
 

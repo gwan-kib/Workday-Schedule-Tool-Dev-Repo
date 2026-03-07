@@ -116,7 +116,7 @@
 }
 
 .semester-button.is-active {
-  background: var(--hex-brand-main-1);
+  background: var(--hex-brand-main-2);
   color: var(--hex-brand-accent-1);
 }
 
