@@ -1,7 +1,7 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 
-const debug = debugFor("renderCourseRows");
-debugLog({ local: { renderCourseRows: false } });
+const debug = debugFor("renderCourseObjects");
+debugLog({ local: { renderCourseObjects: false } });
 
 // Escapes HTML entities in a string. Input: string. Output: escaped string.
 const escHTML = (s) =>
@@ -69,7 +69,7 @@ function formatMultiline(text) {
 }
 
 // Renders course rows into the table body. Input: ui object, courses array. Output: none.
-export function renderCourseRows(ui, courses) {
+export function renderCourseObjects(ui, courses) {
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
   const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
@@ -138,5 +138,5 @@ export function renderCourseRows(ui, courses) {
 
   ui.tableBody.appendChild(frag);
 
-  debug.log({ id: "renderCourseRows.done" }, "Rendered course rows", courses || []);
+  debug.log({ id: "renderCourseObjects.done" }, "Rendered course rows", courses || []);
 }

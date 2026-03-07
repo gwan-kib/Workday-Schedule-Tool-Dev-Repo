@@ -6,7 +6,7 @@ import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { extractCoursesData } from "./extraction/index.js";
 
 import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courseViewSorting.js";
-import { renderCourseRows } from "./mainPanel/renderCourseRows.js";
+import { renderCourseObjects } from "./mainPanel/renderCourseObjects.js";
 import { renderSchedule } from "./mainPanel/scheduleView.js";
 
 import { exportICS } from "./exportLogic/exportIcs.js";
@@ -228,7 +228,7 @@ const assignCourseColors = (courses) => {
 
     const renderAll = () => {
       sortCourses(STATE.sort.key || "code");
-      renderCourseRows(ui, STATE.filtered);
+      renderCourseObjects(ui, STATE.filtered);
       updateScheduleView();
     };
 
@@ -526,7 +526,7 @@ const assignCourseColors = (courses) => {
     STATE.sort = STATE.sort || { key: "code", dir: 1 };
     sortCourses("code");
 
-    renderCourseRows(ui, STATE.filtered);
+    renderCourseObjects(ui, STATE.filtered);
     updateScheduleView();
 
     setActiveView(STATE.view.panel);
