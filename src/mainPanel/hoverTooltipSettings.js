@@ -1,6 +1,7 @@
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("hoverTooltipSettings");
+debugLog({ local: { hoverTooltipSettings: false } });
 
 const STORAGE_KEY = "wdHoverTooltipsEnabled";
 const useChromeStorage = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;

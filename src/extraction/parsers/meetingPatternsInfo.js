@@ -1,6 +1,7 @@
-import { debugFor } from "../../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("meetingPatternsInfo");
+debugLog({ local: { meetingPatternsInfo: false } });
 
 const DATE_RE = /\b\d{4}-\d{2}-\d{2}\s*-\s*\d{4}-\d{2}-\d{2}\b/;
 const TIME_RE = /\b\d{1,2}:\d{2}\s*[ap]\.?m\.?\b/i;

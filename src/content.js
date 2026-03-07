@@ -108,8 +108,6 @@ const assignCourseColors = (courses) => {
 
 // Bootstraps the content script UI and event wiring. Input: none. Output: none.
 (() => {
-  console.log("[WD] content script loaded");
-
   async function boot() {
     const shadowRoot = ensureMount();
     const ui = await loadMainPanel(shadowRoot);
@@ -230,8 +228,8 @@ const assignCourseColors = (courses) => {
 
     const renderAll = () => {
       sortCourses(STATE.sort.key || "code");
-      updateScheduleView();
       renderCourseRows(ui, STATE.filtered);
+      updateScheduleView();
     };
 
     const isMainPanel = (viewKey) => viewKey === STATE.view.panel;
@@ -528,8 +526,8 @@ const assignCourseColors = (courses) => {
     STATE.sort = STATE.sort || { key: "code", dir: 1 };
     sortCourses("code");
 
-    updateScheduleView();
     renderCourseRows(ui, STATE.filtered);
+    updateScheduleView();
 
     setActiveView(STATE.view.panel);
 

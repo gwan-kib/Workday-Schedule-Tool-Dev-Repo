@@ -1,5 +1,5 @@
 import { $$ } from "../utilities/dom.js";
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 import { buildHeaderMaps, findWorkdayGrid } from "./grid.js";
 import { parseSectionLinkString } from "./parsers/sectionLinkInfo.js";
 import {
@@ -12,6 +12,7 @@ import {
 import { createRowCellReader } from "./rowCellReader.js";
 
 const debug = debugFor("courseExtraction");
+debugLog({ local: { courseExtraction: false } });
 
 // Extracts courses from the Workday grid. Input: none. Output: array of course objects.
 export async function extractCoursesData() {

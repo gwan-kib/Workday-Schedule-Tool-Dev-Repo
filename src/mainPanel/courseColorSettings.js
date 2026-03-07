@@ -1,6 +1,7 @@
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("courseColorSettings");
+debugLog({ local: { courseColorSettings: false } });
 
 export const COURSE_COLOR_COUNT = 7;
 export const COURSE_COLOR_LABELS = ["Red", "Orange", "Purple", "Blue", "Yellow", "Green", "Teal"];

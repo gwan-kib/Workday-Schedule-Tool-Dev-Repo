@@ -1,6 +1,7 @@
-﻿import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("loadMainPanel");
+debugLog({ local: { loadMainPanel: false } });
 
 // Loads panel HTML and CSS into the shadow root and returns UI references. Input: ShadowRoot. Output: ui object.
 export async function loadMainPanel(shadowRoot) {

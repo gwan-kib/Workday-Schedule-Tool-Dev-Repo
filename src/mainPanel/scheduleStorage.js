@@ -1,5 +1,6 @@
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 const debug = debugFor("scheduleStorage");
+debugLog({ local: { scheduleStorage: false } });
 
 const STORAGE_KEY = "wdSavedSchedules";
 const MAX_SCHEDULES = 10;

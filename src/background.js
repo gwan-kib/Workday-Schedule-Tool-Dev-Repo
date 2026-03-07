@@ -1,6 +1,7 @@
-import { debugFor } from "./utilities/debugTool.js"; 
+import { debugFor, debugLog } from "./utilities/debugTool.js"; 
 
-const debug = debugFor("background"); 
+const debug = debugFor("background");
+debugLog({ local: { background: false } }); 
 
 // Handles action button clicks by sending a toggle message to the active tab. Input: Chrome tab object. Output: none.
 chrome.action.onClicked.addListener((tab) => {

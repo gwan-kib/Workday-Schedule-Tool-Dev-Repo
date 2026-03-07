@@ -1,6 +1,7 @@
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("renderCourseRows");
+debugLog({ local: { renderCourseRows: false } });
 
 // Escapes HTML entities in a string. Input: string. Output: escaped string.
 const escHTML = (s) =>

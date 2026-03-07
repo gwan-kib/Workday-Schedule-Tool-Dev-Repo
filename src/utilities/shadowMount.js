@@ -1,5 +1,6 @@
-import { debugFor } from "./debugTool.js";
+import { debugFor, debugLog } from "./debugTool.js";
 const debug = debugFor("shadowMount");
+debugLog({ local: { shadowMount: false } });
 
 const EXT_ID = "UBC Workday - Schedule Tool";
 
