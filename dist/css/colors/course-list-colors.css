@@ -72,6 +72,25 @@
   color: var(--hex-neutral-3);
 }
 
+.course-card__avg-button {
+  color: var(--course-card-border);
+  background: var(--course-card-chip-bg);
+  border-color: var(--course-card-border);
+}
+
+.course-card__avg-button:hover:not([disabled]) {
+  background: var(--course-card-border);
+  color: var(--course-card-chip-bg);
+  border-color: var(--course-card-chip-bg);
+}
+
+.course-card__avg-button[disabled],
+.course-card__avg-button.is-disabled {
+  color: var(--hex-neutral-1);
+  background: var(--hex-neutral-4);
+  border-color: var(--hex-neutral-4);
+}
+
 /* Course card color cycle (7) with 1 sub palette (card, chip) */
 .course-card--color-1 {
   --course-card-bg: var(--course-color-1-bg);

@@ -1,4 +1,5 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { fetchSectionGradesWithFallback } from "../averageGrades/gradesApiCall.js";
 
 const debug = debugFor("renderCourseObjects");
 debugLog({ local: { renderCourseObjects: false } });
@@ -43,7 +44,7 @@ function splitMeeting(meeting) {
 
 // Splits a course code into subject/number. Input: code string. Output: object.
 function splitCourseCode(code) {
-  const match = String(code || "").match(/^([A-Z_]+)\s*(\d+)$/);
+  const match = String(code || "").match(/^([A-Z_]+)\s*(\d+[A-Z]?)$/);
   if (match) {
     return { subject: match[1], number: match[2], raw: `${match[1]} ${match[2]}` };
   }
@@ -68,6 +69,111 @@ function formatMultiline(text) {
   return escHTML(text || "").replace(/\n/g, "<br>");
 }
 
+// Parses course info needed for average lookup. Input: course object. Output: { subject, course, section, campus } or null.
+function buildAverageCourseInfo(courseData) {
+  const match = String(courseData?.code || "")
+    .trim()
+    .toUpperCase()
+    .match(/^\s*([A-Z][A-Z0-9_]{1,8})\s*(\d{3}[A-Z]?)\s*$/);
+  if (!match) return null;
+
+  const section = String(courseData?.section_number || "")
+    .trim()
+    .toUpperCase()
+    .slice(0, 3);
+  const rawSubject = match[1];
+  const campus = rawSubject.endsWith("_O") ? "UBCO" : "UBCV";
+
+  return {
+    subject: rawSubject.replace(/_[VO]$/i, ""),
+    course: match[2],
+    section,
+    campus,
+  };
+}
+
+// Extracts an average value from API data. Input: API payload. Output: number|string|null.
+function extractAverage(data) {
+  if (!data) return null;
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const avg = extractAverage(item);
+      if (avg != null) return avg;
+    }
+    return null;
+  }
+  if (typeof data !== "object") return null;
+
+  const direct =
+    data.average ?? data.avg ?? data.average_grade ?? data.averagePercent ?? data.avgPercent ?? data.mean ?? null;
+  if (typeof direct === "number") return direct;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+
+  const nested = data?.grades?.average ?? data?.grades?.avg ?? data?.summary?.average ?? data?.summary?.avg ?? null;
+  if (typeof nested === "number") return nested;
+  if (typeof nested === "string" && nested.trim()) return nested.trim();
+
+  return null;
+}
+
+// Returns true when API payload has an average. Input: API payload. Output: boolean.
+const hasValidAverage = (data) => extractAverage(data) != null;
+
+// Formats average label for button text. Input: average value. Output: string.
+function formatAverageText(average) {
+  if (average == null) return "Avg: N/A";
+  if (typeof average === "number") return `Avg: ${average.toFixed(1)}%`;
+  return `Avg: ${average}%`;
+}
+
+// Returns current yearsession string. Input: none. Output: YYYYW string.
+function getCurrentYearsession() {
+  return `${new Date().getFullYear()}W`;
+}
+
+// Loads average into a course-card button. Input: button element. Output: none.
+async function loadAverageForButton(button) {
+  if (!button || button.dataset.loading === "true") return;
+
+  const subject = button.dataset.subject || "";
+  const course = button.dataset.course || "";
+  const section = button.dataset.section || "";
+  const campus = button.dataset.campus || "UBCV";
+  const yearsession = getCurrentYearsession();
+
+  button.dataset.loading = "true";
+  button.disabled = true;
+  button.textContent = "Loading...";
+
+  if (!subject || !course || !yearsession) {
+    button.textContent = "Avg: N/A";
+    button.disabled = false;
+    button.dataset.loading = "false";
+    return;
+  }
+
+  try {
+    const data = await fetchSectionGradesWithFallback(
+      {
+        campus,
+        yearsession,
+        subject,
+        course,
+        section,
+      },
+      { isValid: hasValidAverage },
+    );
+
+    const average = extractAverage(data);
+    button.textContent = formatAverageText(average);
+  } catch (error) {
+    button.textContent = "Avg: N/A";
+  } finally {
+    button.disabled = false;
+    button.dataset.loading = "false";
+  }
+}
+
 // Renders course rows into the table body. Input: ui object, courses array. Output: none.
 export function renderCourseObjects(ui, courses) {
   ui.tableBody.innerHTML = "";
@@ -80,6 +186,7 @@ export function renderCourseObjects(ui, courses) {
 
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
     const codeInfo = splitCourseCode(course.code || "");
+    const averageInfo = buildAverageCourseInfo(course);
     const instructorName = (course.instructor || "").trim() || "TBA";
 
     const card = document.createElement("div");
@@ -113,25 +220,45 @@ export function renderCourseObjects(ui, courses) {
         </div>
       </div>
       <div class="course-card__title">${escHTML(course.title || "")}</div>
-      <div class="course-card__details">
-        ${
-          meetingMain
-            ? `<div class="course-card__detail">
-                <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
-                <span>${formatMultiline(meetingMain)}</span>
-              </div>`
-            : ""
-        }
-        ${
-          meetingSub
-            ? `<div class="course-card__detail">
-                <span class="material-symbols-rounded" aria-hidden="true">location_on</span>
-                <span>${formatMultiline(meetingSub)}</span>
-              </div>`
-            : ""
-        }
+      <div class="course-card__body">
+        <div class="course-card__details">
+          ${
+            meetingMain
+              ? `<div class="course-card__detail">
+                  <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
+                  <span>${formatMultiline(meetingMain)}</span>
+                </div>`
+              : ""
+          }
+          ${
+            meetingSub
+              ? `<div class="course-card__detail">
+                  <span class="material-symbols-rounded" aria-hidden="true">location_on</span>
+                  <span>${formatMultiline(meetingSub)}</span>
+                </div>`
+              : ""
+          }
+        </div>
+        <div class="course-card__actions">
+          <button
+            type="button"
+            class="course-card__avg-button${averageInfo ? "" : " is-disabled"}"
+            ${averageInfo ? `data-subject="${escHTML(averageInfo.subject)}" data-course="${escHTML(averageInfo.course)}" data-section="${escHTML(averageInfo.section)}" data-campus="${escHTML(averageInfo.campus)}"` : "disabled"}
+          >
+            5 Year Avg
+          </button>
+        </div>
       </div>
     `;
+
+    const averageButton = card.querySelector(".course-card__avg-button");
+    if (averageButton && !averageButton.disabled) {
+      averageButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await loadAverageForButton(averageButton);
+      });
+    }
 
     frag.appendChild(card);
   });
