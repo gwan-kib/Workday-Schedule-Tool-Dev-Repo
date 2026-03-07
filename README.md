@@ -3,7 +3,7 @@ _Not affiliated with or endorsed by Workday._
 <div align="center">
   <img src="icon128.png" width="128px" height="128px" alt="Workday Calendar Tool logo">
 
-# Workday - Schedule Tool
+# UBC Workday - Schedule Tool
 
 <h3 style="margin:0;">Simplify your semester.<br>Visualize your schedule.<br>Export it when you're ready.</h3>
 
@@ -35,7 +35,7 @@ If you use Workday for registration, this helps you:
 7. Export to calendar if needed
 
 - still stuck? check out https://docs.google.com/document/d/1D0YqHct_d3rR8WtlkHF9Dybqb3mFB7Wka0ZWsFZOda8/edit?tab=t.0
-  
+
 ---
 
 ## Features

@@ -234,7 +234,7 @@
   width: 36px;
 }
 
-#widget-refresh.rotate {
+#widget-refresh.rotate .refresh-icon {
   animation: spin360 0.4s ease-in-out;
 }
 
@@ -362,4 +362,3 @@
   text-align: center;
   opacity: 0.7;
 }
-

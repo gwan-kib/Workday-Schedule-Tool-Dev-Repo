@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 
 .widget-panel[data-panel="help"] .help-panel {
-  padding: 10px 30px;
+  padding: 0px 8px;
 }
 
 .widget-panel[data-panel="help"] .help-panel h2 {

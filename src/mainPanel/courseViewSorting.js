@@ -1,9 +1,10 @@
 import { $$, on } from "../utilities/dom.js";
 import { STATE } from "../core/state.js";
 import { renderCourseRows } from "./renderCourseRows.js";
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("mainPanelInteractions");
+debugLog({ local: { mainPanelInteractions: false } });
 
 // Filters courses into STATE.filtered by query. Input: query string. Output: none.
 export function filterCourses(query) {

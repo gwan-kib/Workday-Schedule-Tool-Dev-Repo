@@ -42,6 +42,10 @@
   border-color: var(--course-card-border, var(--hex-brand-accent-4));
 }
 
+.course-code-conflict {
+  color: var(--hex-danger-1);
+}
+
 .course-pill {
   color: var(--hex-neutral-3);
   background: var(--course-card-chip-bg, var(--hex-brand-accent-3));
@@ -136,10 +140,4 @@
 .course-card--sub {
   --course-card-bg: var(--course-card-sub-bg);
   --course-card-chip-bg: var(--course-card-sub-chip-bg);
-}
-
-.instructor-popup-content {
-  color: var(--hex-brand-accent-5);
-  background: var(--hex-brand-main-1);
-  border: 1px solid var(--hex-brand-main-2);
 }

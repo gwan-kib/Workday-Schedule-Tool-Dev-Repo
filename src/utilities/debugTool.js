@@ -1,5 +1,5 @@
 const logConfiguration = {
-  global: false, // master switch (all logs everywhere)
+  global: true, // master switch (all logs everywhere)
   local: {}, // per-scope switch: { "schedule": true/false, ... }
   log: {}, // per-log switch: { "schedule.render": true/false, ... }
 };
@@ -9,7 +9,7 @@ const logConfiguration = {
 // debugLog({ local: { schedule: true } })        -> turns logs ON for the "schedule" module (local control)
 // debugLog({ log: { "schedule.render": false }}) -> disables logging for the "schedule.render" function (specific log control)
 export const debugLog = ({ global, local, log } = {}) => {
-  if (global && typeof global === "boolean") logConfiguration.global = global;
+  if (typeof global === "boolean") logConfiguration.global = global;
 
   if (local && typeof local === "object") {
     for (const [k, v] of Object.entries(local)) {
@@ -43,7 +43,7 @@ const loggingIsOn = (scope, id) => {
 
 // main logger factory for a given scope (file/module), eg. const D = debugFor("schedule");
 export const debugFor = (scope) => {
-  const prefix = scope ? `[Workday - Schedule Tool (file: ${scope})]\n` : "[Workday - Schedule Tool]\n"; // prefix at the start of all logs
+  const prefix = scope ? `[UBC Workday - Schedule Tool (file: ${scope})]\n` : "[UBC Workday - Schedule Tool]\n"; // prefix at the start of all logs
 
   // .log can either be the message (string), .log("message"), or a meta object, .log({ id: "schedule.render" }, "message"),
   // or both, .log({ id: "schedule.render", on: false }, "message")

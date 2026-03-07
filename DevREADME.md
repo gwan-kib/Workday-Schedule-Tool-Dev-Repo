@@ -1,4 +1,4 @@
-# Workday - Schedule Tool (Developer Guide)
+# UBC Workday - Schedule Tool (Developer Guide)
 
 This repo contains a Chrome (Manifest V3) extension that extracts course schedules from Workday, renders a weekly view, and exports calendars. This document covers local setup, build steps, and project structure.
 
@@ -44,22 +44,22 @@ After making changes to source files, rebuild and then click "Reload" on the ext
 ## Project Structure
 
 - `src/` extension source
-    - `src/background.js` service worker entry
-    - `src/content.js` content script entry (main UI, schedule rendering, buttons)
-    - `src/panel.html` extension panel UI
+  - `src/background.js` service worker entry
+  - `src/content.js` content script entry (main UI, schedule rendering, buttons)
+  - `src/panel.html` extension panel UI
 
-    - `src/averageGrades/` UBC Grades API integration
-    - `src/core/` shared core helpers used across features
-    - `src/css/` styles (copied into `dist/css/` at build)
-        - `src/css/css-imports.css` if you ever add a css file, make sure to import it here and add it to, const cssFiles (in src\mainPanel\loadMainPanel.js)
-        - `src/css/colors/` color tokens and theme files
-            - `src/css/colors/theme-tokens.css` color tokens (where colors are set for the whole extension; need to change a color? use this file)
-        - `src/css/formatting/` layout and component styling
-    - `src/exportLogic/` calendar export helpers
-    - `src/extraction/` Workday DOM parsing and schedule extraction
-        - `src/extraction/parsers/` text/DOM parsers for course and meeting details
-    - `src/mainPanel/` schedule panel UI rendering and interactions
-    - `src/utilities/` shared utilities (debug, DOM, shadow mount, etc.)
+  - `src/averageGrades/` UBC Grades API integration
+  - `src/core/` shared core helpers used across features
+  - `src/css/` styles (copied into `dist/css/` at build)
+    - `src/css/css-imports.css` if you ever add a css file, make sure to import it here and add it to, const cssFiles (in src\mainPanel\loadMainPanel.js)
+    - `src/css/colors/` color tokens and theme files
+      - `src/css/colors/theme-tokens.css` color tokens (where colors are set for the whole extension; need to change a color? use this file)
+    - `src/css/formatting/` layout and component styling
+  - `src/exportLogic/` calendar export helpers
+  - `src/extraction/` Workday DOM parsing and schedule extraction
+    - `src/extraction/parsers/` text/DOM parsers for course and meeting details
+  - `src/mainPanel/` schedule panel UI rendering and interactions
+  - `src/utilities/` shared utilities (debug, DOM, shadow mount, etc.)
 
 - `dist/` build output consumed by `manifest.json`
 - `node_modules/` dependencies installed by npm (local dev only)
@@ -112,13 +112,14 @@ const logConfiguration = {
 };
 ```
 
-2. To see the output of a specific method, ensure this import is has been added to the file: 
+2. To see the output of a specific method, ensure this import is has been added to the file:
 
 ```js
 import { debugLog } from "./utilities/debugTool.js";
 ```
 
 Then add this near the top of the file you care about (example for schedule extraction, courseExtraction method):
+
 ```js
 debugLog({ global: true, local: { courseExtraction: true } });
 ```
@@ -129,7 +130,7 @@ After changes:
 - Reload the extension in `chrome://extensions`
 - Open DevTools (ctrl+shift+i) on the Workday page and check the console
 
-Tip: each log includes a prefix like `[Workday - Schedule Tool (file: courseExtraction)]` and many logs include an `id` to help you filter.
+Tip: each log includes a prefix like `[UBC Workday - Schedule Tool (file: courseExtraction)]` and many logs include an `id` to help you filter.
 
 ### Adding a New Debug Log (eg. for file newFeatureFile.js)
 

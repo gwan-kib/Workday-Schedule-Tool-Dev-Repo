@@ -1,6 +1,7 @@
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("renderCourseRows");
+debugLog({ local: { renderCourseRows: false } });
 
 // Escapes HTML entities in a string. Input: string. Output: escaped string.
 const escHTML = (s) =>
@@ -10,6 +11,12 @@ const escHTML = (s) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+const normalizeConflictToken = (value) =>
+  String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
 
 // Normalizes whitespace in multi-line strings. Input: string. Output: cleaned string.
 function cleanLines(text) {
@@ -65,6 +72,7 @@ function formatMultiline(text) {
 export function renderCourseRows(ui, courses) {
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
+  const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
 
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
@@ -76,31 +84,32 @@ export function renderCourseRows(ui, courses) {
 
     const card = document.createElement("div");
     const colorIndex = course?.colorIndex || (index % 7) + 1;
-    const subClass =
-      course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
+    const subClass = course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
     card.className = `course-card course-card--color-${colorIndex}${subClass}`;
+    const courseConflictKey = normalizeConflictToken(course.code || course.title || "");
+    const conflictPartners = conflictPartnersByCode.get(courseConflictKey) || [];
+    const conflictMessage = conflictPartners.length ? `Schedule conflict with: ${conflictPartners.join(", ")}` : "";
+    const showConflictIcon = conflictPartners.length > 0;
 
     card.innerHTML = `
       <div class="course-card__top">
         <div class="course-card__code">
+          ${
+            showConflictIcon
+              ? `<span class="course-code-conflict wd-hover-tooltip" aria-label="Schedule conflict warning" data-tooltip="${escHTML(conflictMessage)}">🚩</span>`
+              : ""
+          }
           ${
             codeInfo.subject
               ? `<span class="course-code-subject">${escHTML(codeInfo.subject)}</span>
                  <span class="course-code-number">${escHTML(codeInfo.number)}</span>`
               : `<span class="course-code-subject">${escHTML(codeInfo.raw)}</span>`
           }
-          ${sectionLabel ? `<span class="course-code-section" title="Section Number">${escHTML(sectionLabel)}</span>` : ""}
+          ${sectionLabel ? `<span class="course-code-section wd-hover-tooltip" data-tooltip="Section number">${escHTML(sectionLabel)}</span>` : ""}
           ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
         </div>
         <div class="course-card__instructor">
-          <div class="instructor-wrapper">
             ${formatInstructorName(instructorName)}
-            <div class="instructor-popup">
-              <div class="instructor-popup-content">
-                ${escHTML(instructorName)}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       <div class="course-card__title">${escHTML(course.title || "")}</div>

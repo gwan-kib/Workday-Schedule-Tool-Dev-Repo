@@ -1,5 +1,6 @@
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 const debug = debugFor("scheduleStorage");
+debugLog({ local: { scheduleStorage: false } });
 
 const STORAGE_KEY = "wdSavedSchedules";
 const MAX_SCHEDULES = 10;
@@ -20,6 +21,7 @@ const sanitizeSchedules = (schedules) => {
       name: s.name || "Untitled",
       savedAt: s.savedAt || new Date().toISOString(),
       courses: s.courses,
+      colorAssignments: Array.isArray(s.colorAssignments) ? s.colorAssignments : null,
     }));
 };
 
@@ -63,7 +65,7 @@ export async function persistSavedSchedules(schedules) {
 }
 
 // Creates a snapshot object for a schedule. Input: name string, courses array. Output: schedule object.
-export function createScheduleSnapshot(name, courses) {
+export function createScheduleSnapshot(name, courses, colorAssignments) {
   const id =
     typeof crypto !== "undefined" && crypto.randomUUID
       ? crypto.randomUUID()
@@ -74,6 +76,7 @@ export function createScheduleSnapshot(name, courses) {
     name: name || "Untitled",
     savedAt: new Date().toISOString(),
     courses: cloneCourses(courses || []),
+    colorAssignments: Array.isArray(colorAssignments) ? [...colorAssignments] : null,
   };
 }
 

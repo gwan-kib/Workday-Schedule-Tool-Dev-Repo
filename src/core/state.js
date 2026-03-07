@@ -13,5 +13,7 @@ export const STATE = {
     panel: "list",
     lastMainPanel: "list",
     semester: "first",
+    timeFormat: "am/pm",
+    hoverTipsEnabled: true,
   },
 };

@@ -1,7 +1,8 @@
 import { $$ } from "../utilities/dom";
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("grid");
+debugLog({ local: { grid: false } });
 
 // Normalizes text for matching. Input: string. Output: normalized lowercased string.
 export const normalizeText = (s) =>

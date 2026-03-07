@@ -1,6 +1,7 @@
-import { debugFor } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("loadMainPanel");
+debugLog({ local: { loadMainPanel: false } });
 
 // Loads panel HTML and CSS into the shadow root and returns UI references. Input: ShadowRoot. Output: ui object.
 export async function loadMainPanel(shadowRoot) {
@@ -15,6 +16,7 @@ export async function loadMainPanel(shadowRoot) {
     "formatting/help-view.css",
     "formatting/widget-footer.css",
     "formatting/floating-button.css",
+    "formatting/hover-tooltip.css",
 
     "colors/theme-tokens.css",
     "colors/widget-base-colors.css",
@@ -25,6 +27,7 @@ export async function loadMainPanel(shadowRoot) {
     "colors/help-view-colors.css",
     "colors/widget-footer-colors.css",
     "colors/floating-button-colors.css",
+    "colors/hover-tooltip-colors.css",
     "colors/settings-colors.css",
   ];
 
@@ -92,9 +95,16 @@ export async function loadMainPanel(shadowRoot) {
     settingsButton: shadowRoot.querySelector(".settings"),
 
     footerAlert: shadowRoot.querySelector("#schedule-conflict-alert"),
+
+    courseColorGrid: shadowRoot.querySelector("#course-color-grid"),
+    courseColorReset: shadowRoot.querySelector("#course-color-reset"),
+
+    hoverTipsToggle: shadowRoot.querySelector("#setting-hover-tips"),
   };
 
   debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", ui);
 
   return ui;
 }
+
+

@@ -25,6 +25,17 @@ import {
   persistSavedSchedules,
   renderSavedSchedules,
 } from "./mainPanel/scheduleStorage.js";
+import {
+  applyCourseColorAssignments,
+  captureCourseColorPalettes,
+  COURSE_COLOR_COUNT,
+  COURSE_COLOR_LABELS,
+  DEFAULT_COURSE_COLOR_ASSIGNMENTS,
+  loadCourseColorAssignments,
+  normalizeCourseColorAssignments,
+  persistCourseColorAssignments,
+} from "./mainPanel/courseColorSettings.js";
+import { loadHoverTooltipSetting, persistHoverTooltipSetting } from "./mainPanel/hoverTooltipSettings.js";
 
 const MAX_COURSE_COLORS = 7;
 
@@ -34,10 +45,16 @@ const assignCourseColors = (courses) => {
 
   const getCourseKey = (course) => {
     if (!course) return "";
-    const code = String(course.code || "").trim().toUpperCase();
-    const title = String(course.title || "").trim().toUpperCase();
+    const code = String(course.code || "")
+      .trim()
+      .toUpperCase();
+    const title = String(course.title || "")
+      .trim()
+      .toUpperCase();
     if (code || title) return `${code}||${title}`;
-    return String(course.section_number || "").trim().toUpperCase();
+    return String(course.section_number || "")
+      .trim()
+      .toUpperCase();
   };
 
   const isLecture = (course) => !(course?.isLab || course?.isSeminar || course?.isDiscussion);
@@ -91,14 +108,122 @@ const assignCourseColors = (courses) => {
 
 // Bootstraps the content script UI and event wiring. Input: none. Output: none.
 (() => {
-  console.log("[WD] content script loaded");
-
   async function boot() {
     const shadowRoot = ensureMount();
     const ui = await loadMainPanel(shadowRoot);
 
+    const courseColorTarget = ui.root?.host || ui.mainPanel;
+    const courseColorPalettes = captureCourseColorPalettes(courseColorTarget);
+    let courseColorAssignments = await loadCourseColorAssignments();
+
+    if (courseColorTarget && courseColorPalettes.length) {
+      courseColorAssignments = normalizeCourseColorAssignments(courseColorAssignments);
+      applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
+    }
+
+    const renderCourseColorSettings = () => {
+      if (!ui.courseColorGrid || !courseColorPalettes.length) return;
+      ui.courseColorGrid.innerHTML = "";
+
+      const paletteById = new Map(courseColorPalettes.map((palette) => [palette.id, palette]));
+
+      for (let index = 0; index < COURSE_COLOR_COUNT; index += 1) {
+        const courseIndex = index + 1;
+        const row = document.createElement("div");
+        row.className = "course-color-row";
+
+        const label = document.createElement("div");
+        label.className = "course-color-label";
+        label.textContent = `Course ${courseIndex}`;
+
+        const control = document.createElement("div");
+        control.className = "course-color-control";
+
+        const select = document.createElement("select");
+        select.className = "course-color-select";
+        select.dataset.courseColor = String(courseIndex);
+
+        courseColorPalettes.forEach((palette, paletteIndex) => {
+          const option = document.createElement("option");
+          option.value = String(palette.id);
+          option.textContent = COURSE_COLOR_LABELS[paletteIndex] || palette.label || `Palette ${palette.id}`;
+          if (palette.id === courseColorAssignments[index]) option.selected = true;
+          select.appendChild(option);
+        });
+
+        const swatch = document.createElement("div");
+        swatch.className = "course-color-swatch";
+
+        const updateSwatch = (paletteId) => {
+          const palette = paletteById.get(paletteId);
+          if (!palette) return;
+          swatch.style.background = palette.bg;
+          swatch.style.borderColor = palette.border;
+        };
+
+        updateSwatch(courseColorAssignments[index]);
+
+        on(select, "change", async () => {
+          const paletteId = Number(select.value);
+          courseColorAssignments[index] = paletteId;
+          courseColorAssignments = normalizeCourseColorAssignments(courseColorAssignments);
+          applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
+          updateSwatch(paletteId);
+          await persistCourseColorAssignments(courseColorAssignments);
+        });
+
+        control.appendChild(select);
+        control.appendChild(swatch);
+        row.appendChild(label);
+        row.appendChild(control);
+        ui.courseColorGrid.appendChild(row);
+      }
+    };
+
+    const applyAndPersistCourseColors = async (assignments, { skipPersist = false } = {}) => {
+      courseColorAssignments = normalizeCourseColorAssignments(assignments);
+      applyCourseColorAssignments(courseColorTarget, courseColorPalettes, courseColorAssignments);
+      renderCourseColorSettings();
+      if (!skipPersist) await persistCourseColorAssignments(courseColorAssignments);
+    };
+
+    renderCourseColorSettings();
+
+    if (ui.courseColorReset) {
+      on(ui.courseColorReset, "click", async () => {
+        await applyAndPersistCourseColors(DEFAULT_COURSE_COLOR_ASSIGNMENTS);
+      });
+    }
+
+    const applyHoverTipsSetting = async (enabled, { skipPersist = false } = {}) => {
+      const normalized = enabled !== false;
+      STATE.view.hoverTipsEnabled = normalized;
+      ui.mainPanel?.classList.toggle("is-hover-tooltips-off", !normalized);
+      if (ui.hoverTipsToggle) ui.hoverTipsToggle.checked = normalized;
+      if (!skipPersist) await persistHoverTooltipSetting(normalized);
+    };
+
+    const hoverTipsEnabled = await loadHoverTooltipSetting();
+    await applyHoverTipsSetting(hoverTipsEnabled, { skipPersist: true });
+
+    if (ui.hoverTipsToggle) {
+      on(ui.hoverTipsToggle, "change", async () => {
+        await applyHoverTipsSetting(ui.hoverTipsToggle.checked);
+      });
+    }
+
     const updateScheduleView = () => {
-      renderSchedule(ui, STATE.filtered, STATE.view.semester);
+      renderSchedule(ui, STATE.filtered, STATE.view.semester, STATE.view.timeFormat);
+
+      const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
+      if (toggleButton) {
+        toggleButton.textContent = STATE.view.timeFormat === "am/pm" ? "AM/PM" : "24H";
+        toggleButton.setAttribute("aria-pressed", String(STATE.view.timeFormat === "am/pm"));
+        on(toggleButton, "click", () => {
+          STATE.view.timeFormat = STATE.view.timeFormat === "am/pm" ? "24h" : "am/pm";
+          updateScheduleView();
+        });
+      }
     };
 
     const renderAll = () => {
@@ -305,7 +430,7 @@ const assignCourseColors = (courses) => {
 
       if (!name) return;
 
-      const snapshot = createScheduleSnapshot(name, STATE.filtered);
+      const snapshot = createScheduleSnapshot(name, STATE.filtered, courseColorAssignments);
       STATE.savedSchedules = [snapshot, ...STATE.savedSchedules];
 
       await persistSavedSchedules(STATE.savedSchedules);
@@ -342,6 +467,10 @@ const assignCourseColors = (courses) => {
       }
 
       STATE.currentScheduleName = selected.name;
+      if (selected.colorAssignments && courseColorPalettes.length) {
+        await applyAndPersistCourseColors(selected.colorAssignments);
+      }
+
       STATE.courses = [...selected.courses];
       assignCourseColors(STATE.courses);
       STATE.filtered = [...selected.courses];

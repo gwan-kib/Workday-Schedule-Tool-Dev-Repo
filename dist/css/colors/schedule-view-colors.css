@@ -31,6 +31,15 @@
   background: transparent;
 }
 
+.schedule-time-toggle {
+  background: var(--hex-brand-accent-5);
+  color: var(--hex-brand-main-1);
+}
+
+.schedule-time-toggle:hover {
+  background: var(--hex-brand-accent-4);
+}
+
 .schedule-entry-float {
   background: var(--schedule-entry-bg, var(--hex-brand-accent-5));
   color: var(--hex-neutral-3);
@@ -103,12 +112,12 @@
 /* semester buttons */
 .semester-button {
   background: var(--hex-brand-accent-4);
-  color: var(--hex-brand-main-1);
+  color: var(--hex-brand-accent-6);
 }
 
 .semester-button.is-active {
-  background: var(--hex-brand-accent-6);
-  color: var(--hex-brand-accent-2);
+  background: var(--hex-brand-main-2);
+  color: var(--hex-brand-accent-1);
 }
 
 /* saved schedules */
