@@ -258,45 +258,27 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
 
   if (!firstBodyRow || !firstDayCell || !timeTh) return;
 
+  const timeColWidth = timeTh.getBoundingClientRect().width;
+  const dayColWidth = firstDayCell.getBoundingClientRect().width;
+  const headerHeight = table.querySelector("thead").getBoundingClientRect().height;
+  const rowHeight = firstBodyRow.getBoundingClientRect().height;
+
   const cellStyles = getComputedStyle(firstDayCell);
   const borderLeft = parseFloat(cellStyles.borderLeftWidth) || 0;
   const borderTop = parseFloat(cellStyles.borderTopWidth) || 0;
+  const borderRight = parseFloat(cellStyles.borderRightWidth) || 0;
+  const borderBottom = parseFloat(cellStyles.borderBottomWidth) || 0;
 
-  const borderX = (borderLeft);
-  const borderY = (borderTop);
-  const overlayRect = overlay.getBoundingClientRect();
-  const dayCells = new Map();
-  DAYS.forEach((day) => {
-    dayCells.set(day, Array.from(table.querySelectorAll(`tbody td.schedule-cell[data-day="${day}"]`)));
-  });
+  const borderX = (borderLeft + borderRight) / 2.0;
+  const borderY = (borderTop + borderBottom) / 2.0;
 
-  function getBlockMetrics(day, rowStart, rowSpan) {
-    const cells = dayCells.get(day) || [];
-    const start = Number.parseInt(rowStart, 10);
-    const span = Number.parseInt(rowSpan, 10);
-    if (!Number.isFinite(start) || !Number.isFinite(span) || span <= 0) return null;
-
-    const startCell = cells[start];
-    const endCell = cells[start + span - 1];
-    if (!startCell || !endCell) return null;
-
-    const startRect = startCell.getBoundingClientRect();
-    const endRect = endCell.getBoundingClientRect();
-
-    const left = startRect.left - overlayRect.left;
-    const top = startRect.top - overlayRect.top;
-    const width = startRect.width;
-    const height = endRect.bottom - startRect.top;
-
-    return { left, top, width, height };
-  }
-
-  DAYS.forEach((day) => {
+  DAYS.forEach((day, dayIndex) => {
     const events = eventsByDay.get(day) || [];
 
     events.forEach((ev) => {
-      const metrics = getBlockMetrics(day, ev.rowStart, ev.rowSpan);
-      if (!metrics) return;
+      const left = timeColWidth + dayIndex * dayColWidth;
+      const top = headerHeight + ev.rowStart * rowHeight;
+      const height = ev.rowSpan * rowHeight;
 
       const block = document.createElement("div");
       const colorClass = ev.colorIndex ? ` schedule-entry--color-${ev.colorIndex}` : "";
@@ -305,10 +287,10 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
           ? " schedule-entry--sub"
           : "";
       block.className = `schedule-entry-float${colorClass}${subClass}`;
-      block.style.left = `${metrics.left + borderLeft - .5}px`;
-      block.style.top = `${metrics.top + borderTop - .5}px`;
-      block.style.width = `${metrics.width - borderX}px`;
-      block.style.height = `${metrics.height - borderY}px`;
+      block.style.left = `${left + borderLeft}px`;
+      block.style.top = `${top + borderTop}px`;
+      block.style.width = `${dayColWidth - borderX - 0.1}px`;
+      block.style.height = `${height - borderY}px`;
 
       const overlapLayer = document.createElement("div");
       overlapLayer.className = "schedule-entry-overlap-layer";
@@ -333,19 +315,24 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
   });
 
   (conflictBlocks || []).forEach((conflict) => {
-    const metrics = getBlockMetrics(conflict.day, conflict.rowStart, conflict.rowSpan);
-    if (!metrics || metrics.height <= 0) return;
+    const dayIndex = DAYS.indexOf(conflict.day);
+    if (dayIndex === -1) return;
+
+    const left = timeColWidth + dayIndex * dayColWidth;
+    const top = headerHeight + conflict.rowStart * rowHeight;
+    const height = conflict.rowSpan * rowHeight;
+    if (height <= 0) return;
 
     const block = document.createElement("div");
     block.className = "schedule-conflict-float wd-hover-tooltip";
-    block.style.left = `${metrics.left + borderLeft - .5}px`;
-    block.style.top = `${metrics.top + borderTop - .5}px`;
-    block.style.width = `${metrics.width - borderX}px`;
-    block.style.height = `${metrics.height - borderY}px`;
+    block.style.left = `${left + borderLeft}px`;
+    block.style.top = `${top + borderTop}px`;
+    block.style.width = `${dayColWidth - borderX}px`;
+    block.style.height = `${height - borderY}px`;
 
     const symbol = document.createElement("div");
     symbol.className = "schedule-conflict-symbol";
-    symbol.textContent = "❗";
+    symbol.textContent = "\u2757";
     block.appendChild(symbol);
 
     if (conflict.codes?.length) {

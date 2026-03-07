@@ -2,6 +2,10 @@
   position: relative;
 }
 
+.schedule-conflict-float.wd-hover-tooltip {
+  position: absolute;
+}
+
 .widget.is-hover-tooltips-off .wd-hover-tooltip::after,
 .widget.is-hover-tooltips-off .wd-hover-tooltip::before {
   display: none;
