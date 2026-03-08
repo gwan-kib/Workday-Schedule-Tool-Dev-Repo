@@ -217,12 +217,8 @@
   border: 1px solid var(--hex-neutral-4);
   border-radius: 999px;
 
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-
-  transition:
-    box-shadow 150ms ease,
-    background-color 150ms ease;
 }
 
 /* Refresh button */

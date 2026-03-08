@@ -1,6 +1,6 @@
 import { $$, on } from "../utilities/dom.js";
 import { STATE } from "../core/state.js";
-import { renderCourseRows } from "./renderCourseRows.js";
+import { reorderCourseObjects } from "./renderCourseObjects.js";
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("mainPanelInteractions");
@@ -21,8 +21,8 @@ export function filterCourses(query) {
     keys.some((k) =>
       String(c?.[k] || "")
         .toLowerCase()
-        .includes(q)
-    )
+        .includes(q),
+    ),
   );
 }
 
@@ -51,7 +51,7 @@ export function wireTableSorting(ui) {
         // Third click: clear sorting and restore filtered order.
         STATE.sort = { key: null, dir: 1 };
         filterCourses(ui.searchInput?.value || "");
-        renderCourseRows(ui, STATE.filtered);
+        reorderCourseObjects(ui, STATE.filtered);
 
         headCells.forEach((h) => h.classList.remove("sorted-asc", "sorted-desc"));
         debug.log({ id: "wireTableSorting.click" }, "Cleared sort via list controls", { key });
@@ -59,7 +59,7 @@ export function wireTableSorting(ui) {
       }
 
       sortCourses(key);
-      renderCourseRows(ui, STATE.filtered);
+      reorderCourseObjects(ui, STATE.filtered);
 
       headCells.forEach((h) => h.classList.remove("sorted-asc", "sorted-desc"));
       th.classList.add(STATE.sort.dir === 1 ? "sorted-asc" : "sorted-desc");

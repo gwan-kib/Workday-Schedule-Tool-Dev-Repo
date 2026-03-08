@@ -394,7 +394,7 @@ function updateFooterConflictMessage(ui, conflictCodes) {
     return;
   }
 
-  alertEl.textContent = `⚠️ The following classes are in conflict: [${codes.join(", ")}].`;
+  alertEl.textContent = `🚩 The following classes are in conflict: [${codes.join(", ")}].`;
   alertEl.classList.remove("is-hidden");
 }
 

@@ -168,9 +168,18 @@
   border: 1px solid;
 }
 
+.course-card__body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .course-card__details {
   display: grid;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .course-card__detail {
@@ -188,4 +197,28 @@
 
 .course-card__detail span:last-child {
   white-space: pre-line;
+}
+
+.course-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+.course-card__avg-button {
+  width: 120px;
+  height: 35px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 2px solid;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.course-card__avg-button[disabled],
+.course-card__avg-button.is-disabled {
+  cursor: default;
 }

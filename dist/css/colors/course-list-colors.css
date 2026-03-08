@@ -72,6 +72,15 @@
   color: var(--hex-neutral-3);
 }
 
+.course-card__avg-button {
+  background: var(--course-card-bg);
+  border-color: var(--course-card-border);
+}
+
+.course-card__avg-button:hover:not([disabled]) {
+  background: var(--course-card-chip-bg);
+}
+
 /* Course card color cycle (7) with 1 sub palette (card, chip) */
 .course-card--color-1 {
   --course-card-bg: var(--course-color-1-bg);
