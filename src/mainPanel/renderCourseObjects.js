@@ -4,6 +4,25 @@ import { fetchSectionGradesWithFallback } from "../averageGrades/gradesApiCall.j
 const debug = debugFor("renderCourseObjects");
 debugLog({ local: { renderCourseObjects: false } });
 
+const renderKeyByCourse = new WeakMap();
+let renderKeyCounter = 0;
+
+// Returns a stable render key per course object instance. Input: course object. Output: key string.
+function getCourseRenderKey(course) {
+  if (!course || typeof course !== "object") {
+    renderKeyCounter += 1;
+    return `course-render-${renderKeyCounter}`;
+  }
+
+  const existing = renderKeyByCourse.get(course);
+  if (existing) return existing;
+
+  renderKeyCounter += 1;
+  const key = `course-render-${renderKeyCounter}`;
+  renderKeyByCourse.set(course, key);
+  return key;
+}
+
 // Escapes HTML entities in a string. Input: string. Output: escaped string.
 const escHTML = (s) =>
   String(s ?? "")
@@ -121,9 +140,9 @@ const hasValidAverage = (data) => extractAverage(data) != null;
 
 // Formats average label for button text. Input: average value. Output: string.
 function formatAverageText(average) {
-  if (average == null) return "Avg: N/A";
-  if (typeof average === "number") return `Avg: ${average.toFixed(1)}%`;
-  return `Avg: ${average}%`;
+  if (average == null) return "Average: N/A";
+  if (typeof average === "number") return `Average: ${average.toFixed(1)}%`;
+  return `Average: ${average}%`;
 }
 
 // Returns current yearsession string. Input: none. Output: YYYYW string.
@@ -146,7 +165,7 @@ async function loadAverageForButton(button) {
   button.textContent = "Loading...";
 
   if (!subject || !course || !yearsession) {
-    button.textContent = "Avg: N/A";
+    button.textContent = "Average: N/A";
     button.disabled = false;
     button.dataset.loading = "false";
     return;
@@ -167,7 +186,7 @@ async function loadAverageForButton(button) {
     const average = extractAverage(data);
     button.textContent = formatAverageText(average);
   } catch (error) {
-    button.textContent = "Avg: N/A";
+    button.textContent = "Average: N/A";
   } finally {
     button.disabled = false;
     button.dataset.loading = "false";
@@ -190,6 +209,7 @@ export function renderCourseObjects(ui, courses) {
     const instructorName = (course.instructor || "").trim() || "TBA";
 
     const card = document.createElement("div");
+    card.dataset.courseRenderKey = getCourseRenderKey(course);
     const colorIndex = course?.colorIndex || (index % 7) + 1;
     const subClass = course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
     card.className = `course-card course-card--color-${colorIndex}${subClass}`;
@@ -245,7 +265,7 @@ export function renderCourseObjects(ui, courses) {
             class="course-card__avg-button${averageInfo ? "" : " is-disabled"}"
             ${averageInfo ? `data-subject="${escHTML(averageInfo.subject)}" data-course="${escHTML(averageInfo.course)}" data-section="${escHTML(averageInfo.section)}" data-campus="${escHTML(averageInfo.campus)}"` : "disabled"}
           >
-            5 Year Avg
+            5 Year Average
           </button>
         </div>
       </div>
@@ -266,4 +286,37 @@ export function renderCourseObjects(ui, courses) {
   ui.tableBody.appendChild(frag);
 
   debug.log({ id: "renderCourseObjects.done" }, "Rendered course rows", courses || []);
+}
+
+// Reorders already-rendered course cards to match courses order. Input: ui object, courses array. Output: none.
+export function reorderCourseObjects(ui, courses) {
+  const container = ui?.tableBody;
+  if (!container) return;
+
+  const cardsByKey = new Map();
+  Array.from(container.children).forEach((child) => {
+    const key = child?.dataset?.courseRenderKey;
+    if (!key) return;
+    cardsByKey.set(key, child);
+  });
+
+  const orderedCards = [];
+
+  for (const course of courses || []) {
+    const key = getCourseRenderKey(course);
+    const card = cardsByKey.get(key);
+
+    if (!card) {
+      renderCourseObjects(ui, courses);
+      return;
+    }
+
+    orderedCards.push(card);
+  }
+
+  const frag = document.createDocumentFragment();
+  orderedCards.forEach((card) => frag.appendChild(card));
+  container.appendChild(frag);
+
+  debug.log({ id: "renderCourseObjects.reorder" }, "Reordered course rows", courses || []);
 }
