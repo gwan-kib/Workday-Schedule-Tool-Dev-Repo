@@ -22,6 +22,7 @@ const TIME_REGEX = /(\d{1,2}):(\d{2})\s*([ap])\.?m\.?/gi;
 const SEMESTER_MONTHS = {
   first: ["09", "08"],
   second: ["01", "12"],
+  summer: ["05", "06", "07"],
 };
 
 const normalizeConflictToken = (value) =>
@@ -66,13 +67,14 @@ function parseMeetingLine(line) {
   };
 }
 
-// Maps a start date to a semester key. Input: date string (YYYY-MM-DD). Output: "first", "second", or null.
+// Maps a start date to a semester key. Input: date string (YYYY-MM-DD). Output: "first", "second", "summer", or null.
 function getSemester(startDate) {
   if (!startDate) return null;
   const month = startDate.split("-")[1];
 
   if (SEMESTER_MONTHS.first.includes(month)) return "first";
   if (SEMESTER_MONTHS.second.includes(month)) return "second";
+  if (SEMESTER_MONTHS.summer.includes(month)) return "summer";
   return null;
 }
 
