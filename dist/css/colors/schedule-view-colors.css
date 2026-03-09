@@ -109,16 +109,12 @@
   --schedule-entry-border: var(--schedule-entry-sub-border);
 }
 
-/* semester buttons */
-.semester-button {
-  background: var(--hex-brand-accent-4);
-  color: var(--hex-brand-accent-6);
-}
-
-.semester-button.is-active {
+/* schedule term pill */
+.schedule-term-pill {
   background: var(--hex-brand-main-2);
   color: var(--hex-brand-accent-1);
 }
+
 
 /* saved schedules */
 .schedule-saved-summary {

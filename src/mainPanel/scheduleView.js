@@ -19,12 +19,29 @@ SLOTS.push(END_HOUR * 60);
 const DAY_REGEX = /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g;
 const TIME_REGEX = /(\d{1,2}):(\d{2})\s*([ap])\.?m\.?/gi;
 
-const SEMESTER_MONTHS = {
-  first: ["09", "08"],
-  second: ["01", "12"],
-  summer1: ["05"],
-  summer2: ["06"],
+const TERM_WINDOWS = {
+  first: {
+    label: "Semester 1",
+    start: "2025-09-01",
+    end: "2025-12-31",
+  },
+  second: {
+    label: "Semester 2",
+    start: "2026-01-01",
+    end: "2026-04-30",
+  },
+  summer1: {
+    label: "Summer S1",
+    start: "2026-05-01",
+    end: "2026-06-30",
+  },
+  summer2: {
+    label: "Summer S2",
+    start: "2026-07-01",
+    end: "2026-08-31",
+  },
 };
+
 
 const normalizeConflictToken = (value) =>
   String(value || "")
@@ -69,16 +86,30 @@ function parseMeetingLine(line) {
 }
 
 // Maps a start date to a semester key. Input: date string (YYYY-MM-DD). Output: "first", "second", "summer1", "summer2", or null.
-function getSemester(startDate) {
-  if (!startDate) return null;
-  const month = startDate.split("-")[1];
+function parseDateValue(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
-  if (SEMESTER_MONTHS.first.includes(month)) return "first";
-  if (SEMESTER_MONTHS.second.includes(month)) return "second";
-  if (SEMESTER_MONTHS.summer1.includes(month)) return "summer1";
-  if (SEMESTER_MONTHS.summer2.includes(month)) return "summer2";
+function getSemesterForRange(startDate, endDate) {
+  const courseStart = parseDateValue(startDate);
+  const courseEnd = parseDateValue(endDate || startDate);
+
+  if (!courseStart || !courseEnd) return null;
+
+  for (const [termKey, term] of Object.entries(TERM_WINDOWS)) {
+    const termStart = parseDateValue(term.start);
+    const termEnd = parseDateValue(term.end);
+
+    if (!termStart || !termEnd) continue;
+
+    const overlaps = courseStart <= termEnd && courseEnd >= termStart;
+    if (overlaps) return termKey;
+  }
   return null;
 }
+
 
 // Clamps minutes to grid bounds. Input: minutes number. Output: minutes number.
 function clampToGrid(minutes) {
@@ -113,8 +144,10 @@ function buildDayEvents(courses, semester) {
   (courses || []).forEach((course, courseIndex) => {
     const colorIndex = course?.colorIndex || (courseIndex % 7) + 1;
     const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
-    const courseSemester = getSemester(startDate);
+    const endDate = course.endDate || startDate || "";
+    const courseSemester = getSemesterForRange(startDate, endDate);
     if (semester && courseSemester !== semester) return;
+    
 
     const lines = course.meetingLines?.length ? course.meetingLines : [];
 
@@ -401,6 +434,30 @@ function updateFooterConflictMessage(ui, conflictCodes) {
   alertEl.textContent = `🚩 The following classes are in conflict: [${codes.join(", ")}].`;
   alertEl.classList.remove("is-hidden");
 }
+function getActiveSemester(courses = []) {
+  const counts = {};
+
+  (courses || []).forEach((course) => {
+    const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
+    const endDate = course.endDate || startDate || "";
+    const semester = getSemesterForRange(startDate, endDate);
+
+    if (!semester) return;
+    counts[semester] = (counts[semester] || 0) + 1;
+  });
+
+  let bestSemester = null;
+  let bestCount = 0;
+
+  Object.entries(counts).forEach(([semester, count]) => {
+    if (count > bestCount) {
+      bestSemester = semester;
+      bestCount = count;
+    }
+  });
+
+  return bestSemester;
+}
 
 // Renders the schedule view for a semester. Input: ui object, courses array, semester key. Output: none.
 export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
@@ -410,7 +467,9 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
     return;
   }
 
-  const eventsByDay = buildDayEvents(courses || [], semester);
+  const activeSemester = semester || getActiveSemester(courses || []);
+
+  const eventsByDay = buildDayEvents(courses || [], activeSemester);
   const allEventsByDay = buildDayEvents(courses || [], null);
   const { conflictBlocks } = detectScheduleConflicts(eventsByDay);
   const { conflictBlocks: allConflictBlocks, conflictCodes } = detectScheduleConflicts(allEventsByDay);
@@ -422,4 +481,11 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
 
   renderOverlayBlocks(tableWrap, eventsByDay, conflictBlocks, timeFormat);
   updateFooterConflictMessage(ui, conflictCodes);
+
+  ui.activeSemester = activeSemester;
+
+  const semesterLabel = TERM_WINDOWS[activeSemester]?.label || "Unknown Term";
+  if (ui?.scheduleTermPill) {
+    ui.scheduleTermPill.textContent = semesterLabel;
+  }
 }

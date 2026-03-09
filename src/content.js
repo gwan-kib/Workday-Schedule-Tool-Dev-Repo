@@ -338,15 +338,6 @@ const assignCourseColors = (courses) => {
       });
     });
 
-    ui.semesterButtons.forEach((button) => {
-      on(button, "click", () => {
-        STATE.view.semester = button.dataset.semester;
-
-        ui.semesterButtons.forEach((b) => b.classList.toggle("is-active", b.dataset.semester === STATE.view.semester));
-        updateScheduleView();
-      });
-    });
-
     on(ui.floatingButton, "click", toggleMainPanel);
 
     const setExportOpen = (isOpen) => {

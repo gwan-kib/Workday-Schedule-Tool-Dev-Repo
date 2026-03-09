@@ -1,38 +1,32 @@
 /* -------------------------------------------------------------------------- */
-/* SCHEDULE VIEW: TOP CONTROLS (SEMESTER TOGGLES)                              */
+/* SCHEDULE VIEW: TOP CONTROLS (AUTO TERM PILL)                                */
 /* -------------------------------------------------------------------------- */
 
 .schedule-controls {
   display: flex;
   justify-content: center;
   align-items: center;
-
-  gap: 10px;
-
   padding: 8px 12px;
 }
 
-.schedule-semester-buttons {
-  display: flex;
-  left: 50%;
-  display: flex;
-  gap: 10px;
-}
+.schedule-term-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-.semester-button {
-  padding: 2px 16px;
-  height: 30px;
+  min-height: 34px;
+  padding: 6px 18px;
 
   border-radius: 999px;
   border: none;
 
   font-size: 16px;
   font-weight: 700;
+  line-height: 1;
 
-  cursor: pointer;
-
-  transition: all 0.2s ease;
+  white-space: nowrap;
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* SCHEDULE VIEW: SAVED SCHEDULES DROPDOWN                                     */

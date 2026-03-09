@@ -157,23 +157,10 @@
     <!-- ========================= -->
     <div class="widget-panel" data-panel="schedule">
       <div class="schedule-controls">
-        <div class="schedule-semester-buttons">
-          <button class="semester-button is-active" type="button" data-semester="first">
-            <span class="text">Semester 1</span>
-          </button>
-          <button class="semester-button" type="button" data-semester="second">
-            <span class="text">Semester 2</span>
-          </button>
-          <button class="semester-button" type="button" data-semester="summer1">
-            <span class="text">Summer S1</span>
-          </button>
-          <button class="semester-button" type="button" data-semester="summer2">
-            <span class="text">Summer S2</span>
-          </button>
-        </div>
+        <div class="schedule-term-pill" id="schedule-term-pill">Detected Term</div>
       </div>
       <div class="schedule-grid" id="schedule-grid"></div>
-    </div>
+    </div>    
     <!-- ========================= -->
     <!-- Settings panel -->
     <!-- ========================= -->
@@ -231,7 +218,7 @@
     <div class="widget-panel" data-panel="help">
       <div class="help-panel">
         <h2>Help</h2>
-        <p>Need a hand?</pp>
+        <p>Need a hand?</p>
         <div class="help-box">
           <label class="settings-field">
             <a
