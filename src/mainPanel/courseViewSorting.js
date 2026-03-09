@@ -5,6 +5,7 @@ import { debugFor, debugLog } from "../utilities/debugTool.js";
 
 const debug = debugFor("mainPanelInteractions");
 debugLog({ local: { mainPanelInteractions: false } });
+const SORTABLE_KEYS = new Set(["title", "meeting", "instructionalFormat"]);
 
 // Filters courses into STATE.filtered by query. Input: query string. Output: none.
 export function filterCourses(query) {
@@ -15,7 +16,7 @@ export function filterCourses(query) {
     return;
   }
 
-  const keys = ["code", "title", "section_number", "instructor", "meeting", "instructionalFormat"];
+  const keys = [ "title", "meeting", "instructionalFormat"];
 
   STATE.filtered = STATE.courses.filter((c) =>
     keys.some((k) =>
@@ -28,7 +29,7 @@ export function filterCourses(query) {
 
 // Sorts STATE.filtered by a key and updates STATE.sort. Input: key string. Output: none.
 export function sortCourses(key) {
-  if (!key) return;
+  if (!key || !SORTABLE_KEYS.has(key)) return;
 
   const dir = STATE.sort.key === key ? -STATE.sort.dir : 1;
   STATE.sort = { key, dir };

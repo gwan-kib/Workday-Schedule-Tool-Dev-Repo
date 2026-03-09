@@ -8,6 +8,9 @@
 
   padding: 10px 12px;
   gap: 6px;
+  
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
 }
 
 #widget-title {
