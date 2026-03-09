@@ -182,7 +182,7 @@
         <h2>Settings</h2>
         <p>More options will be added in future updates.</p>
         <div class="settings-box settings-box--stack">
-          <div class="settings-section">
+          <div class="settings-section settings-section--display">
             <h3>Display</h3>
             <p>Control hover tips across the tool.</p>
             <label class="settings-tooltip-toggle">
@@ -194,13 +194,35 @@
               <span class="settings-toggle__slider" aria-hidden="true" for="setting-hover-tips"></span>
             </label>
           </div>
-          <div class="settings-section">
+          <div class="settings-section settings-section--course-colors">
             <h3>Course Colors</h3>
             <p>Customize your course colors.</p>
             <div class="course-color-grid" id="course-color-grid"></div>
             <button class="button course-color-reset" id="course-color-reset" type="button">
               Reset to default
             </button>
+          </div>
+          <div class="settings-section settings-section--contributors">
+            <h3>Contributors</h3>
+            <p>Connect with contributors on LinkedIn.</p>
+            <label class="settings-field">
+              <a
+                class="link"
+                href="https://www.linkedin.com/in/gwantanakiboigo/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >LinkedIn: Gwantana<span class="material-symbols-rounded">arrow_outward</span></a
+              >
+            </label>
+            <label class="settings-field">
+              <a
+                class="link"
+                href="https://www.linkedin.com/in/mahmoud-rabie-2b0287344/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >LinkedIn: Mahmoud Rabie<span class="material-symbols-rounded">arrow_outward</span></a
+              >
+            </label>
           </div>
         </div>
         <div class="settings-box">
@@ -211,15 +233,6 @@
               target="_blank"
               rel="noopener noreferrer"
               >GitHub Repo<span class="material-symbols-rounded">arrow_outward</span></a
-            >
-          </label>
-          <label class="settings-field">
-            <a
-              class="link"
-              href="https://www.linkedin.com/in/gwantanakiboigo/"
-              target="_blank"
-              rel="noopener noreferrer"
-              >LinkedIn<span class="material-symbols-rounded">arrow_outward</span></a
             >
           </label>
         </div>
@@ -287,4 +300,3 @@
     <span class="footer-tip"><span class="muted">Click sort buttons to reorder courses</span></span>
   </div>
 </div>
-
