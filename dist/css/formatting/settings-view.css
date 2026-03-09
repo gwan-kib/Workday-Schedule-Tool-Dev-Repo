@@ -47,6 +47,24 @@
   line-height: 1.35;
 }
 
+.settings-field--github-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.settings-section--team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-links {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
 .widget-panel[data-panel="settings"] .course-color-grid {
   display: grid;
   gap: 8px;
