@@ -20,25 +20,33 @@ const DAY_REGEX = /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g;
 const TIME_REGEX = /(\d{1,2}):(\d{2})\s*([ap])\.?m\.?/gi;
 
 const TERM_WINDOWS = {
-  first: {
-    label: "Semester 1",
-    start: "2025-09-01",
-    end: "2025-12-31",
+  winter1: {
+    label: "Winter Term 1",
+    startMonth: 9,
+    startDay: 1,
+    endMonth: 12,
+    endDay: 31,
   },
-  second: {
-    label: "Semester 2",
-    start: "2026-01-01",
-    end: "2026-04-30",
+  winter2: {
+    label: "Winter Term 2",
+    startMonth: 1,
+    startDay: 1,
+    endMonth: 4,
+    endDay: 30,
   },
   summer1: {
-    label: "Summer S1",
-    start: "2026-05-01",
-    end: "2026-06-30",
+    label: "Summer Session Term 1",
+    startMonth: 5,
+    startDay: 1,
+    endMonth: 6,
+    endDay: 30,
   },
   summer2: {
-    label: "Summer S2",
-    start: "2026-07-01",
-    end: "2026-08-31",
+    label: "Summer Session Term 2",
+    startMonth: 7,
+    startDay: 1,
+    endMonth: 8,
+    endDay: 31,
   },
 };
 
@@ -98,17 +106,22 @@ function getSemesterForRange(startDate, endDate) {
 
   if (!courseStart || !courseEnd) return null;
 
-  for (const [termKey, term] of Object.entries(TERM_WINDOWS)) {
-    const termStart = parseDateValue(term.start);
-    const termEnd = parseDateValue(term.end);
+  const startYear = courseStart.getFullYear();
+  const endYear = courseEnd.getFullYear();
 
-    if (!termStart || !termEnd) continue;
+  for (let year = startYear - 1; year <= endYear + 1; year++) {
+    for (const [termKey, term] of Object.entries(TERM_WINDOWS)) {
+      const termStart = new Date(year, term.startMonth - 1, term.startDay);
+      const termEnd = new Date(year, term.endMonth - 1, term.endDay);
 
-    const overlaps = courseStart <= termEnd && courseEnd >= termStart;
-    if (overlaps) return termKey;
+      const overlaps = courseStart <= termEnd && courseEnd >= termStart;
+      if (overlaps) return termKey;
+    }
   }
+
   return null;
 }
+
 
 
 // Clamps minutes to grid bounds. Input: minutes number. Output: minutes number.
@@ -442,9 +455,16 @@ function getActiveSemester(courses = []) {
     const endDate = course.endDate || startDate || "";
     const semester = getSemesterForRange(startDate, endDate);
 
+    console.log("COURSE:", course.code);
+    console.log("startDate:", startDate);
+    console.log("endDate:", endDate);
+    console.log("detected semester:", semester);
+
     if (!semester) return;
     counts[semester] = (counts[semester] || 0) + 1;
   });
+
+  console.log("semester counts:", counts);
 
   let bestSemester = null;
   let bestCount = 0;
@@ -456,8 +476,11 @@ function getActiveSemester(courses = []) {
     }
   });
 
+  console.log("active semester:", bestSemester);
+
   return bestSemester;
 }
+
 
 // Renders the schedule view for a semester. Input: ui object, courses array, semester key. Output: none.
 export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
