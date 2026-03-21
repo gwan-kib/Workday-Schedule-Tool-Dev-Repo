@@ -12,7 +12,7 @@ export const STATE = {
   view: {
     panel: "list",
     lastMainPanel: "list",
-    semester: "first",
+    semester: null,
     timeFormat: "am/pm",
     hoverTipsEnabled: true,
   },
