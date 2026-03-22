@@ -1,4 +1,4 @@
-import { queryProfRating, RMP_MESSAGE_TYPE } from "./rateMyProfessors/rmpApi.js";
+import { queryProfRating, RMP_MESSAGE_TYPE } from "./rateMyProfessor/rmpApi.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
 
 const debug = debugFor("background");

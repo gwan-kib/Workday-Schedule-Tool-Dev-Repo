@@ -216,7 +216,7 @@ const assignCourseColors = (courses) => {
       console.log("STATE.view.semester:", STATE.view.semester);
       console.log("STATE.filtered:", STATE.filtered);
       renderSchedule(ui, STATE.filtered, STATE.view.semester, STATE.view.timeFormat);
-    
+
       const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
       if (toggleButton) {
         toggleButton.textContent = STATE.view.timeFormat === "am/pm" ? "AM/PM" : "24H";
@@ -245,9 +245,9 @@ const assignCourseColors = (courses) => {
       ui.views.forEach((el) => el.classList.toggle("is-active", el.dataset.panel === viewKey));
       ui.viewTabs.forEach((button) => button.classList.toggle("is-active", button.dataset.panel === viewKey));
 
-      ui.mainPanel.classList.toggle("is-schedule-view", viewKey === "schedule");
-      ui.mainPanel.classList.toggle("is-settings-view", viewKey === "settings");
-      ui.mainPanel.classList.toggle("is-help-view", viewKey === "help");
+      ui.mainPanel.classList.toggle("is-schedule-view", viewKey === "schedule-panel");
+      ui.mainPanel.classList.toggle("is-settings-view", viewKey === "settings-panel");
+      ui.mainPanel.classList.toggle("is-help-view", viewKey === "help-panel");
     };
 
     const syncFloatingButtonState = () => {
@@ -330,7 +330,7 @@ const assignCourseColors = (courses) => {
 
         const meta = document.createElement("span");
         meta.className = "schedule-picker-option-meta";
-        meta.textContent = `${option.courseCount} courses${option.courseCount === 1 ? "" : "s"}`;
+        meta.textContent = `${option.courseCount} course${option.courseCount === 1 ? "" : "s"}`;
 
         const courses = document.createElement("span");
         courses.className = "schedule-picker-option-courses";
@@ -447,7 +447,7 @@ const assignCourseColors = (courses) => {
     ui.viewTabs.forEach((button) => {
       on(button, "click", () => {
         setActiveView(button.dataset.panel);
-        if (button.dataset.panel === "schedule") updateScheduleView();
+        if (button.dataset.panel === "schedule-panel") updateScheduleView();
       });
     });
 
@@ -578,32 +578,32 @@ const assignCourseColors = (courses) => {
       ui.searchInput.value = "";
 
       renderAll();
-      setActiveView("list");
+      setActiveView("course-list-panel");
       if (ui.savedDropdown) ui.savedDropdown.open = false;
     });
 
     on(ui.settingsButton, "click", () => {
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
-      if (STATE.view.panel === "settings") {
-        const backTo = STATE.view.lastMainPanel || "list";
+      if (STATE.view.panel === "settings-panel") {
+        const backTo = STATE.view.lastMainPanel || "course-list-panel";
         setActiveView(backTo);
-        if (backTo === "schedule") updateScheduleView();
+        if (backTo === "schedule-panel") updateScheduleView();
         return;
       }
-      setActiveView("settings");
+      setActiveView("settings-panel");
     });
 
     on(ui.helpButton, "click", () => {
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
-      if (STATE.view.panel === "help") {
-        const backTo = STATE.view.lastMainPanel || "list";
+      if (STATE.view.panel === "help-panel") {
+        const backTo = STATE.view.lastMainPanel || "course-list-panel";
         setActiveView(backTo);
-        if (backTo === "schedule") updateScheduleView();
+        if (backTo === "schedule-panel") updateScheduleView();
         return;
       }
-      setActiveView("help");
+      setActiveView("help-panel");
     });
 
     on(
@@ -623,7 +623,7 @@ const assignCourseColors = (courses) => {
     await loadCoursesFromPage();
 
     renderAll();
-    
+
     setActiveView(STATE.view.panel);
 
     let termCampus = readTermCampus();

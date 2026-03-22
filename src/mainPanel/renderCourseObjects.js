@@ -1,6 +1,6 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 import { fetchSectionGradesWithFallback } from "../averageGrades/gradesApiCall.js";
-import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../rateMyProfessors/rmpApi.js";
+import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../rateMyProfessor/rmpApi.js";
 
 const debug = debugFor("renderCourseObjects");
 debugLog({ local: { renderCourseObjects: false } });

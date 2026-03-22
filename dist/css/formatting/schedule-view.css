@@ -27,7 +27,6 @@
   white-space: nowrap;
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* SCHEDULE VIEW: SAVED SCHEDULES DROPDOWN                                     */
 /* -------------------------------------------------------------------------- */
@@ -309,13 +308,13 @@
 /* SCHEDULE VIEW: GRID + TABLE (TIME GRID STRUCTURE)                           */
 /* -------------------------------------------------------------------------- */
 
-.widget-panel[data-panel="schedule"] {
+.widget-panel[data-panel="schedule-panel"] {
   height: 100%;
   flex-direction: column;
   height: 520px;
 }
 
-.widget-panel[data-panel="schedule"].is-active {
+.widget-panel[data-panel="schedule-panel"].is-active {
   display: flex;
 }
 
@@ -343,7 +342,7 @@
   position: relative;
 }
 
-[data-panel="schedule"] .schedule-table thead th {
+[data-panel="schedule-panel"] .schedule-table thead th {
   position: sticky;
   top: 0;
   z-index: 50;
@@ -417,7 +416,7 @@
 }
 
 /* Center the schedule table block inside the scroll area */
-.widget-panel[data-panel="schedule"] .schedule-grid {
+.widget-panel[data-panel="schedule-panel"] .schedule-grid {
   text-align: center;
 }
 
@@ -560,4 +559,3 @@
   display: block;
   text-align: center;
 }
-

@@ -21,28 +21,28 @@ const TIME_REGEX = /(\d{1,2}):(\d{2})\s*([ap])\.?m\.?/gi;
 
 const TERM_WINDOWS = {
   winter1: {
-    label: "Winter Session Term 1",
+    label: "Winter Session - Term 1",
     startMonth: 9,
     startDay: 1,
     endMonth: 12,
     endDay: 31,
   },
   winter2: {
-    label: "Winter Session Term 2",
+    label: "Winter Session - Term 2",
     startMonth: 1,
     startDay: 1,
     endMonth: 4,
     endDay: 30,
   },
   summer1: {
-    label: "Summer Session Term 1",
+    label: "Summer Session - Term 1",
     startMonth: 5,
     startDay: 1,
     endMonth: 6,
     endDay: 30,
   },
   summer2: {
-    label: "Summer Session Term 2",
+    label: "Summer Session - Term 2",
     startMonth: 7,
     startDay: 1,
     endMonth: 8,
