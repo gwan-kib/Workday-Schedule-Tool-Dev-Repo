@@ -262,6 +262,7 @@ const assignCourseColors = (courses) => {
     syncFloatingButtonState();
 
     let resolveScheduleModal = null;
+    let resolveSchedulePickerModal = null;
 
     const closeScheduleModal = (value) => {
       if (!ui.saveModal) return;
@@ -299,6 +300,72 @@ const assignCourseColors = (courses) => {
       });
     };
 
+    const closeSchedulePickerModal = (value) => {
+      if (!ui.schedulePickerModal) return;
+
+      ui.schedulePickerModal.classList.add("is-hidden");
+      ui.schedulePickerModal.setAttribute("aria-hidden", "true");
+      ui.schedulePickerList.innerHTML = "";
+
+      if (resolveSchedulePickerModal) {
+        resolveSchedulePickerModal(value);
+        resolveSchedulePickerModal = null;
+      }
+    };
+
+    const renderSchedulePickerOptions = (options) => {
+      if (!ui.schedulePickerList) return;
+
+      ui.schedulePickerList.innerHTML = "";
+
+      options.forEach((option) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "schedule-picker-option";
+        button.dataset.scheduleId = option.id;
+
+        const title = document.createElement("span");
+        title.className = "schedule-picker-option-title";
+        title.textContent = option.title;
+
+        const meta = document.createElement("span");
+        meta.className = "schedule-picker-option-meta";
+        meta.textContent = `${option.courseCount} courses${option.courseCount === 1 ? "" : "s"}`;
+
+        const courses = document.createElement("span");
+        courses.className = "schedule-picker-option-courses";
+        courses.textContent = option.courseNames.length ? option.courseNames.join(", ") : "No course names detected";
+
+        button.appendChild(title);
+        button.appendChild(meta);
+        button.appendChild(courses);
+        ui.schedulePickerList.appendChild(button);
+      });
+    };
+
+    const openSchedulePickerModal = ({
+      title = "Choose a schedule",
+      message = "Multiple schedule tables were found on this page. Choose which one to load.",
+      options = [],
+    }) => {
+      if (!ui.schedulePickerModal || !ui.schedulePickerList) return Promise.resolve(options[0]?.id || null);
+
+      ui.schedulePickerTitle.textContent = title;
+      ui.schedulePickerMessage.textContent = message;
+      renderSchedulePickerOptions(options);
+
+      ui.schedulePickerModal.classList.remove("is-hidden");
+      ui.schedulePickerModal.setAttribute("aria-hidden", "false");
+
+      const firstOption = ui.schedulePickerList.querySelector(".schedule-picker-option");
+      if (firstOption) firstOption.focus();
+      else ui.schedulePickerCancel?.focus();
+
+      return new Promise((resolve) => {
+        resolveSchedulePickerModal = resolve;
+      });
+    };
+
     if (ui.saveModal) {
       on(ui.saveModal, "click", (event) => {
         if (event.target === ui.saveModal) return closeScheduleModal(null);
@@ -332,6 +399,50 @@ const assignCourseColors = (courses) => {
         if (event.key === "Escape" && !ui.saveModal.classList.contains("is-hidden")) closeScheduleModal(null);
       });
     }
+
+    if (ui.schedulePickerModal) {
+      on(ui.schedulePickerModal, "click", (event) => {
+        if (event.target === ui.schedulePickerModal) return closeSchedulePickerModal(null);
+
+        const action = event.target.closest("[data-action]")?.dataset.action;
+        if (action === "close" || action === "cancel") return closeSchedulePickerModal(null);
+
+        const option = event.target.closest("[data-schedule-id]");
+        if (option) return closeSchedulePickerModal(option.dataset.scheduleId);
+      });
+
+      on(document, "keydown", (event) => {
+        if (event.key === "Escape" && !ui.schedulePickerModal.classList.contains("is-hidden")) {
+          closeSchedulePickerModal(null);
+        }
+      });
+    }
+
+    const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
+      const extractedCourses = await extractCoursesData({
+        selectSchedule: (options) =>
+          openSchedulePickerModal({
+            title: "Select a schedule",
+            message: "Multiple schedule tables detected. Select the one you would like to load:",
+            options,
+          }),
+      });
+
+      if (extractedCourses === null) {
+        if (!preserveExisting) {
+          STATE.courses = [];
+          STATE.filtered = [];
+          STATE.currentScheduleName = null;
+        }
+        return false;
+      }
+
+      STATE.courses = extractedCourses;
+      assignCourseColors(STATE.courses);
+      STATE.currentScheduleName = null;
+      filterCourses(ui.searchInput.value);
+      return true;
+    };
 
     ui.viewTabs.forEach((button) => {
       on(button, "click", () => {
@@ -374,11 +485,8 @@ const assignCourseColors = (courses) => {
       void ui.refreshButton.offsetWidth;
       ui.refreshButton.classList.add("rotate");
 
-      STATE.courses = await extractCoursesData();
-      assignCourseColors(STATE.courses);
-      STATE.currentScheduleName = null;
-      filterCourses(ui.searchInput.value);
-      renderAll();
+      const loaded = await loadCoursesFromPage({ preserveExisting: true });
+      if (loaded) renderAll();
     });
 
     on(ui.clearButton, "click", () => {
@@ -512,12 +620,9 @@ const assignCourseColors = (courses) => {
     STATE.savedSchedules = await loadSavedSchedules();
     renderSavedSchedules(ui, STATE.savedSchedules);
 
-    STATE.courses = await extractCoursesData();
-    assignCourseColors(STATE.courses);
-    STATE.filtered = [...STATE.courses];
+    await loadCoursesFromPage();
 
-    updateScheduleView();
-    renderCourseObjects(ui, STATE.filtered);
+    renderAll();
     
     setActiveView(STATE.view.panel);
 

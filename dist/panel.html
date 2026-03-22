@@ -283,4 +283,29 @@
       </div>
     </div>
   </div>
+  <div class="schedule-modal is-hidden" id="schedule-picker-modal" aria-hidden="true">
+    <div class="schedule-modal-backdrop" data-action="close"></div>
+    <div class="dialog-container">
+      <div
+        class="schedule-modal-dialog schedule-picker-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="schedule-picker-title"
+      >
+        <div class="schedule-modal-header">
+          <h3 class="schedule-modal-title" id="schedule-picker-title">Choose a Schedule</h3>
+          <button class="schedule-modal-close" type="button" data-action="close">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+          </button>
+        </div>
+        <p class="schedule-modal-message" id="schedule-picker-message">
+          Multiple schedule tables were found on this page. Choose which one to load.
+        </p>
+        <div class="schedule-picker-list" id="schedule-picker-list"></div>
+        <div class="schedule-modal-actions">
+          <button class="button schedule-modal-cancel" type="button" data-action="cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

@@ -191,3 +191,16 @@
   border-color: var(--hex-danger-1);
 }
 
+.schedule-picker-option {
+  background: var(--hex-brand-accent-4);
+  color: var(--hex-brand-main-1);
+  border-color: var(--hex-brand-accent-6);
+}
+
+.schedule-picker-option:hover,
+.schedule-picker-option:focus-visible {
+  background: var(--hex-brand-accent-5);
+  border-color: var(--hex-brand-main-2);
+  outline: none;
+}
+

@@ -88,8 +88,14 @@ export async function loadMainPanel(shadowRoot) {
     saveModalMessage: shadowRoot.querySelector("#schedule-modal-message"),
     saveModalField: shadowRoot.querySelector("#schedule-modal-field"),
     saveModalInput: shadowRoot.querySelector("#schedule-modal-input"),
-    saveModalCancel: shadowRoot.querySelector(".schedule-modal-cancel"),
-    saveModalConfirm: shadowRoot.querySelector(".schedule-modal-confirm"),
+    saveModalCancel: shadowRoot.querySelector("#schedule-save-modal .schedule-modal-cancel"),
+    saveModalConfirm: shadowRoot.querySelector("#schedule-save-modal .schedule-modal-confirm"),
+
+    schedulePickerModal: shadowRoot.querySelector("#schedule-picker-modal"),
+    schedulePickerTitle: shadowRoot.querySelector("#schedule-picker-title"),
+    schedulePickerMessage: shadowRoot.querySelector("#schedule-picker-message"),
+    schedulePickerList: shadowRoot.querySelector("#schedule-picker-list"),
+    schedulePickerCancel: shadowRoot.querySelector("#schedule-picker-modal .schedule-modal-cancel"),
 
     helpButton: shadowRoot.querySelector(".help"),
     settingsButton: shadowRoot.querySelector(".settings"),
