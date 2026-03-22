@@ -205,9 +205,12 @@
 .course-card__actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
   flex: 0 0 auto;
 }
 
+.course-card__rmp-button,
 .course-card__avg-button {
   width: 120px;
   height: 35px;
@@ -221,7 +224,19 @@
   transition: all 0.2s ease;
 }
 
+.course-card__rmp-button[data-status="loaded"] {
+  width: 96px;
+}
+
+.course-card__rmp-button[data-status="empty"],
+.course-card__rmp-button[data-status="error"] {
+  width: 88px;
+}
+
+.course-card__rmp-button[disabled],
 .course-card__avg-button[disabled],
 .course-card__avg-button.is-disabled {
-  cursor: default;
+  cursor: text;
+  user-select: text;
+  color: var(--hex-neutral-3);
 }
