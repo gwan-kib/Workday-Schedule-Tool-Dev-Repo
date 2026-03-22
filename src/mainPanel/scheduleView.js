@@ -455,16 +455,9 @@ function getActiveSemester(courses = []) {
     const endDate = course.endDate || startDate || "";
     const semester = getSemesterForRange(startDate, endDate);
 
-    console.log("COURSE:", course.code);
-    console.log("startDate:", startDate);
-    console.log("endDate:", endDate);
-    console.log("detected semester:", semester);
-
     if (!semester) return;
     counts[semester] = (counts[semester] || 0) + 1;
   });
-
-  console.log("semester counts:", counts);
 
   let bestSemester = null;
   let bestCount = 0;
@@ -475,8 +468,6 @@ function getActiveSemester(courses = []) {
       bestCount = count;
     }
   });
-
-  console.log("active semester:", bestSemester);
 
   return bestSemester;
 }

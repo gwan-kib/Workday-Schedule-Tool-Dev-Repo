@@ -213,8 +213,6 @@ const assignCourseColors = (courses) => {
     }
 
     const updateScheduleView = () => {
-      console.log("STATE.view.semester:", STATE.view.semester);
-      console.log("STATE.filtered:", STATE.filtered);
       renderSchedule(ui, STATE.filtered, STATE.view.semester, STATE.view.timeFormat);
 
       const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
