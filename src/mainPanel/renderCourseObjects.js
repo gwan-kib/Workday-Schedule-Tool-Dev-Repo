@@ -195,7 +195,7 @@ function applyAverageButtonState(button, state) {
 function formatRmpText(data) {
   if (!data) return "RMP N/A";
   const rating = typeof data.rating === "number" ? data.rating.toFixed(1) : String(data.rating || "").trim();
-  return rating ? `RMP ${rating}` : "RMP N/A";
+  return rating ? `RateMyProf:\n${rating} / 5` : "RateMyProf: N/A";
 }
 
 // Extracts instructor/campus info for an RMP lookup. Input: course object. Output: lookup object or null.
@@ -215,36 +215,41 @@ function applyRmpButtonState(button, state) {
 
   const status = state?.status || "idle";
   const data = state?.data || null;
+  const hasProfileLink = status === "loaded" && Boolean(data?.link);
 
   button.disabled = status === "loading";
   button.dataset.status = status;
+  button.classList.toggle("wd-hover-tooltip", hasProfileLink);
+
+  if (hasProfileLink) {
+    button.dataset.tooltip = "Visit RateMyProf Site ↗";
+    button.title = "Open RateMyProfessors profile";
+  } else {
+    delete button.dataset.tooltip;
+    button.removeAttribute("title");
+  }
 
   if (status === "loading") {
     button.textContent = "Loading...";
-    button.title = "Loading RateMyProfessors rating";
     return;
   }
 
-  if (status === "loaded" && data?.link) {
+  if (hasProfileLink) {
     button.textContent = formatRmpText(data);
-    button.title = "Open RateMyProfessors profile";
     return;
   }
 
   if (status === "empty") {
-    button.textContent = "RMP N/A";
-    button.title = "No confident RateMyProfessors match found";
+    button.textContent = "RateMyProf: N/A";
     return;
   }
 
   if (status === "error") {
-    button.textContent = "RMP Error";
-    button.title = "RateMyProfessors lookup failed";
+    button.textContent = "RateMyProf: Error";
     return;
   }
 
-  button.textContent = "RMP Rating";
-  button.title = "Load RateMyProfessors rating";
+  button.textContent = "RateMyProf";
 }
 
 // Returns current yearsession string. Input: none. Output: YYYYW string.
