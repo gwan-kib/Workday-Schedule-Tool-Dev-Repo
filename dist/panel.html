@@ -23,7 +23,7 @@
     <span class="spacer"></span>
     <div class="export-dropdown" id="widget-export">
       <button
-        class="button export-summary wd-hover-tooltip"
+        class="button export-summary"
         id="widget-export-button"
         type="button"
         aria-haspopup="menu"
@@ -56,14 +56,14 @@
         </button>
       </div>
     </div>
-    <button class="button help wd-hover-tooltip" type="button" aria-label="Help" data-tooltip="Help">
+    <button class="button help" type="button" aria-label="help-panel" data-tooltip="help-panel">
       <span class="material-symbols-rounded"> help </span><span class="text">Help</span>
     </button>
     <button
-      class="button settings symbolOnly wd-hover-tooltip"
+      class="button settings symbolOnly"
       type="button"
-      aria-label="Settings"
-      data-tooltip="Settings"
+      aria-label="settings-panel"
+      data-tooltip="settings-panel"
     >
       <span class="material-symbols-rounded">settings</span>
     </button>
@@ -75,7 +75,7 @@
     <button
       class="tab-button symbolOnly is-active wd-hover-tooltip"
       type="button"
-      data-panel="list"
+      data-panel="course-list-panel"
       aria-label="Course list"
       data-tooltip="Course list"
     >
@@ -84,7 +84,7 @@
     <button
       class="tab-button symbolOnly wd-hover-tooltip"
       type="button"
-      data-panel="schedule"
+      data-panel="schedule-panel"
       aria-label="Schedule view"
       data-tooltip="Schedule view"
     >
@@ -137,7 +137,7 @@
     <!-- ========================= -->
     <!-- List panel -->
     <!-- ========================= -->
-    <div class="widget-panel is-active" data-panel="list">
+    <div class="widget-panel is-active" data-panel="course-list-panel">
       <div class="course-list-toolbar">
         <span class="course-list-label">Sort By:</span>
         <div class="course-sortbar" id="course-sortbar">
@@ -152,16 +152,16 @@
     <!-- ========================= -->
     <!-- Schedule panel -->
     <!-- ========================= -->
-    <div class="widget-panel" data-panel="schedule">
+    <div class="widget-panel" data-panel="schedule-panel">
       <div class="schedule-controls">
         <div class="schedule-term-pill" id="schedule-term-pill">Detected Term</div>
       </div>
       <div class="schedule-grid" id="schedule-grid"></div>
-    </div>    
+    </div>
     <!-- ========================= -->
     <!-- Settings panel -->
     <!-- ========================= -->
-    <div class="widget-panel" data-panel="settings">
+    <div class="widget-panel" data-panel="settings-panel">
       <div class="settings-panel">
         <h2>Settings</h2>
         <p>More options will be added in future updates.</p>
@@ -225,7 +225,7 @@
     <!-- ========================= -->
     <!-- Help panel -->
     <!-- ========================= -->
-    <div class="widget-panel" data-panel="help">
+    <div class="widget-panel" data-panel="help-panel">
       <div class="help-panel">
         <h2>Help</h2>
         <p>Need a hand?</p>
@@ -244,36 +244,6 @@
         <p>Extension not working properly? Found a bug?<br />Feel free to send me an email: gwantanak.3@gmail.com</p>
       </div>
     </div>
-    <!-- ========================= -->
-    <!-- Save schedule modal -->
-    <!-- ========================= -->
-    <div class="schedule-modal is-hidden" id="schedule-save-modal" aria-hidden="true">
-      <div class="schedule-modal-backdrop" data-action="close"></div>
-      <div class="dialog-container">
-        <div class="schedule-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
-          <div class="schedule-modal-header">
-            <h3 class="schedule-modal-title" id="schedule-modal-title">Save Schedule</h3>
-            <button class="schedule-modal-close" type="button" data-action="close">
-              <span class="material-symbols-rounded" aria-hidden="true">close</span>
-            </button>
-          </div>
-          <p class="schedule-modal-message" id="schedule-modal-message">Name this schedule so you can find it later.</p>
-          <label class="schedule-modal-field" id="schedule-modal-field">
-            <span class="schedule-modal-label">Schedule name</span>
-            <input
-              id="schedule-modal-input"
-              class="schedule-modal-input"
-              type="text"
-              placeholder="e.g. Fall semester plan"
-            />
-          </label>
-          <div class="schedule-modal-actions">
-            <button class="button schedule-modal-cancel" type="button" data-action="cancel">Cancel</button>
-            <button class="button schedule-modal-confirm" type="button" data-action="confirm">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
   <!-- ========================= -->
   <!-- Footer -->
@@ -281,6 +251,60 @@
   <div class="widget-footer">
     <span class="footer-alert is-hidden" id="schedule-conflict-alert" aria-live="polite"></span>
     <span class="spacer"></span>
-    <span class="footer-tip"><span class="muted">Click sort buttons to reorder courses</span></span>
+  </div>
+  <!-- ========================= -->
+  <!-- Save schedule modal -->
+  <!-- ========================= -->
+  <div class="schedule-modal is-hidden" id="schedule-save-modal" aria-hidden="true">
+    <div class="schedule-modal-backdrop" data-action="close"></div>
+    <div class="dialog-container">
+      <div class="schedule-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+        <div class="schedule-modal-header">
+          <h3 class="schedule-modal-title" id="schedule-modal-title">Save Schedule</h3>
+          <button class="schedule-modal-close" type="button" data-action="close">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+          </button>
+        </div>
+        <p class="schedule-modal-message" id="schedule-modal-message">Name this schedule so you can find it later.</p>
+        <label class="schedule-modal-field" id="schedule-modal-field">
+          <span class="schedule-modal-label">Schedule name</span>
+          <input
+            id="schedule-modal-input"
+            class="schedule-modal-input"
+            type="text"
+            placeholder="e.g. Fall semester plan"
+          />
+        </label>
+        <div class="schedule-modal-actions">
+          <button class="button schedule-modal-cancel" type="button" data-action="cancel">Cancel</button>
+          <button class="button schedule-modal-confirm" type="button" data-action="confirm">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="schedule-modal is-hidden" id="schedule-picker-modal" aria-hidden="true">
+    <div class="schedule-modal-backdrop" data-action="close"></div>
+    <div class="dialog-container">
+      <div
+        class="schedule-modal-dialog schedule-picker-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="schedule-picker-title"
+      >
+        <div class="schedule-modal-header">
+          <h3 class="schedule-modal-title" id="schedule-picker-title">Choose a Schedule</h3>
+          <button class="schedule-modal-close" type="button" data-action="close">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+          </button>
+        </div>
+        <p class="schedule-modal-message" id="schedule-picker-message">
+          Multiple schedule tables were found on this page. Choose which one to load.
+        </p>
+        <div class="schedule-picker-list" id="schedule-picker-list"></div>
+        <div class="schedule-modal-actions">
+          <button class="button schedule-modal-cancel" type="button" data-action="cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

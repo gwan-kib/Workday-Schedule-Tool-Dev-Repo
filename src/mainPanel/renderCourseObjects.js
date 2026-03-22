@@ -1,10 +1,13 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 import { fetchSectionGradesWithFallback } from "../averageGrades/gradesApiCall.js";
+import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../rateMyProfessor/rmpApi.js";
 
 const debug = debugFor("renderCourseObjects");
 debugLog({ local: { renderCourseObjects: false } });
 
 const renderKeyByCourse = new WeakMap();
+const averageStateByCourse = new WeakMap();
+const rmpStateByCourse = new WeakMap();
 let renderKeyCounter = 0;
 
 // Returns a stable render key per course object instance. Input: course object. Output: key string.
@@ -21,6 +24,34 @@ function getCourseRenderKey(course) {
   const key = `course-render-${renderKeyCounter}`;
   renderKeyByCourse.set(course, key);
   return key;
+}
+
+// Returns persistent average-button UI state per course object. Input: course object. Output: state object.
+function getCourseAverageState(course) {
+  if (!course || typeof course !== "object") {
+    return { status: "idle", label: "5 Year Average" };
+  }
+
+  const existing = averageStateByCourse.get(course);
+  if (existing) return existing;
+
+  const state = { status: "idle", label: "5 Year Average" };
+  averageStateByCourse.set(course, state);
+  return state;
+}
+
+// Returns persistent RMP UI state per course object. Input: course object. Output: state object.
+function getCourseRmpState(course) {
+  if (!course || typeof course !== "object") {
+    return { status: "idle", data: null };
+  }
+
+  const existing = rmpStateByCourse.get(course);
+  if (existing) return existing;
+
+  const state = { status: "idle", data: null };
+  rmpStateByCourse.set(course, state);
+  return state;
 }
 
 // Escapes HTML entities in a string. Input: string. Output: escaped string.
@@ -72,15 +103,18 @@ function splitCourseCode(code) {
 
 // Formats an instructor name for display. Input: name string. Output: string.
 function formatInstructorName(name) {
-  const nameParts = String(name || "")
-    .trim()
-    .split(/\s+/);
-  if (nameParts.length > 1) {
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
-    return `${firstName} ${lastName}`;
+  const raw = String(name || "").trim();
+  if (!raw) return "";
+
+  if (raw.includes(",")) {
+    const parts = raw
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (parts.length === 2) return `${parts[1]} ${parts[0]}`;
   }
-  return name || "";
+
+  return raw;
 }
 
 // Formats multiline content for HTML. Input: string. Output: HTML string.
@@ -145,14 +179,87 @@ function formatAverageText(average) {
   return `Average: ${average}%`;
 }
 
+// Applies current average state to a button. Input: button element and state. Output: none.
+function applyAverageButtonState(button, state) {
+  if (!button) return;
+
+  const status = state?.status || "idle";
+  const label = state?.label || "5 Year Average";
+
+  button.dataset.status = status;
+  button.textContent = status === "loading" ? "Loading..." : label;
+  button.disabled = status === "loading" || status === "resolved";
+}
+
+// Formats RMP label text. Input: rating data or null. Output: button label.
+function formatRmpText(data) {
+  if (!data) return "RMP N/A";
+  const rating = typeof data.rating === "number" ? data.rating.toFixed(1) : String(data.rating || "").trim();
+  return rating ? `RateMyProf:\n${rating} / 5` : "RateMyProf: N/A";
+}
+
+// Extracts instructor/campus info for an RMP lookup. Input: course object. Output: lookup object or null.
+function buildRmpLookupInfo(courseData) {
+  const normalized = normalizeProfessorName(courseData?.instructor);
+  if (!normalized) return null;
+
+  return {
+    profName: normalized.fullName,
+    campus: inferCampusFromCourseCode(courseData?.code),
+  };
+}
+
+// Applies current RMP state to a button. Input: button element and state. Output: none.
+function applyRmpButtonState(button, state) {
+  if (!button) return;
+
+  const status = state?.status || "idle";
+  const data = state?.data || null;
+  const hasProfileLink = status === "loaded" && Boolean(data?.link);
+
+  button.disabled = status === "loading";
+  button.dataset.status = status;
+  button.classList.toggle("wd-hover-tooltip", hasProfileLink);
+
+  if (hasProfileLink) {
+    button.dataset.tooltip = "Visit RateMyProf Site ↗";
+    button.title = "Open RateMyProfessors profile";
+  } else {
+    delete button.dataset.tooltip;
+    button.removeAttribute("title");
+  }
+
+  if (status === "loading") {
+    button.textContent = "Loading...";
+    return;
+  }
+
+  if (hasProfileLink) {
+    button.textContent = formatRmpText(data);
+    return;
+  }
+
+  if (status === "empty") {
+    button.textContent = "RateMyProf: N/A";
+    return;
+  }
+
+  if (status === "error") {
+    button.textContent = "RateMyProf: Error";
+    return;
+  }
+
+  button.textContent = "RateMyProf";
+}
+
 // Returns current yearsession string. Input: none. Output: YYYYW string.
 function getCurrentYearsession() {
   return `${new Date().getFullYear()}W`;
 }
 
 // Loads average into a course-card button. Input: button element. Output: none.
-async function loadAverageForButton(button) {
-  if (!button || button.dataset.loading === "true") return;
+async function loadAverageForButton(button, state) {
+  if (!button || !state || state.status === "loading" || state.status === "resolved") return;
 
   const subject = button.dataset.subject || "";
   const course = button.dataset.course || "";
@@ -160,14 +267,13 @@ async function loadAverageForButton(button) {
   const campus = button.dataset.campus || "UBCV";
   const yearsession = getCurrentYearsession();
 
-  button.dataset.loading = "true";
-  button.disabled = true;
-  button.textContent = "Loading...";
+  state.status = "loading";
+  applyAverageButtonState(button, state);
 
   if (!subject || !course || !yearsession) {
-    button.textContent = "Average: N/A";
-    button.disabled = false;
-    button.dataset.loading = "false";
+    state.label = "Average: N/A";
+    state.status = "resolved";
+    applyAverageButtonState(button, state);
     return;
   }
 
@@ -184,12 +290,12 @@ async function loadAverageForButton(button) {
     );
 
     const average = extractAverage(data);
-    button.textContent = formatAverageText(average);
+    state.label = formatAverageText(average);
   } catch (error) {
-    button.textContent = "Average: N/A";
+    state.label = "Average: N/A";
   } finally {
-    button.disabled = false;
-    button.dataset.loading = "false";
+    state.status = "resolved";
+    applyAverageButtonState(button, state);
   }
 }
 
@@ -206,7 +312,10 @@ export function renderCourseObjects(ui, courses) {
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
     const codeInfo = splitCourseCode(course.code || "");
     const averageInfo = buildAverageCourseInfo(course);
+    const averageState = getCourseAverageState(course);
     const instructorName = (course.instructor || "").trim() || "TBA";
+    const rmpInfo = buildRmpLookupInfo(course);
+    const rmpState = getCourseRmpState(course);
 
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
@@ -260,6 +369,18 @@ export function renderCourseObjects(ui, courses) {
           }
         </div>
         <div class="course-card__actions">
+          ${
+            rmpInfo
+              ? `<button
+                  type="button"
+                  class="course-card__rmp-button"
+                  data-prof-name="${escHTML(rmpInfo.profName)}"
+                  data-campus="${escHTML(rmpInfo.campus)}"
+                >
+                  RMP Rating
+                </button>`
+              : ""
+          }
           <button
             type="button"
             class="course-card__avg-button${averageInfo ? "" : " is-disabled"}"
@@ -272,11 +393,53 @@ export function renderCourseObjects(ui, courses) {
     `;
 
     const averageButton = card.querySelector(".course-card__avg-button");
-    if (averageButton && !averageButton.disabled) {
+    if (averageButton && averageInfo) {
+      applyAverageButtonState(averageButton, averageState);
+
       averageButton.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        await loadAverageForButton(averageButton);
+        await loadAverageForButton(averageButton, averageState);
+      });
+    }
+
+    const rmpButton = card.querySelector(".course-card__rmp-button");
+    if (rmpButton) {
+      applyRmpButtonState(rmpButton, rmpState);
+
+      rmpButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (rmpState.status === "loaded" && rmpState.data?.link) {
+          window.open(rmpState.data.link, "_blank", "noopener,noreferrer");
+          return;
+        }
+
+        if (rmpState.status === "loading") return;
+
+        rmpState.status = "loading";
+        applyRmpButtonState(rmpButton, rmpState);
+
+        try {
+          const data = await fetchProfRating({
+            profName: rmpButton.dataset.profName || "",
+            campus: rmpButton.dataset.campus || "UBCV",
+          });
+
+          rmpState.data = data;
+          rmpState.status = data?.link ? "loaded" : "empty";
+        } catch (error) {
+          rmpState.data = null;
+          rmpState.status = "error";
+          debug.warn({ id: "renderCourseObjects.rmpLookupFailed" }, "Failed to load RMP rating", {
+            instructor: rmpButton.dataset.profName || "",
+            campus: rmpButton.dataset.campus || "UBCV",
+            error: String(error),
+          });
+        }
+
+        applyRmpButtonState(rmpButton, rmpState);
       });
     }
 

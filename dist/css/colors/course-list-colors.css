@@ -72,11 +72,13 @@
   color: var(--hex-neutral-3);
 }
 
+.course-card__rmp-button,
 .course-card__avg-button {
   background: var(--course-card-bg);
   border-color: var(--course-card-border);
 }
 
+.course-card__rmp-button:hover:not([disabled]),
 .course-card__avg-button:hover:not([disabled]) {
   background: var(--course-card-chip-bg);
 }

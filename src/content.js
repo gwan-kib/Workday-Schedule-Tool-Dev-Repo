@@ -213,10 +213,8 @@ const assignCourseColors = (courses) => {
     }
 
     const updateScheduleView = () => {
-      console.log("STATE.view.semester:", STATE.view.semester);
-      console.log("STATE.filtered:", STATE.filtered);
       renderSchedule(ui, STATE.filtered, STATE.view.semester, STATE.view.timeFormat);
-    
+
       const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
       if (toggleButton) {
         toggleButton.textContent = STATE.view.timeFormat === "am/pm" ? "AM/PM" : "24H";
@@ -245,9 +243,9 @@ const assignCourseColors = (courses) => {
       ui.views.forEach((el) => el.classList.toggle("is-active", el.dataset.panel === viewKey));
       ui.viewTabs.forEach((button) => button.classList.toggle("is-active", button.dataset.panel === viewKey));
 
-      ui.mainPanel.classList.toggle("is-schedule-view", viewKey === "schedule");
-      ui.mainPanel.classList.toggle("is-settings-view", viewKey === "settings");
-      ui.mainPanel.classList.toggle("is-help-view", viewKey === "help");
+      ui.mainPanel.classList.toggle("is-schedule-view", viewKey === "schedule-panel");
+      ui.mainPanel.classList.toggle("is-settings-view", viewKey === "settings-panel");
+      ui.mainPanel.classList.toggle("is-help-view", viewKey === "help-panel");
     };
 
     const syncFloatingButtonState = () => {
@@ -262,6 +260,7 @@ const assignCourseColors = (courses) => {
     syncFloatingButtonState();
 
     let resolveScheduleModal = null;
+    let resolveSchedulePickerModal = null;
 
     const closeScheduleModal = (value) => {
       if (!ui.saveModal) return;
@@ -299,6 +298,72 @@ const assignCourseColors = (courses) => {
       });
     };
 
+    const closeSchedulePickerModal = (value) => {
+      if (!ui.schedulePickerModal) return;
+
+      ui.schedulePickerModal.classList.add("is-hidden");
+      ui.schedulePickerModal.setAttribute("aria-hidden", "true");
+      ui.schedulePickerList.innerHTML = "";
+
+      if (resolveSchedulePickerModal) {
+        resolveSchedulePickerModal(value);
+        resolveSchedulePickerModal = null;
+      }
+    };
+
+    const renderSchedulePickerOptions = (options) => {
+      if (!ui.schedulePickerList) return;
+
+      ui.schedulePickerList.innerHTML = "";
+
+      options.forEach((option) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "schedule-picker-option";
+        button.dataset.scheduleId = option.id;
+
+        const title = document.createElement("span");
+        title.className = "schedule-picker-option-title";
+        title.textContent = option.title;
+
+        const meta = document.createElement("span");
+        meta.className = "schedule-picker-option-meta";
+        meta.textContent = `${option.courseCount} course${option.courseCount === 1 ? "" : "s"}`;
+
+        const courses = document.createElement("span");
+        courses.className = "schedule-picker-option-courses";
+        courses.textContent = option.courseNames.length ? option.courseNames.join(", ") : "No course names detected";
+
+        button.appendChild(title);
+        button.appendChild(meta);
+        button.appendChild(courses);
+        ui.schedulePickerList.appendChild(button);
+      });
+    };
+
+    const openSchedulePickerModal = ({
+      title = "Choose a schedule",
+      message = "Multiple schedule tables were found on this page. Choose which one to load.",
+      options = [],
+    }) => {
+      if (!ui.schedulePickerModal || !ui.schedulePickerList) return Promise.resolve(options[0]?.id || null);
+
+      ui.schedulePickerTitle.textContent = title;
+      ui.schedulePickerMessage.textContent = message;
+      renderSchedulePickerOptions(options);
+
+      ui.schedulePickerModal.classList.remove("is-hidden");
+      ui.schedulePickerModal.setAttribute("aria-hidden", "false");
+
+      const firstOption = ui.schedulePickerList.querySelector(".schedule-picker-option");
+      if (firstOption) firstOption.focus();
+      else ui.schedulePickerCancel?.focus();
+
+      return new Promise((resolve) => {
+        resolveSchedulePickerModal = resolve;
+      });
+    };
+
     if (ui.saveModal) {
       on(ui.saveModal, "click", (event) => {
         if (event.target === ui.saveModal) return closeScheduleModal(null);
@@ -333,10 +398,54 @@ const assignCourseColors = (courses) => {
       });
     }
 
+    if (ui.schedulePickerModal) {
+      on(ui.schedulePickerModal, "click", (event) => {
+        if (event.target === ui.schedulePickerModal) return closeSchedulePickerModal(null);
+
+        const action = event.target.closest("[data-action]")?.dataset.action;
+        if (action === "close" || action === "cancel") return closeSchedulePickerModal(null);
+
+        const option = event.target.closest("[data-schedule-id]");
+        if (option) return closeSchedulePickerModal(option.dataset.scheduleId);
+      });
+
+      on(document, "keydown", (event) => {
+        if (event.key === "Escape" && !ui.schedulePickerModal.classList.contains("is-hidden")) {
+          closeSchedulePickerModal(null);
+        }
+      });
+    }
+
+    const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
+      const extractedCourses = await extractCoursesData({
+        selectSchedule: (options) =>
+          openSchedulePickerModal({
+            title: "Select a schedule",
+            message: "Multiple schedule tables detected. Select the one you would like to load:",
+            options,
+          }),
+      });
+
+      if (extractedCourses === null) {
+        if (!preserveExisting) {
+          STATE.courses = [];
+          STATE.filtered = [];
+          STATE.currentScheduleName = null;
+        }
+        return false;
+      }
+
+      STATE.courses = extractedCourses;
+      assignCourseColors(STATE.courses);
+      STATE.currentScheduleName = null;
+      filterCourses(ui.searchInput.value);
+      return true;
+    };
+
     ui.viewTabs.forEach((button) => {
       on(button, "click", () => {
         setActiveView(button.dataset.panel);
-        if (button.dataset.panel === "schedule") updateScheduleView();
+        if (button.dataset.panel === "schedule-panel") updateScheduleView();
       });
     });
 
@@ -374,11 +483,8 @@ const assignCourseColors = (courses) => {
       void ui.refreshButton.offsetWidth;
       ui.refreshButton.classList.add("rotate");
 
-      STATE.courses = await extractCoursesData();
-      assignCourseColors(STATE.courses);
-      STATE.currentScheduleName = null;
-      filterCourses(ui.searchInput.value);
-      renderAll();
+      const loaded = await loadCoursesFromPage({ preserveExisting: true });
+      if (loaded) renderAll();
     });
 
     on(ui.clearButton, "click", () => {
@@ -470,32 +576,32 @@ const assignCourseColors = (courses) => {
       ui.searchInput.value = "";
 
       renderAll();
-      setActiveView("schedule");
+      setActiveView("course-list-panel");
       if (ui.savedDropdown) ui.savedDropdown.open = false;
     });
 
     on(ui.settingsButton, "click", () => {
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
-      if (STATE.view.panel === "settings") {
-        const backTo = STATE.view.lastMainPanel || "list";
+      if (STATE.view.panel === "settings-panel") {
+        const backTo = STATE.view.lastMainPanel || "course-list-panel";
         setActiveView(backTo);
-        if (backTo === "schedule") updateScheduleView();
+        if (backTo === "schedule-panel") updateScheduleView();
         return;
       }
-      setActiveView("settings");
+      setActiveView("settings-panel");
     });
 
     on(ui.helpButton, "click", () => {
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
-      if (STATE.view.panel === "help") {
-        const backTo = STATE.view.lastMainPanel || "list";
+      if (STATE.view.panel === "help-panel") {
+        const backTo = STATE.view.lastMainPanel || "course-list-panel";
         setActiveView(backTo);
-        if (backTo === "schedule") updateScheduleView();
+        if (backTo === "schedule-panel") updateScheduleView();
         return;
       }
-      setActiveView("help");
+      setActiveView("help-panel");
     });
 
     on(
@@ -512,13 +618,10 @@ const assignCourseColors = (courses) => {
     STATE.savedSchedules = await loadSavedSchedules();
     renderSavedSchedules(ui, STATE.savedSchedules);
 
-    STATE.courses = await extractCoursesData();
-    assignCourseColors(STATE.courses);
-    STATE.filtered = [...STATE.courses];
+    await loadCoursesFromPage();
 
-    updateScheduleView();
-    renderCourseObjects(ui, STATE.filtered);
-    
+    renderAll();
+
     setActiveView(STATE.view.panel);
 
     let termCampus = readTermCampus();

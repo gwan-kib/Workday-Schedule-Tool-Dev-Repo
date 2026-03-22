@@ -27,7 +27,6 @@
   white-space: nowrap;
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* SCHEDULE VIEW: SAVED SCHEDULES DROPDOWN                                     */
 /* -------------------------------------------------------------------------- */
@@ -158,7 +157,6 @@
 .schedule-modal-backdrop {
   position: absolute;
   inset: 0;
-  padding: 10px;
 }
 
 .dialog-container {
@@ -262,17 +260,61 @@
   display: none;
 }
 
+.schedule-picker-dialog {
+  max-height: min(520px, 84vh);
+}
+
+.schedule-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: min(320px, 50vh);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.schedule-picker-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+
+  width: 100%;
+  padding: 12px;
+
+  border: 1px solid;
+  border-radius: 12px;
+
+  text-align: left;
+  cursor: pointer;
+}
+
+.schedule-picker-option-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.schedule-picker-option-meta {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.schedule-picker-option-courses {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 /* -------------------------------------------------------------------------- */
 /* SCHEDULE VIEW: GRID + TABLE (TIME GRID STRUCTURE)                           */
 /* -------------------------------------------------------------------------- */
 
-.widget-panel[data-panel="schedule"] {
+.widget-panel[data-panel="schedule-panel"] {
   height: 100%;
   flex-direction: column;
   height: 520px;
 }
 
-.widget-panel[data-panel="schedule"].is-active {
+.widget-panel[data-panel="schedule-panel"].is-active {
   display: flex;
 }
 
@@ -300,7 +342,7 @@
   position: relative;
 }
 
-[data-panel="schedule"] .schedule-table thead th {
+[data-panel="schedule-panel"] .schedule-table thead th {
   position: sticky;
   top: 0;
   z-index: 50;
@@ -374,7 +416,7 @@
 }
 
 /* Center the schedule table block inside the scroll area */
-.widget-panel[data-panel="schedule"] .schedule-grid {
+.widget-panel[data-panel="schedule-panel"] .schedule-grid {
   text-align: center;
 }
 
@@ -517,4 +559,3 @@
   display: block;
   text-align: center;
 }
-

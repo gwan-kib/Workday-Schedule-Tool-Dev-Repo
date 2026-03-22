@@ -6,7 +6,7 @@
 
   "permissions": ["storage"],
 
-  "host_permissions": ["https://*.myworkday.com/*"],
+  "host_permissions": ["https://*.myworkday.com/*", "https://www.ratemyprofessors.com/*"],
 
   "icons": {
     "16": "icon16.png",
