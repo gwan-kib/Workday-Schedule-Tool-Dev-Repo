@@ -578,7 +578,7 @@ const assignCourseColors = (courses) => {
       ui.searchInput.value = "";
 
       renderAll();
-      setActiveView("schedule");
+      setActiveView("list");
       if (ui.savedDropdown) ui.savedDropdown.open = false;
     });
 
