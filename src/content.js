@@ -229,7 +229,7 @@ const assignCourseColors = (courses) => {
     };
 
     const renderAll = () => {
-      sortCourses(STATE.sort.key || "code");
+      if (STATE.sort?.key) sortCourses(STATE.sort.key);
       updateScheduleView();
       renderCourseObjects(ui, STATE.filtered);
     };
@@ -515,9 +515,6 @@ const assignCourseColors = (courses) => {
     STATE.courses = await extractCoursesData();
     assignCourseColors(STATE.courses);
     STATE.filtered = [...STATE.courses];
-
-    STATE.sort = STATE.sort || { key: "code", dir: 1 };
-    sortCourses("code");
 
     updateScheduleView();
     renderCourseObjects(ui, STATE.filtered);
