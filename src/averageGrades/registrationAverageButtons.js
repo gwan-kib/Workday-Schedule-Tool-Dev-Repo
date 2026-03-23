@@ -1,5 +1,3 @@
-import { buildHeaderMaps, findWorkdayGrid } from "../extraction/grid.js";
-import { createRowCellReader } from "../extraction/rowCellReader.js";
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 import {
   fetchSectionGradesWithFallback,
@@ -7,10 +5,11 @@ import {
   readTermCampus,
 } from "./gradesApiCall.js";
 
-const registrationRowSelector = "tr, [role='row'], .wd-GridRow, .grid-row";
+const registrationCardSelector = 'li[data-automation-id="compositeContainer"]';
 const averageButtonSelector = "div.WHPF.WFPF, div.WHMF.WFMF";
+const compositeSubHeaderSelector = '[data-automation-id="compositeSubHeaderOne"]';
 const debug = debugFor("registrationAverageButtons");
-debugLog({ local: { registrationAverageButtons: false } });
+debugLog({ local: { registrationAverageButtons: true } });
 
 const extractAverage = (data) => {
   if (!data) return null;
@@ -47,58 +46,99 @@ const labLike = (text) => /\b(laboratory)\b/i.test(String(text || ""));
 const seminarLike = (text) => /\bseminar\b/i.test(String(text || ""));
 const discussionLike = (text) => /\bdiscussion\b/i.test(String(text || ""));
 const isLectureFormat = (text) => lectureLike(text) && !labLike(text) && !seminarLike(text) && !discussionLike(text);
+const summarizeDebugText = (text, maxLength = 160) => {
+  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
+};
+const getRegistrationContainer = (headerWrapper) =>
+  headerWrapper?.closest?.(registrationCardSelector) || headerWrapper || null;
+const getStaticButtonLabel = (reason) => (reason === "not-lecture" ? "Not a lecture" : "Average:\nunavailable");
 
 // Sets up registration average buttons on Workday pages. Input: none. Output: cleanup function.
 export function setupRegistrationAverageButtons() {
   debug.log({ id: "setupRegistrationAverageButtons.start" }, "Initializing registration average buttons");
   let termCampus = readTermCampus();
-  let registrationGridContext = null;
 
-  const getRegistrationGridContext = () => {
-    if (registrationGridContext?.root?.isConnected) return registrationGridContext;
-
-    const grid = findWorkdayGrid();
-    if (!grid?.root) return null;
-
-    registrationGridContext = {
-      root: grid.root,
-      headerMaps: buildHeaderMaps(grid.root),
-    };
-    debug.log({ id: "setupRegistrationAverageButtons.gridContext" }, "Cached registration grid context");
-
-    return registrationGridContext;
-  };
-
-  const shouldShowAverageButtonForRegistration = (headerWrapper) => {
-    const row = headerWrapper?.closest?.(registrationRowSelector);
-    if (!row) return false;
-
-    const gridContext = getRegistrationGridContext();
-    if (gridContext?.root?.contains(row)) {
-      const { readCellTextByHeader } = createRowCellReader(row, gridContext.headerMaps);
-      const instructionalFormat = readCellTextByHeader("instructionalFormat");
-      if (instructionalFormat) {
-        const shouldShow = isLectureFormat(instructionalFormat);
-        debug.log({ id: "setupRegistrationAverageButtons.shouldShow.grid" }, "Checked row instructional format", {
-          instructionalFormat,
-          shouldShow,
-        });
-        return shouldShow;
-      }
+  const getRegistrationAverageButtonState = (headerWrapper) => {
+    const row = getRegistrationContainer(headerWrapper);
+    const rowPreview = summarizeDebugText(row?.innerText || headerWrapper?.innerText || "");
+    if (!row) {
+      debug.log(
+        { id: "setupRegistrationAverageButtons.resolveRow.noRow" },
+        "Could not find a registration row while resolving average-button mode",
+      );
+      return {
+        buttonMode: "static",
+        staticReason: "not-lecture",
+        isLecture: false,
+        rowPreview,
+        source: "missing-row",
+        instructionalFormat: "",
+      };
     }
 
-    const shouldShow = isLectureFormat(row.innerText || headerWrapper.innerText || "");
-    debug.log({ id: "setupRegistrationAverageButtons.shouldShow.fallback" }, "Checked fallback row text", {
-      shouldShow,
+    const compositeInstructionalFormat =
+      row.querySelector?.(compositeSubHeaderSelector)?.getAttribute?.("title") ||
+      row.querySelector?.(compositeSubHeaderSelector)?.textContent ||
+      "";
+    if (compositeInstructionalFormat) {
+      const isLecture = isLectureFormat(compositeInstructionalFormat);
+      debug.log(
+        { id: "setupRegistrationAverageButtons.resolveRow.composite" },
+        "Resolved row average-button mode from composite subheader",
+        {
+          instructionalFormat: summarizeDebugText(compositeInstructionalFormat),
+          isLecture,
+          buttonMode: isLecture ? "interactive" : "static",
+          rowPreview,
+        },
+      );
+      return {
+        buttonMode: isLecture ? "interactive" : "static",
+        staticReason: isLecture ? null : "not-lecture",
+        isLecture,
+        rowPreview,
+        source: "composite-subheader",
+        instructionalFormat: summarizeDebugText(compositeInstructionalFormat),
+      };
+    }
+
+    const fallbackInstructionalText = row.innerText || headerWrapper.innerText || "";
+    const isLecture = isLectureFormat(fallbackInstructionalText);
+    debug.log({ id: "setupRegistrationAverageButtons.resolveRow.fallback" }, "Resolved row average-button mode from fallback text", {
+      instructionalFormat: summarizeDebugText(fallbackInstructionalText),
+      isLecture,
+      buttonMode: isLecture ? "interactive" : "static",
+      rowPreview,
     });
-    return shouldShow;
+    return {
+      buttonMode: isLecture ? "interactive" : "static",
+      staticReason: isLecture ? null : "not-lecture",
+      isLecture,
+      rowPreview,
+      source: "fallback-text",
+      instructionalFormat: summarizeDebugText(fallbackInstructionalText),
+    };
   };
 
-  const createAverageButton = (courseInfo) => {
-    debug.log({ id: "setupRegistrationAverageButtons.createButton" }, "Creating average button", { courseInfo });
+  const createAverageButton = ({ courseInfo = null, mode = "interactive", staticReason = null } = {}) => {
+    debug.log({ id: "setupRegistrationAverageButtons.createButton" }, "Creating registration average button", {
+      courseInfo,
+      mode,
+      staticReason,
+    });
     const button = document.createElement("button");
     button.type = "button";
     button.className = "registration__avg-button";
+    if (mode === "static") {
+      button.classList.add("registration__avg-button--static");
+      button.textContent = getStaticButtonLabel(staticReason);
+      button.disabled = true;
+      button.tabIndex = -1;
+      return button;
+    }
+
     button.textContent = "Class Average\n(past 5 years)";
 
     button.addEventListener("click", async (event) => {
@@ -160,13 +200,58 @@ export function setupRegistrationAverageButtons() {
 
   const ensureAverageButton = (headerWrapper) => {
     if (!headerWrapper || !(headerWrapper instanceof Element)) return;
-    if (headerWrapper.previousElementSibling?.classList?.contains("registration__avg-button")) return;
-    if (!shouldShowAverageButtonForRegistration(headerWrapper)) return;
+    const row = getRegistrationContainer(headerWrapper);
+    const rowPreview = summarizeDebugText(row?.innerText || headerWrapper.innerText || "");
+    const alreadyHasButton = headerWrapper.previousElementSibling?.classList?.contains("registration__avg-button") || false;
+    debug.log(
+      { id: "setupRegistrationAverageButtons.ensureButton.rowState" },
+      "Evaluating row button state",
+      {
+        alreadyHasButton,
+        rowPreview,
+      },
+    );
+    if (alreadyHasButton) {
+      debug.log(
+        { id: "setupRegistrationAverageButtons.ensureButton.skipExisting" },
+        "Skipped row because an average button is already present",
+        {
+          rowPreview,
+        },
+      );
+      return;
+    }
+
+    const buttonState = getRegistrationAverageButtonState(headerWrapper);
+    debug.log(
+      { id: "setupRegistrationAverageButtons.ensureButton.decision" },
+      "Finished row average-button mode check",
+      {
+        buttonMode: buttonState.buttonMode,
+        staticReason: buttonState.staticReason,
+        instructionalFormat: buttonState.instructionalFormat,
+        instructionalFormatSource: buttonState.source,
+        rowPreview: buttonState.rowPreview || rowPreview,
+      },
+    );
 
     const parentElement = headerWrapper.parentElement;
     if (parentElement) {
       parentElement.style.display = "flex";
       parentElement.style.alignItems = "center";
+    }
+
+    if (buttonState.buttonMode === "static") {
+      const button = createAverageButton({
+        mode: "static",
+        staticReason: buttonState.staticReason,
+      });
+      headerWrapper.parentNode?.insertBefore(button, headerWrapper);
+      debug.log({ id: "setupRegistrationAverageButtons.ensureButton.inserted" }, "Inserted static registration average button", {
+        staticReason: buttonState.staticReason,
+        rowPreview: buttonState.rowPreview || rowPreview,
+      });
+      return;
     }
 
     const promptOption = headerWrapper.querySelector?.('[data-automation-id="promptOption"]') || headerWrapper;
@@ -179,22 +264,32 @@ export function setupRegistrationAverageButtons() {
 
     const courseInfo = parseCourseInfoFromPromptText(promptText);
     if (!courseInfo) {
-      debug.warn({ id: "setupRegistrationAverageButtons.ensureButton.noCourseInfo" }, "Could not parse course info");
+      const fallbackButton = createAverageButton({
+        mode: "static",
+        staticReason: "unavailable",
+      });
+      headerWrapper.parentNode?.insertBefore(fallbackButton, headerWrapper);
+      debug.warn(
+        { id: "setupRegistrationAverageButtons.ensureButton.noCourseInfo" },
+        "Could not parse course info for lecture row; inserted unavailable average button",
+        {
+          rowPreview: buttonState.rowPreview || rowPreview,
+        },
+      );
       return;
     }
 
-    const button = createAverageButton(courseInfo);
+    const button = createAverageButton({ courseInfo, mode: "interactive" });
     headerWrapper.parentNode?.insertBefore(button, headerWrapper);
-    debug.log({ id: "setupRegistrationAverageButtons.ensureButton.inserted" }, "Inserted average button", {
+    debug.log({ id: "setupRegistrationAverageButtons.ensureButton.inserted" }, "Inserted interactive registration average button", {
       courseInfo,
+      rowPreview: buttonState.rowPreview || rowPreview,
     });
   };
 
   const handleAverageButtonNodes = (node) => {
     if (!(node instanceof Element)) return;
-    debug.log({ id: "setupRegistrationAverageButtons.handleNodes" }, "Inspecting node for average buttons", {
-      tagName: node.tagName,
-    });
+    
     if (node.matches?.(averageButtonSelector)) {
       ensureAverageButton(node);
     }

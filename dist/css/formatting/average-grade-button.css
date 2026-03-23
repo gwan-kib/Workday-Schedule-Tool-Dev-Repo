@@ -33,3 +33,8 @@
   cursor: default;
 }
 
+.registration__avg-button--static {
+  cursor: default;
+  pointer-events: none;
+}
+

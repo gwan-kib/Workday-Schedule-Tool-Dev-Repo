@@ -4,15 +4,12 @@
   box-shadow: 0 0 0 1px var(--hex-brand-main-2);
 }
 
-.registration__avg-button:hover {
+.registration__avg-button:hover:not([disabled]):not(.registration__avg-button--static) {
   background-color: var(--hex-brand-accent-6);
   box-shadow: 0 0 0 1px var(--hex-brand-main-2);
 }
 
-.registration__avg-button[disabled] {
-  color: var(--hex-neutral-4);
-  background-color: var(--hex-neutral-4);
-  box-shadow: 0 0 0 1px var(--hex-neutral-4);
-  opacity: 0.9;
+.registration__avg-button.registration__avg-button--static {
+  opacity: 0.5;
 }
 
