@@ -4,6 +4,8 @@ import { ensureMount } from "./utilities/shadowMount.js";
 
 import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { extractCoursesData } from "./extraction/index.js";
+import { buildHeaderMaps, findWorkdayGrid } from "./extraction/grid.js";
+import { createRowCellReader } from "./extraction/rowCellReader.js";
 
 import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courseViewSorting.js";
 import { renderCourseObjects } from "./mainPanel/renderCourseObjects.js";
@@ -655,11 +657,48 @@ const assignCourseColors = (courses) => {
     };
 
     const hasValidAverage = (data) => extractAverage(data) != null;
+    const lectureLike = (text) => /\blecture\b/i.test(String(text || ""));
+    const labLike = (text) => /\b(laboratory)\b/i.test(String(text || ""));
+    const seminarLike = (text) => /\bseminar\b/i.test(String(text || ""));
+    const discussionLike = (text) => /\bdiscussion\b/i.test(String(text || ""));
+    const isLectureFormat = (text) =>
+      lectureLike(text) && !labLike(text) && !seminarLike(text) && !discussionLike(text);
+    const registrationRowSelector = "tr, [role='row'], .wd-GridRow, .grid-row";
+
+    let registrationGridContext = null;
+
+    const getRegistrationGridContext = () => {
+      if (registrationGridContext?.root?.isConnected) return registrationGridContext;
+
+      const grid = findWorkdayGrid();
+      if (!grid?.root) return null;
+
+      registrationGridContext = {
+        root: grid.root,
+        headerMaps: buildHeaderMaps(grid.root),
+      };
+
+      return registrationGridContext;
+    };
+
+    const shouldShowAverageButtonForRegistration = (headerWrapper) => {
+      const row = headerWrapper?.closest?.(registrationRowSelector);
+      if (!row) return false;
+
+      const gridContext = getRegistrationGridContext();
+      if (gridContext?.root?.contains(row)) {
+        const { readCellTextByHeader } = createRowCellReader(row, gridContext.headerMaps);
+        const instructionalFormat = readCellTextByHeader("instructionalFormat");
+        if (instructionalFormat) return isLectureFormat(instructionalFormat);
+      }
+
+      return isLectureFormat(row.innerText || headerWrapper.innerText || "");
+    };
 
     const createAverageButton = (courseInfo) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "wd-average-grade-button";
+      button.className = "registration__avg-button";
       button.textContent = "Class Average\n(past 5 years)";
 
       button.addEventListener("click", async (event) => {
@@ -710,7 +749,11 @@ const assignCourseColors = (courses) => {
 
     const ensureAverageButton = (headerWrapper) => {
       if (!headerWrapper || !(headerWrapper instanceof Element)) return;
-      if (headerWrapper.previousElementSibling?.classList?.contains("wd-average-grade-button")) return;
+      if (headerWrapper.previousElementSibling?.classList?.contains("registration__avg-button")) {
+        return;
+      }
+
+      if (!shouldShowAverageButtonForRegistration(headerWrapper)) return;
 
       const parentElement = headerWrapper.parentElement;
       if (parentElement) {

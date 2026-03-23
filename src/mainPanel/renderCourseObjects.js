@@ -365,10 +365,12 @@ export function renderCourseObjects(ui, courses) {
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
     const sectionLabel = String(course.section_number || "").trim();
+    const isLectureCourse = !(course?.isLab || course?.isSeminar || course?.isDiscussion);
 
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
     const codeInfo = splitCourseCode(course.code || "");
     const averageInfo = buildAverageCourseInfo(course);
+    const showAverageButton = Boolean(averageInfo && isLectureCourse);
     const averageState = getCourseAverageState(course);
     const instructorName = (course.instructor || "").trim() || "TBA";
     const rmpInfo = buildRmpLookupInfo(course);
@@ -439,20 +441,27 @@ export function renderCourseObjects(ui, courses) {
               : ""
           }
         </div>
-        <div class="course-card__actions">
-          <button
-            type="button"
-            class="course-card__avg-button${averageInfo ? "" : " is-disabled"}"
-            ${averageInfo ? `data-subject="${escHTML(averageInfo.subject)}" data-course="${escHTML(averageInfo.course)}" data-section="${escHTML(averageInfo.section)}" data-campus="${escHTML(averageInfo.campus)}"` : "disabled"}
-          >
-            5 Year Average
-          </button>
-        </div>
+        ${
+          showAverageButton
+            ? `<div class="course-card__actions">
+                <button
+                  type="button"
+                  class="course-card__avg-button"
+                  data-subject="${escHTML(averageInfo.subject)}"
+                  data-course="${escHTML(averageInfo.course)}"
+                  data-section="${escHTML(averageInfo.section)}"
+                  data-campus="${escHTML(averageInfo.campus)}"
+                >
+                  5 Year Average
+                </button>
+              </div>`
+            : ""
+        }
       </div>
     `;
 
     const averageButton = card.querySelector(".course-card__avg-button");
-    if (averageButton && averageInfo) {
+    if (averageButton && showAverageButton) {
       applyAverageButtonState(averageButton, averageState);
 
       averageButton.addEventListener("click", async (event) => {
