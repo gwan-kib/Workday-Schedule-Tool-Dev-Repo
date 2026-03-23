@@ -100,6 +100,14 @@
   font-size: 15px;
 }
 
+.course-card__instructor-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .course-card__code {
   display: flex;
   align-items: center;
@@ -228,7 +236,9 @@
 }
 
 .course-card__rmp-button {
-  width: 110px;
+  width: 140px;
+  height: 25px;
+  border-radius: 8px;
 }
 
 .course-card__rmp-button[disabled],
