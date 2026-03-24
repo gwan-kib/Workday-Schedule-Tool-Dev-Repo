@@ -140,9 +140,19 @@
   color: var(--hex-brand-main-1);
 }
 
+.schedule-saved-badge {
+  background: var(--hex-brand-main-2);
+  color: var(--hex-brand-accent-1);
+}
+
 .schedule-saved-action {
   background: var(--hex-brand-main-2);
   color: var(--hex-brand-accent-2);
+}
+
+.schedule-saved-action.star.is-favorite {
+  background: var(--hex-brand-main-1);
+  color: var(--hex-brand-accent-1);
 }
 
 .schedule-saved-action.delete {

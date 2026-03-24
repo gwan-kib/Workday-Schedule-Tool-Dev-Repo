@@ -21,6 +21,7 @@ import {
   loadSavedSchedules,
   persistSavedSchedules,
   renderSavedSchedules,
+  togglePreferredSchedule,
 } from "./mainPanel/scheduleStorage.js";
 
 const debug = debugFor("content");
@@ -209,6 +210,7 @@ debugLog({ local: { content: false } });
       if (!name) return;
 
       const snapshot = createScheduleSnapshot(name, STATE.filtered, courseColorController.getAssignments());
+      if (!STATE.savedSchedules.length) snapshot.isFavorite = true;
       STATE.savedSchedules = [snapshot, ...STATE.savedSchedules];
       debug.log({ id: "saveSchedule.saved" }, "Saved schedule snapshot", {
         scheduleName: name,
@@ -231,6 +233,14 @@ debugLog({ local: { content: false } });
 
       const selected = STATE.savedSchedules.find((s) => s.id === scheduleId);
       if (!selected) return;
+
+      if (actionButton.dataset.action === "favorite") {
+        STATE.savedSchedules = togglePreferredSchedule(STATE.savedSchedules, scheduleId);
+        await persistSavedSchedules(STATE.savedSchedules);
+        renderSavedSchedules(ui, STATE.savedSchedules);
+        if (ui.savedDropdown) ui.savedDropdown.open = true;
+        return;
+      }
 
       if (actionButton.dataset.action === "delete") {
         debug.log({ id: "savedMenu.delete" }, "Deleting saved schedule", { scheduleId, scheduleName: selected.name });
