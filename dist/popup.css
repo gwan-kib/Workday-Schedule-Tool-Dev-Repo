@@ -47,7 +47,6 @@ h3 {
   justify-content: center;
   height: 570px;
   gap: 16px;
-  padding: 18px;
   border: 3px solid var(--hex-brand-main-1);
   background: var(--hex-brand-accent-1);
   overflow: auto;

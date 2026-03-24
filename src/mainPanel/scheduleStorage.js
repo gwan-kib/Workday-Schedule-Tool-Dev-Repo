@@ -157,9 +157,7 @@ export function renderSavedSchedules(ui, schedules) {
     return;
   }
 
-  [...normalizeSchedules(schedules)]
-    .sort((a, b) => Number(Boolean(b.isFavorite)) - Number(Boolean(a.isFavorite)))
-    .forEach((schedule) => {
+  normalizeSchedules(schedules).forEach((schedule) => {
       const card = document.createElement("div");
       card.className = "schedule-saved-card";
       card.dataset.id = schedule.id;
@@ -180,7 +178,7 @@ export function renderSavedSchedules(ui, schedules) {
       if (schedule.isFavorite) {
         const badge = document.createElement("span");
         badge.className = "schedule-saved-badge";
-        badge.textContent = "Default";
+        badge.textContent = "Favorite";
         titleRow.appendChild(badge);
       }
 

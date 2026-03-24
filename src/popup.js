@@ -46,7 +46,7 @@ function renderPicker() {
   popupState.schedules.forEach((schedule) => {
     const option = document.createElement("option");
     option.value = schedule.id;
-    option.textContent = schedule.isFavorite ? `${schedule.name} (Default)` : schedule.name;
+    option.textContent = schedule.isFavorite ? `${schedule.name} (Favorite)` : schedule.name;
     option.selected = schedule.id === popupState.activeScheduleId;
     ui.select.appendChild(option);
   });
