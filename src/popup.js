@@ -8,7 +8,6 @@ import { formatScheduleMeta, getFavoriteSchedule, getPreferredSchedule, loadSave
 
 // Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
 const ui = {
-  title: document.querySelector("#popup-title"),
   status: document.querySelector("#popup-status"),
   empty: document.querySelector("#popup-empty"),
   content: document.querySelector("#popup-content"),
