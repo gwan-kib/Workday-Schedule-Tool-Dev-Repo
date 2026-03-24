@@ -498,7 +498,7 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
 
   ui.activeSemester = activeSemester;
 
-  const semesterLabel = TERM_WINDOWS[activeSemester]?.label || "Unknown Term";
+  const semesterLabel = TERM_WINDOWS[activeSemester]?.label || "Term Not Found";
   if (ui?.scheduleTermPill) {
     ui.scheduleTermPill.textContent = semesterLabel;
   }

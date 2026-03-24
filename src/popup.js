@@ -6,6 +6,7 @@ import {
 import { renderSchedule } from "./mainPanel/scheduleView.js";
 import { formatScheduleMeta, getFavoriteSchedule, getPreferredSchedule, loadSavedSchedules } from "./mainPanel/scheduleStorage.js";
 
+// Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
 const ui = {
   title: document.querySelector("#popup-title"),
   status: document.querySelector("#popup-status"),
@@ -19,12 +20,14 @@ const ui = {
   footerAlert: document.querySelector("#popup-footer-alert"),
 };
 
+// Popup state mirrors the saved schedules in storage plus the schedule currently being previewed.
 const popupState = {
   schedules: [],
   activeScheduleId: null,
   basePalettes: [],
 };
 
+// Reapplies the stored course color palette so the popup preview matches the main extension view.
 function applySavedPalette(schedule) {
   if (!popupState.basePalettes.length) return;
 
@@ -35,6 +38,7 @@ function applySavedPalette(schedule) {
   );
 }
 
+// The picker only appears when more than one saved schedule exists, and it labels the default schedule clearly.
 function renderPicker() {
   if (!ui.select) return;
 
@@ -51,6 +55,7 @@ function renderPicker() {
   ui.pickerWrap?.classList.toggle("is-hidden", popupState.schedules.length <= 1);
 }
 
+// Renders the active saved schedule preview, falling back to the preferred schedule when needed.
 function renderActiveSchedule() {
   const activeSchedule =
     popupState.schedules.find((schedule) => schedule.id === popupState.activeScheduleId) ||
@@ -59,8 +64,7 @@ function renderActiveSchedule() {
   if (!activeSchedule) {
     ui.empty?.classList.remove("is-hidden");
     ui.content?.classList.add("is-hidden");
-    ui.title.textContent = "Saved schedule";
-    ui.status.textContent = "No saved schedules are available yet.";
+    ui.status?.classList.remove("is-hidden");
     return;
   }
 
@@ -74,7 +78,7 @@ function renderActiveSchedule() {
 
   ui.empty?.classList.add("is-hidden");
   ui.content?.classList.remove("is-hidden");
-  ui.title.textContent = activeSchedule.name;
+  ui.status?.classList.add("is-hidden");
   ui.meta.textContent = formatScheduleMeta(activeSchedule);
   ui.status.textContent = isDefaultSchedule
     ? "This is the schedule shown when you open the extension outside Workday."
@@ -83,6 +87,7 @@ function renderActiveSchedule() {
       : "No default schedule is starred yet, so the newest saved schedule is shown.";
 }
 
+// Startup restores saved schedules from storage, captures the base theme palette, and draws the initial preview.
 async function boot() {
   popupState.basePalettes = captureCourseColorPalettes(document.documentElement);
   popupState.schedules = await loadSavedSchedules();
@@ -92,11 +97,13 @@ async function boot() {
   renderActiveSchedule();
 }
 
+// Switching the picker updates which saved schedule is previewed in-place.
 ui.select?.addEventListener("change", (event) => {
   popupState.activeScheduleId = event.target.value;
   renderActiveSchedule();
 });
 
+// The schedule grid uses measured layout, so rerender on resize to keep the preview aligned.
 window.addEventListener("resize", () => {
   if (!popupState.activeScheduleId) return;
   renderActiveSchedule();
