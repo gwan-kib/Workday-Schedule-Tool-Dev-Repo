@@ -4,7 +4,7 @@
   "version": "2.0",
   "description": "A tool to make planning for your semester easier.",
 
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage"],
 
   "host_permissions": ["https://*.myworkday.com/*", "https://www.ratemyprofessors.com/*"],
 

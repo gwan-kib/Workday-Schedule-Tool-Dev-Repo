@@ -25,6 +25,7 @@ const popupState = {
   activeScheduleId: null,
   basePalettes: [],
 };
+let scheduledRenderFrame = 0;
 
 // Reapplies the stored course color palette so the popup preview matches the main extension view.
 function applySavedPalette(schedule) {
@@ -35,6 +36,24 @@ function applySavedPalette(schedule) {
     popupState.basePalettes,
     normalizeCourseColorAssignments(schedule?.colorAssignments),
   );
+}
+
+function cancelScheduledRender() {
+  if (!scheduledRenderFrame) return;
+  cancelAnimationFrame(scheduledRenderFrame);
+  scheduledRenderFrame = 0;
+}
+
+// The schedule renderer depends on live element measurements, so defer until the popup is visible.
+function queueVisibleScheduleRender(schedule) {
+  cancelScheduledRender();
+
+  scheduledRenderFrame = requestAnimationFrame(() => {
+    scheduledRenderFrame = requestAnimationFrame(() => {
+      scheduledRenderFrame = 0;
+      renderSchedule(ui, schedule?.courses, null, "am/pm");
+    });
+  });
 }
 
 // The picker only appears when more than one saved schedule exists, and it labels the default schedule clearly.
@@ -61,6 +80,7 @@ function renderActiveSchedule() {
     getPreferredSchedule(popupState.schedules);
 
   if (!activeSchedule) {
+    cancelScheduledRender();
     ui.empty?.classList.remove("is-hidden");
     ui.content?.classList.add("is-hidden");
     ui.status?.classList.remove("is-hidden");
@@ -70,7 +90,6 @@ function renderActiveSchedule() {
   popupState.activeScheduleId = activeSchedule.id;
   renderPicker();
   applySavedPalette(activeSchedule);
-  renderSchedule(ui, activeSchedule.courses, null, "am/pm");
 
   const favoriteSchedule = getFavoriteSchedule(popupState.schedules);
   const isDefaultSchedule = favoriteSchedule?.id === activeSchedule.id;
@@ -84,6 +103,8 @@ function renderActiveSchedule() {
     : favoriteSchedule
       ? "Previewing a different saved schedule."
       : "No default schedule is starred yet, so the newest saved schedule is shown.";
+
+  queueVisibleScheduleRender(activeSchedule);
 }
 
 // Startup restores saved schedules from storage, captures the base theme palette, and draws the initial preview.

@@ -130,10 +130,6 @@ debugLog({ local: { content: false } });
       }
     });
 
-    chrome.runtime.onMessage.addListener((message) => {
-      if (message?.type === "TOGGLE_WIDGET") toggleMainPanel();
-    });
-
     // These controls manage the live schedule currently loaded from the page.
     on(ui.refreshButton, "click", async () => {
       ui.refreshButton.classList.remove("rotate");
