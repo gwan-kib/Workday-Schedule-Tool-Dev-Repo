@@ -16,7 +16,7 @@ export function filterCourses(query) {
     return;
   }
 
-  const keys = [ "title", "meeting", "instructionalFormat"];
+  const keys = [ "title", "meeting", "instructionalFormat", "code", "instructor" ];
 
   STATE.filtered = STATE.courses.filter((c) =>
     keys.some((k) =>
