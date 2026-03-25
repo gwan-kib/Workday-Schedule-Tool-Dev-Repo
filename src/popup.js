@@ -24,6 +24,7 @@ const popupState = {
   schedules: [],
   activeScheduleId: null,
   basePalettes: [],
+  timeFormat: "am/pm",
 };
 let scheduledRenderFrame = 0;
 
@@ -51,8 +52,21 @@ function queueVisibleScheduleRender(schedule) {
   scheduledRenderFrame = requestAnimationFrame(() => {
     scheduledRenderFrame = requestAnimationFrame(() => {
       scheduledRenderFrame = 0;
-      renderSchedule(ui, schedule?.courses, null, "am/pm");
+      renderSchedule(ui, schedule?.courses, null, popupState.timeFormat);
+      wireTimeFormatToggle(schedule);
     });
+  });
+}
+
+function wireTimeFormatToggle(schedule) {
+  const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
+  if (!toggleButton) return;
+
+  toggleButton.textContent = popupState.timeFormat === "am/pm" ? "AM/PM" : "24H";
+  toggleButton.setAttribute("aria-pressed", String(popupState.timeFormat === "am/pm"));
+  toggleButton.addEventListener("click", () => {
+    popupState.timeFormat = popupState.timeFormat === "am/pm" ? "24h" : "am/pm";
+    queueVisibleScheduleRender(schedule);
   });
 }
 
