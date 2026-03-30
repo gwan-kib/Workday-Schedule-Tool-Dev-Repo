@@ -1,5 +1,7 @@
 @import "./css/colors/theme-tokens.css";
+@import "./css/formatting/saved-schedules.css";
 @import "./css/formatting/schedule-view.css";
+@import "./css/colors/saved-schedules-colors.css";
 @import "./css/colors/schedule-view-colors.css";
 
 :root {
@@ -67,7 +69,7 @@ h3 {
   flex-direction: column;
   align-items: center;
   width: 400px;
-  padding: 0px 0px 10px;
+  padding: 10px 0px 10px 0px;
 
   border: 2px solid var(--hex-brand-main-1);
   border-radius: 18px;
@@ -120,32 +122,79 @@ h3 {
 
 .popup-picker {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   font-size: 12px;
   font-weight: 700;
   align-items: center;
   justify-content: center;
 }
 
-.popup-picker span {
-  font-size: 16px;
+.popup-picker-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hex-brand-main-2);
 }
 
-.popup-picker select {
-  height: fit-content;
+.popup-picker .schedule-saved-dropdown {
+  margin-left: 0;
+}
+
+.popup-picker .schedule-saved-summary {
   width: fit-content;
-  padding: 8px 10px;
-  border: 2px solid var(--hex-brand-accent-6);
-  border-radius: 12px;
-  background: var(--hex-brand-accent-1);
-  color: inherit;
-  font: inherit;
+  padding: 0 14px;
+  gap: 10px;
+  opacity: 1;
 }
 
-.popup-picker select:focus-visible {
+.popup-picker .schedule-saved-summary .text {
+  flex: 1;
+}
+
+.popup-picker .schedule-saved-summary:focus-visible {
+  outline: 2px solid var(--hex-brand-main-2);
+  outline-offset: 2px;
+}
+
+.popup-dropdown-caret {
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.popup-saved-dropdown[open] .popup-dropdown-caret {
+  transform: rotate(180deg);
+}
+
+.popup-picker .schedule-saved-menu {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(320px, calc(100vw - 64px));
+}
+
+.popup-picker .schedule-saved-card {
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.popup-picker .schedule-saved-card:hover,
+.popup-picker .schedule-saved-card:focus-visible {
+  border: 2px dashed var(--hex-brand-main-3);
   outline: none;
-  border-color: var(--hex-brand-main-2);
+}
+
+.popup-picker .schedule-saved-card.is-active {
+  border: 2px solid var(--hex-brand-main-2);
+}
+
+.popup-picker .schedule-saved-actions {
+  justify-content: flex-end;
+}
+
+.popup-picker .schedule-saved-action.star {
+  cursor: pointer;
 }
 
 .popup-meta-row {

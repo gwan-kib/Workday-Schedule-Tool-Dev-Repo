@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UBC Workday - Schedule Tool</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
     <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
@@ -20,10 +24,16 @@
       </section>
 
       <section class="popup-content is-hidden" id="popup-content">
-        <label class="popup-picker" id="popup-picker-wrap">
-          <span>Saved Schedules:</span>
-          <select id="popup-select"></select>
-        </label>
+        <div class="popup-picker" id="popup-picker-wrap">
+          <span class="popup-picker-label">Saved Schedules</span>
+          <details class="schedule-saved-dropdown popup-saved-dropdown" id="popup-saved-dropdown">
+            <summary class="schedule-saved-summary popup-saved-summary" aria-label="Choose saved schedule">
+              <span class="text" id="popup-saved-summary-text">Schedules</span>
+              <span class="popup-dropdown-caret" aria-hidden="true">&#9662;</span>
+            </summary>
+            <div class="schedule-saved-menu popup-saved-menu" id="popup-saved-menu"></div>
+          </details>
+        </div>
 
         <div class="popup-meta-row">
           <div class="schedule-term-pill" id="popup-term-pill">Detected Term</div>

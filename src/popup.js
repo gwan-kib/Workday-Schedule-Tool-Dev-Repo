@@ -4,14 +4,22 @@ import {
   normalizeCourseColorAssignments,
 } from "./mainPanel/courseColorSettings.js";
 import { renderSchedule } from "./mainPanel/scheduleView.js";
-import { formatScheduleMeta, getFavoriteSchedule, getPreferredSchedule, loadSavedSchedules } from "./mainPanel/scheduleStorage.js";
+import {
+  formatScheduleMeta,
+  getPreferredSchedule,
+  loadSavedSchedules,
+  persistSavedSchedules,
+  togglePreferredSchedule,
+} from "./mainPanel/scheduleStorage.js";
 
 // Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
 const ui = {
   empty: document.querySelector("#popup-empty"),
   content: document.querySelector("#popup-content"),
   pickerWrap: document.querySelector("#popup-picker-wrap"),
-  select: document.querySelector("#popup-select"),
+  savedDropdown: document.querySelector("#popup-saved-dropdown"),
+  savedSummaryText: document.querySelector("#popup-saved-summary-text"),
+  savedMenu: document.querySelector("#popup-saved-menu"),
   meta: document.querySelector("#popup-meta"),
   scheduleGrid: document.querySelector("#popup-schedule-grid"),
   scheduleTermPill: document.querySelector("#popup-term-pill"),
@@ -69,18 +77,73 @@ function wireTimeFormatToggle(schedule) {
   });
 }
 
-// The picker only appears when more than one saved schedule exists, and it labels the default schedule clearly.
+// The popup reuses the main extension's saved-schedules dropdown pattern so the picker feels consistent.
 function renderPicker() {
-  if (!ui.select) return;
+  if (!ui.savedMenu || !ui.savedSummaryText) return;
 
-  ui.select.innerHTML = "";
+  const activeSchedule =
+    popupState.schedules.find((schedule) => schedule.id === popupState.activeScheduleId) ||
+    getPreferredSchedule(popupState.schedules);
+
+  ui.savedSummaryText.textContent = activeSchedule?.name || "Schedules";
+  ui.savedMenu.innerHTML = "";
 
   popupState.schedules.forEach((schedule) => {
-    const option = document.createElement("option");
-    option.value = schedule.id;
-    option.textContent = schedule.isFavorite ? `${schedule.name} (Favorite)` : schedule.name;
-    option.selected = schedule.id === popupState.activeScheduleId;
-    ui.select.appendChild(option);
+    const card = document.createElement("div");
+    card.className = `schedule-saved-card${schedule.id === popupState.activeScheduleId ? " is-active" : ""}`;
+    card.dataset.id = schedule.id;
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `Preview ${schedule.name}`);
+
+    const header = document.createElement("div");
+    header.className = "schedule-saved-card-header";
+
+    const info = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "schedule-saved-title";
+    title.textContent = schedule.name;
+
+    const titleRow = document.createElement("div");
+    titleRow.className = "schedule-saved-title-row";
+    titleRow.appendChild(title);
+
+    if (schedule.isFavorite) {
+      const badge = document.createElement("span");
+      badge.className = "schedule-saved-badge";
+      badge.textContent = "Favorite";
+      titleRow.appendChild(badge);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "schedule-saved-meta";
+    meta.textContent = formatScheduleMeta(schedule);
+
+    info.appendChild(titleRow);
+    info.appendChild(meta);
+    header.appendChild(info);
+
+    const actions = document.createElement("div");
+    actions.className = "schedule-saved-actions";
+
+    const favoriteButton = document.createElement("button");
+    favoriteButton.type = "button";
+    favoriteButton.className = `schedule-saved-action star${schedule.isFavorite ? " is-favorite" : ""}`;
+    favoriteButton.dataset.action = "favorite";
+    favoriteButton.setAttribute("aria-label", schedule.isFavorite ? "Unstar schedule" : "Star schedule");
+    favoriteButton.setAttribute("title", schedule.isFavorite ? "Unstar schedule" : "Star schedule");
+    favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));
+
+    const favoriteIcon = document.createElement("span");
+    favoriteIcon.className = "material-symbols-rounded";
+    favoriteIcon.setAttribute("aria-hidden", "true");
+    favoriteIcon.textContent = "star";
+    favoriteButton.appendChild(favoriteIcon);
+
+    actions.appendChild(favoriteButton);
+    card.appendChild(header);
+    card.appendChild(actions);
+    ui.savedMenu.appendChild(card);
   });
 
   ui.pickerWrap?.classList.toggle("is-hidden", popupState.schedules.length <= 1);
@@ -103,9 +166,6 @@ function renderActiveSchedule() {
   renderPicker();
   applySavedPalette(activeSchedule);
 
-  const favoriteSchedule = getFavoriteSchedule(popupState.schedules);
-  const isDefaultSchedule = favoriteSchedule?.id === activeSchedule.id;
-
   ui.empty?.classList.add("is-hidden");
   ui.content?.classList.remove("is-hidden");
   ui.meta.textContent = formatScheduleMeta(activeSchedule);
@@ -123,10 +183,42 @@ async function boot() {
   renderActiveSchedule();
 }
 
-// Switching the picker updates which saved schedule is previewed in-place.
-ui.select?.addEventListener("change", (event) => {
-  popupState.activeScheduleId = event.target.value;
+ui.savedMenu?.addEventListener("click", async (event) => {
+  const actionButton = event.target.closest("[data-action]");
+  const card = event.target.closest(".schedule-saved-card");
+  const scheduleId = card?.dataset.id;
+  if (!scheduleId) return;
+
+  if (actionButton?.dataset.action === "favorite") {
+    event.stopPropagation();
+    popupState.schedules = togglePreferredSchedule(popupState.schedules, scheduleId);
+    await persistSavedSchedules(popupState.schedules);
+    renderPicker();
+    if (ui.savedDropdown) ui.savedDropdown.open = true;
+    return;
+  }
+
+  popupState.activeScheduleId = scheduleId;
+  if (ui.savedDropdown) ui.savedDropdown.open = false;
   renderActiveSchedule();
+});
+
+ui.savedMenu?.addEventListener("keydown", (event) => {
+  const card = event.target.closest(".schedule-saved-card");
+  if (!card) return;
+
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest("[data-action='favorite']")) return;
+
+  event.preventDefault();
+  card.click();
+});
+
+document.addEventListener("click", (event) => {
+  const path = event.composedPath ? event.composedPath() : [];
+  if (ui.savedDropdown?.open && !path.includes(ui.savedDropdown)) {
+    ui.savedDropdown.open = false;
+  }
 });
 
 // The schedule grid uses measured layout, so rerender on resize to keep the preview aligned.
