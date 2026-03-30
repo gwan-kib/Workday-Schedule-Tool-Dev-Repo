@@ -149,8 +149,18 @@
   gap: 8px;
 }
 
-.schedule-modal-cancel {
-  opacity: 0.6;
+.schedule-modal-cancel,
+.schedule-modal-confirm {
+  opacity: 0.7;
+}
+
+.schedule-modal-cancel:hover,
+.schedule-modal-cancel:focus-visible,
+.schedule-modal-cancel:active,
+.schedule-modal-confirm:hover,
+.schedule-modal-confirm:focus-visible,
+.schedule-modal-confirm:active {
+  opacity: 1;
 }
 
 .schedule-modal-field.is-hidden,

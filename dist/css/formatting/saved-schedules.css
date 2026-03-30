@@ -57,10 +57,21 @@
 .schedule-saved-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 
-  padding: 10px;
+  padding: 6px 10px;
+  border: 2px solid transparent;
   border-radius: 10px;
+
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.schedule-saved-card:hover,
+.schedule-saved-card:focus-visible {
+  outline: none;
 }
 
 .schedule-saved-card-header {
@@ -112,9 +123,10 @@
   cursor: pointer;
 }
 
-.schedule-saved-action.star {
-  width: 21px;
-  height: 21px;
+.schedule-saved-action.star,
+.schedule-saved-action.delete {
+  width: 27px;
+  height: 27px;
   padding: 0;
 
   display: inline-flex;
@@ -124,8 +136,24 @@
   transition: all 0.2s ease;
 }
 
-.schedule-saved-action.star .material-symbols-rounded {
+.schedule-saved-action.delete {
+  margin-left: auto;
+}
+
+.schedule-saved-action.star .material-symbols-rounded,
+.schedule-saved-action.delete .material-symbols-rounded {
   font-size: 18px;
+}
+
+.schedule-saved-action.star,
+.schedule-saved-action.delete {
+  opacity: 0.7;
+}
+
+.schedule-saved-action.star:hover,
+.schedule-saved-action.delete:hover,
+.schedule-saved-action.star.is-favorite {
+  opacity: 1;
 }
 
 .schedule-saved-action.star.is-favorite .material-symbols-rounded {

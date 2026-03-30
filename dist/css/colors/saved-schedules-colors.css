@@ -25,6 +25,17 @@
   color: var(--hex-brand-main-1);
 }
 
+.schedule-saved-card:hover,
+.schedule-saved-card:focus-visible {
+  border-color: var(--hex-brand-main-3);
+  border-style: dashed;
+}
+
+.schedule-saved-card.is-active {
+  border-color: var(--hex-brand-main-2);
+  border-style: solid;
+}
+
 .schedule-saved-badge {
   background: var(--hex-brand-main-2);
   color: var(--hex-brand-accent-1);
