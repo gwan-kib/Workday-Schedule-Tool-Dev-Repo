@@ -1,129 +1,125 @@
 _Not affiliated with or endorsed by Workday._
 
 <div align="center">
-  <img src="icon128.png" width="128px" height="128px" alt="Workday Calendar Tool logo">
+  <img src="icon128.png" width="128" height="128" alt="UBC Workday - Schedule Tool logo">
 
 # UBC Workday - Schedule Tool
 
-<h3 style="margin:0;">Simplify your semester.<br>Visualize your schedule.<br>Export it when you're ready.</h3>
-
-Chrome Extension: https://lnkd.in/gtMCjkjs
+See your Workday schedule as an actual timetable, compare saved options, and export the version you want.
 
 </div>
 
 ---
 
-## Built for Students by Students
+## What It Does
 
-If you use Workday for registration, this helps you:
+This Chrome extension adds a schedule-planning layer on top of UBC Workday. It is built for students who want a faster way to compare course combinations without manually reading through Workday tables.
 
-- See your full week at a glance
-- Spot class overlaps and gaps instantly
-- Compare different schedule options before you register
-- Export your final schedule to your calendar in seconds
+Current capabilities include:
+
+- A weekly timetable view generated directly from Workday course data
+- Conflict highlighting for overlapping classes
+- Local saved schedules with a favorite/default schedule
+- A popup preview of your favorite saved schedule outside the Workday page
+- Course list filtering and sorting
+- Custom course color assignments
+- Optional hover tooltip controls
+- `.ics` calendar export
+- Class average lookups from UBC Grades
+- Rate My Professors lookups for supported instructors
 
 ---
 
 ## How To Use
 
-1. Install the extension
-2. Open Workday
-3. Go to the View My Courses page (or any of your saved schedules)
-4. Open the extension using the button on the rightside of your screen
-5. View your course and schedule layout
-6. Save schedules in the extension
-7. Export to calendar if needed
+1. Install or load the extension in Chrome.
+2. Open a supported `*.myworkday.com` page that contains your courses or saved schedules.
+3. Use the floating button on the page to open the main panel.
+4. Switch between the course list, schedule, settings, and help views.
+5. Save schedule snapshots locally when you want to compare options.
+6. Star one saved schedule to make it your default popup preview.
+7. Export the currently loaded schedule to `.ics` when you are ready to add it to a calendar app.
 
-- still stuck? check out https://docs.google.com/document/d/1D0YqHct_d3rR8WtlkHF9Dybqb3mFB7Wka0ZWsFZOda8/edit?tab=t.0
-
----
-
-## Features
-
-### Weekly Schedule View
-
-Turns your Workday courses into a calendar-style grid so you can see:
-
-- Class times
-- Overlaps
-- Gaps between classes
-- The shape of your week
+If you only want a quick preview, open the extension popup from the Chrome toolbar. The popup shows your preferred saved schedule and lets you switch between saved schedules.
 
 ---
+
+## Feature Overview
+
+### Schedule View
+
+The schedule view turns extracted Workday meeting times into a weekly grid so you can quickly see:
+
+- when classes happen
+- where gaps appear in your day
+- which courses overlap
+- which term a given schedule belongs to
 
 ### Saved Schedules
 
-Save multiple versions locally so you can:
+Saved schedules are stored locally in extension storage. You can:
 
-- Compare registration scenarios
-- Try section swaps
-- Keep backups of past schedules
+- save multiple schedule snapshots
+- load an older snapshot back into the panel
+- delete snapshots you no longer need
+- mark one schedule as your favorite/default
 
-All snapshots stay on your device.
+### Popup Preview
 
----
+The extension popup mirrors your saved schedules and shows a compact preview of your preferred schedule, including:
 
-### Class Averages
+- the saved schedule selector
+- favorite toggling
+- the schedule grid preview
+- time-format switching
 
-- See 5-year class averages right in Workday
-- Pulled straight from ubcgrades.com
+### Course Details and Planning Aids
 
----
+Inside the Workday page, the extension can also show:
 
-### Calendar Export (.ics)
+- class averages sourced from UBC Grades
+- Rate My Professors ratings when a supported instructor match is found
+- saved course color themes for easier visual scanning
 
-Export to a standard `.ics` file that works with:
+### Calendar Export
 
-- Google Calendar
-- Apple Calendar
-- Outlook
-- Most calendar apps
-
-Includes recurring class meetings with the correct schedule structure.
-
----
-
-### Smart Filtering
-
-Search by:
-
-- Course name
-- Instructor…
-- Week Days and more
-
-Find the classes you need without endless scrolling.
+The `.ics` export works with common calendar apps such as Google Calendar, Apple Calendar, and Outlook.
 
 ---
 
-Want to request a feature? Let me know: gwantanak.3@gmail.com
+## Privacy and Data Use
+
+Most schedule data is kept locally in Chrome storage on your device.
+
+The extension currently uses these external services when their related features are triggered:
+
+- `ubcgrades.com` for class average lookups
+- `ratemyprofessors.com` for professor rating lookups
+- Google Fonts for the Material Symbols icon font used by the UI
+
+The extension does not include analytics or ad tracking code.
 
 ---
 
-## Privacy and Security
+## Supported Environment
 
-Your data stays on your device.
-
-- Works only on `*.myworkday.com`
-- Schedule data stored locally using Chrome storage
-- No external servers
-- No tracking
-- No third-party analytics
-- No data collection
+- Chrome / Chromium browsers with Manifest V3 support
+- Workday pages on `https://*.myworkday.com/*`
 
 ---
 
-## Development / Contributing
+## Development
 
-- See `DevREADME.md`
+Developer setup and project structure are documented in `DevREADME.md`.
 
 ---
 
-## Browser Compatibility
+## Contact
 
-- Chrome (Manifest V3 compatible)
+Questions or feature requests: `gwantanak.3@gmail.com`
 
 ---
 
 ## License
 
-MIT (see `LICENSE.md`)
+MIT. See `LICENSE.md`.
