@@ -143,8 +143,8 @@ export function formatScheduleMeta(schedule) {
   return `${count} courses | Saved ${dateLabel}`;
 }
 
-// Renders saved schedule cards into the UI. Input: ui object, schedules array. Output: none.
-export function renderSavedSchedules(ui, schedules) {
+// Renders saved schedule cards into the UI. Input: ui object, schedules array, and optional active schedule id. Output: none.
+export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
   if (!ui.savedMenu) return;
 
   ui.savedMenu.innerHTML = "";
@@ -159,8 +159,11 @@ export function renderSavedSchedules(ui, schedules) {
 
   normalizeSchedules(schedules).forEach((schedule) => {
       const card = document.createElement("div");
-      card.className = "schedule-saved-card";
+      card.className = `schedule-saved-card${schedule.id === activeScheduleId ? " is-active" : ""}`;
       card.dataset.id = schedule.id;
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `Load ${schedule.name}`);
 
       const header = document.createElement("div");
       header.className = "schedule-saved-card-header";
@@ -207,20 +210,20 @@ export function renderSavedSchedules(ui, schedules) {
       favoriteIcon.textContent = "star";
       favoriteButton.appendChild(favoriteIcon);
 
-      const loadButton = document.createElement("button");
-      loadButton.type = "button";
-      loadButton.className = "schedule-saved-action";
-      loadButton.dataset.action = "load";
-      loadButton.textContent = "Load";
-
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
       deleteButton.className = "schedule-saved-action delete";
       deleteButton.dataset.action = "delete";
-      deleteButton.textContent = "Delete";
+      deleteButton.setAttribute("aria-label", "Delete schedule");
+      deleteButton.setAttribute("title", "Delete schedule");
+
+      const deleteIcon = document.createElement("span");
+      deleteIcon.className = "material-symbols-rounded";
+      deleteIcon.setAttribute("aria-hidden", "true");
+      deleteIcon.textContent = "delete";
+      deleteButton.appendChild(deleteIcon);
 
       actions.appendChild(favoriteButton);
-      actions.appendChild(loadButton);
       actions.appendChild(deleteButton);
 
       card.appendChild(header);

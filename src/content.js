@@ -82,14 +82,18 @@ debugLog({ local: { content: false } });
         if (!preserveExisting) {
           STATE.courses = [];
           STATE.filtered = [];
+          STATE.currentSavedScheduleId = null;
           STATE.currentScheduleName = null;
+          renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         }
         return false;
       }
 
       STATE.courses = extractedCourses;
       courseColorController.assignCourseColors(STATE.courses);
+      STATE.currentSavedScheduleId = null;
       STATE.currentScheduleName = null;
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       filterCourses(ui.searchInput.value);
       debug.log({ id: "loadCoursesFromPage.complete" }, "Loaded courses from page", {
         courseCount: STATE.courses.length,
@@ -143,9 +147,11 @@ debugLog({ local: { content: false } });
     on(ui.clearButton, "click", () => {
       STATE.courses = [];
       STATE.filtered = [];
+      STATE.currentSavedScheduleId = null;
       STATE.currentScheduleName = null;
       ui.searchInput.value = "";
       renderAll();
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     });
 
     const handleExport = async (type) => {
@@ -214,31 +220,31 @@ debugLog({ local: { content: false } });
       });
 
       await persistSavedSchedules(STATE.savedSchedules);
-      renderSavedSchedules(ui, STATE.savedSchedules);
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
 
       if (ui.savedDropdown) ui.savedDropdown.open = true;
     });
 
     on(ui.savedMenu, "click", async (event) => {
       const actionButton = event.target.closest("[data-action]");
-      if (!actionButton) return;
-
-      const card = actionButton.closest(".schedule-saved-card");
+      const card = event.target.closest(".schedule-saved-card");
       const scheduleId = card?.dataset.id;
       if (!scheduleId) return;
 
       const selected = STATE.savedSchedules.find((s) => s.id === scheduleId);
       if (!selected) return;
 
-      if (actionButton.dataset.action === "favorite") {
+      if (actionButton?.dataset.action === "favorite") {
+        event.stopPropagation();
         STATE.savedSchedules = togglePreferredSchedule(STATE.savedSchedules, scheduleId);
         await persistSavedSchedules(STATE.savedSchedules);
-        renderSavedSchedules(ui, STATE.savedSchedules);
+        renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         if (ui.savedDropdown) ui.savedDropdown.open = true;
         return;
       }
 
-      if (actionButton.dataset.action === "delete") {
+      if (actionButton?.dataset.action === "delete") {
+        event.stopPropagation();
         debug.log({ id: "savedMenu.delete" }, "Deleting saved schedule", { scheduleId, scheduleName: selected.name });
         const confirmed = await openScheduleModal({
           title: "Permanently Delete Schedule?",
@@ -250,11 +256,13 @@ debugLog({ local: { content: false } });
         if (!confirmed) return;
 
         STATE.savedSchedules = STATE.savedSchedules.filter((s) => s.id !== scheduleId);
+        if (STATE.currentSavedScheduleId === scheduleId) STATE.currentSavedScheduleId = null;
         await persistSavedSchedules(STATE.savedSchedules);
-        renderSavedSchedules(ui, STATE.savedSchedules);
+        renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         return;
       }
 
+      STATE.currentSavedScheduleId = scheduleId;
       STATE.currentScheduleName = selected.name;
       debug.log({ id: "savedMenu.load" }, "Loading saved schedule", { scheduleId, scheduleName: selected.name });
       if (selected.colorAssignments) {
@@ -267,8 +275,20 @@ debugLog({ local: { content: false } });
       ui.searchInput.value = "";
 
       renderAll();
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       setActiveView("course-list-panel");
       if (ui.savedDropdown) ui.savedDropdown.open = false;
+    });
+
+    on(ui.savedMenu, "keydown", (event) => {
+      const card = event.target.closest(".schedule-saved-card");
+      if (!card) return;
+
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (event.target.closest("[data-action]")) return;
+
+      event.preventDefault();
+      card.click();
     });
 
     // Settings/help buttons are thin wrappers around the shared panel-switching helper above.
@@ -297,7 +317,7 @@ debugLog({ local: { content: false } });
     debug.log({ id: "boot.savedSchedulesLoaded" }, "Loaded saved schedules", {
       scheduleCount: STATE.savedSchedules.length,
     });
-    renderSavedSchedules(ui, STATE.savedSchedules);
+    renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
 
     await loadCoursesFromPage();
 

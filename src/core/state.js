@@ -5,6 +5,8 @@ export const STATE = {
 
   savedSchedules: [],
 
+  currentSavedScheduleId: null,
+
   currentScheduleName: null,
 
   sort: { key: null, dir: 1 },

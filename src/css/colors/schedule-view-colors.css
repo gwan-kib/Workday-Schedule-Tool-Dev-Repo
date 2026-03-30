@@ -138,6 +138,28 @@
   color: var(--hex-brand-main-1);
 }
 
+.schedule-modal-cancel {
+  background: var(--hex-danger-1);
+  color: var(--hex-brand-accent-2);
+}
+
+.schedule-modal-cancel:hover,
+.schedule-modal-cancel:focus-visible,
+.schedule-modal-cancel:active {
+  background: var(--hex-danger-1);
+}
+
+.schedule-modal-confirm {
+  background: var(--hex-brand-main-1);
+  color: var(--hex-brand-accent-2);
+}
+
+.schedule-modal-confirm:hover,
+.schedule-modal-confirm:focus-visible,
+.schedule-modal-confirm:active {
+  background: var(--hex-brand-main-1);
+}
+
 .schedule-modal-input {
   background: var(--hex-brand-accent-4);
   color: var(--hex-brand-main-1);
