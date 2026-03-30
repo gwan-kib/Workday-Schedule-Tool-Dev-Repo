@@ -175,8 +175,21 @@ h3 {
 }
 
 .popup-picker .schedule-saved-card {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
   border: 2px solid transparent;
   cursor: pointer;
+}
+
+.popup-picker .schedule-saved-card-header {
+  flex: 1;
+  min-width: 0;
+}
+
+.popup-picker .schedule-saved-card-header > div {
+  min-width: 0;
 }
 
 .popup-picker .schedule-saved-card:hover,
@@ -190,10 +203,14 @@ h3 {
 }
 
 .popup-picker .schedule-saved-actions {
+  flex-direction: row;
+  align-items: flex-end;
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 .popup-picker .schedule-saved-action.star {
+  flex-shrink: 0;
   cursor: pointer;
 }
 
