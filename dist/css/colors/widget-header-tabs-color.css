@@ -97,7 +97,7 @@
 /* export dropdown */
 .export-menu {
   background: var(--hex-brand-accent-1);
-  border-color: var(--hex-brand-accent-1);
+  border-color: var(--hex-brand-main-2);
 }
 
 .export-option {

@@ -116,44 +116,6 @@
 }
 
 
-/* saved schedules */
-.schedule-saved-summary {
-  background: var(--hex-brand-main-3);
-  color: var(--hex-brand-accent-2);
-  opacity: 0.5;
-
-  transition: all 0.2s ease;
-}
-
-.schedule-saved-summary:hover {
-  opacity: 0.75;
-}
-
-.schedule-saved-menu {
-  background: var(--hex-brand-accent-2);
-  border-color: var(--hex-brand-main-2);
-  box-shadow: 0 12px 24px rgba(var(--hex-brand-main-1), 0.2);
-}
-
-.schedule-saved-card {
-  background: var(--hex-brand-accent-4);
-  color: var(--hex-brand-main-1);
-}
-
-.schedule-saved-action {
-  background: var(--hex-brand-main-2);
-  color: var(--hex-brand-accent-2);
-}
-
-.schedule-saved-action.delete {
-  background: var(--hex-danger-1);
-}
-
-.schedule-saved-empty {
-  background: var(--hex-brand-accent-4);
-  color: var(--hex-brand-main-1);
-}
-
 /* modal colors (moved here from widget-functionality-colors.css) */
 .schedule-modal-backdrop {
   background: rgba(64, 29, 129, 0.4);

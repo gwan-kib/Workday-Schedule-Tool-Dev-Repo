@@ -43,13 +43,13 @@ function getCourseAverageState(course) {
 // Returns persistent RMP UI state per course object. Input: course object. Output: state object.
 function getCourseRmpState(course) {
   if (!course || typeof course !== "object") {
-    return { status: "idle", data: null };
+    return { status: "idle", data: null, button: null, pendingRequest: null };
   }
 
   const existing = rmpStateByCourse.get(course);
   if (existing) return existing;
 
-  const state = { status: "idle", data: null };
+  const state = { status: "idle", data: null, button: null, pendingRequest: null };
   rmpStateByCourse.set(course, state);
   return state;
 }
@@ -252,6 +252,63 @@ function applyRmpButtonState(button, state) {
   button.textContent = "RateMyProf";
 }
 
+// Loads RMP data into a course-card button and keeps the latest rendered button synced. Input: button/state object. Output: none.
+async function loadRmpForButton(button, state, { force = false } = {}) {
+  if (!button || !state) return;
+
+  state.button = button;
+
+  if (state.status === "loading") {
+    applyRmpButtonState(button, state);
+    try {
+      await state.pendingRequest;
+    } catch (error) {
+      // The request path already updates UI state and logging.
+    }
+    return;
+  }
+
+  if (!force && (state.status === "loaded" || state.status === "empty")) {
+    applyRmpButtonState(button, state);
+    return;
+  }
+
+  const profName = button.dataset.profName || "";
+  const campus = button.dataset.campus || "UBCV";
+
+  if (!profName) {
+    state.data = null;
+    state.status = "empty";
+    applyRmpButtonState(button, state);
+    return;
+  }
+
+  state.status = "loading";
+  applyRmpButtonState(button, state);
+
+  const request = (async () => {
+    try {
+      const data = await fetchProfRating({ profName, campus });
+      state.data = data;
+      state.status = data?.link ? "loaded" : "empty";
+    } catch (error) {
+      state.data = null;
+      state.status = "error";
+      debug.warn({ id: "renderCourseObjects.rmpLookupFailed" }, "Failed to load RMP rating", {
+        instructor: profName,
+        campus,
+        error: String(error),
+      });
+    } finally {
+      state.pendingRequest = null;
+      applyRmpButtonState(state.button, state);
+    }
+  })();
+
+  state.pendingRequest = request;
+  await request;
+}
+
 // Returns current yearsession string. Input: none. Output: YYYYW string.
 function getCurrentYearsession() {
   return `${new Date().getFullYear()}W`;
@@ -308,10 +365,12 @@ export function renderCourseObjects(ui, courses) {
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
     const sectionLabel = String(course.section_number || "").trim();
+    const isLectureCourse = !(course?.isLab || course?.isSeminar || course?.isDiscussion);
 
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
     const codeInfo = splitCourseCode(course.code || "");
     const averageInfo = buildAverageCourseInfo(course);
+    const showAverageButton = Boolean(averageInfo && isLectureCourse);
     const averageState = getCourseAverageState(course);
     const instructorName = (course.instructor || "").trim() || "TBA";
     const rmpInfo = buildRmpLookupInfo(course);
@@ -344,8 +403,22 @@ export function renderCourseObjects(ui, courses) {
           ${sectionLabel ? `<span class="course-code-section wd-hover-tooltip" data-tooltip="Section number">${escHTML(sectionLabel)}</span>` : ""}
           ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
         </div>
-        <div class="course-card__instructor">
-            ${formatInstructorName(instructorName)}
+        <div class="course-card__instructor-wrap">
+          ${
+            rmpInfo
+              ? `<button
+                  type="button"
+                  class="course-card__rmp-button"
+                  data-prof-name="${escHTML(rmpInfo.profName)}"
+                  data-campus="${escHTML(rmpInfo.campus)}"
+                >
+                  RMP Rating
+                </button>`
+              : ""
+          }
+          <div class="course-card__instructor">
+              ${formatInstructorName(instructorName)}
+          </div>
         </div>
       </div>
       <div class="course-card__title">${escHTML(course.title || "")}</div>
@@ -368,32 +441,27 @@ export function renderCourseObjects(ui, courses) {
               : ""
           }
         </div>
-        <div class="course-card__actions">
-          ${
-            rmpInfo
-              ? `<button
+        ${
+          showAverageButton
+            ? `<div class="course-card__actions">
+                <button
                   type="button"
-                  class="course-card__rmp-button"
-                  data-prof-name="${escHTML(rmpInfo.profName)}"
-                  data-campus="${escHTML(rmpInfo.campus)}"
+                  class="course-card__avg-button"
+                  data-subject="${escHTML(averageInfo.subject)}"
+                  data-course="${escHTML(averageInfo.course)}"
+                  data-section="${escHTML(averageInfo.section)}"
+                  data-campus="${escHTML(averageInfo.campus)}"
                 >
-                  RMP Rating
-                </button>`
-              : ""
-          }
-          <button
-            type="button"
-            class="course-card__avg-button${averageInfo ? "" : " is-disabled"}"
-            ${averageInfo ? `data-subject="${escHTML(averageInfo.subject)}" data-course="${escHTML(averageInfo.course)}" data-section="${escHTML(averageInfo.section)}" data-campus="${escHTML(averageInfo.campus)}"` : "disabled"}
-          >
-            5 Year Average
-          </button>
-        </div>
+                  5 Year Average
+                </button>
+              </div>`
+            : ""
+        }
       </div>
     `;
 
     const averageButton = card.querySelector(".course-card__avg-button");
-    if (averageButton && averageInfo) {
+    if (averageButton && showAverageButton) {
       applyAverageButtonState(averageButton, averageState);
 
       averageButton.addEventListener("click", async (event) => {
@@ -405,6 +473,7 @@ export function renderCourseObjects(ui, courses) {
 
     const rmpButton = card.querySelector(".course-card__rmp-button");
     if (rmpButton) {
+      rmpState.button = rmpButton;
       applyRmpButtonState(rmpButton, rmpState);
 
       rmpButton.addEventListener("click", async (event) => {
@@ -418,29 +487,10 @@ export function renderCourseObjects(ui, courses) {
 
         if (rmpState.status === "loading") return;
 
-        rmpState.status = "loading";
-        applyRmpButtonState(rmpButton, rmpState);
-
-        try {
-          const data = await fetchProfRating({
-            profName: rmpButton.dataset.profName || "",
-            campus: rmpButton.dataset.campus || "UBCV",
-          });
-
-          rmpState.data = data;
-          rmpState.status = data?.link ? "loaded" : "empty";
-        } catch (error) {
-          rmpState.data = null;
-          rmpState.status = "error";
-          debug.warn({ id: "renderCourseObjects.rmpLookupFailed" }, "Failed to load RMP rating", {
-            instructor: rmpButton.dataset.profName || "",
-            campus: rmpButton.dataset.campus || "UBCV",
-            error: String(error),
-          });
-        }
-
-        applyRmpButtonState(rmpButton, rmpState);
+        await loadRmpForButton(rmpButton, rmpState, { force: rmpState.status === "error" });
       });
+
+      void loadRmpForButton(rmpButton, rmpState);
     }
 
     frag.appendChild(card);

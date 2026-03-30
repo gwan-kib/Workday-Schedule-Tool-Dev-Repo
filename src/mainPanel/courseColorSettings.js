@@ -21,6 +21,79 @@ export const normalizeCourseColorAssignments = (value) => {
   });
 };
 
+// Assigns stable color indices to courses if missing. Input: courses array. Output: none.
+export function assignCourseColors(courses) {
+  if (!Array.isArray(courses)) {
+    debug.warn({ id: "assignCourseColors.invalidInput" }, "assignCourseColors called with non-array input");
+    return;
+  }
+  debug.log({ id: "assignCourseColors.start" }, "Assigning course colors", { courseCount: courses.length });
+
+  const getCourseKey = (course) => {
+    if (!course) return "";
+    const code = String(course.code || "")
+      .trim()
+      .toUpperCase();
+    const title = String(course.title || "")
+      .trim()
+      .toUpperCase();
+    if (code || title) return `${code}||${title}`;
+    return String(course.section_number || "")
+      .trim()
+      .toUpperCase();
+  };
+
+  const isLecture = (course) => !(course?.isLab || course?.isSeminar || course?.isDiscussion);
+  const hasValidColor = (course) =>
+    Number.isInteger(course?.colorIndex) && course.colorIndex >= 1 && course.colorIndex <= COURSE_COLOR_COUNT;
+
+  let colorCursor = 0;
+  const colorByKey = new Map();
+
+  const nextColor = () => {
+    colorCursor += 1;
+    return ((colorCursor - 1) % COURSE_COLOR_COUNT) + 1;
+  };
+
+  courses.forEach((course) => {
+    if (!course) return;
+    const key = getCourseKey(course);
+    if (hasValidColor(course)) {
+      if (key && !colorByKey.has(key)) colorByKey.set(key, course.colorIndex);
+      return;
+    }
+    if (!isLecture(course)) return;
+    if (key && colorByKey.has(key)) {
+      course.colorIndex = colorByKey.get(key);
+      return;
+    }
+    const colorIndex = nextColor();
+    course.colorIndex = colorIndex;
+    if (key) colorByKey.set(key, colorIndex);
+  });
+
+  courses.forEach((course) => {
+    if (!course) return;
+    if (hasValidColor(course)) {
+      const key = getCourseKey(course);
+      if (key && !colorByKey.has(key)) colorByKey.set(key, course.colorIndex);
+      return;
+    }
+    const key = getCourseKey(course);
+    if (key && colorByKey.has(key)) {
+      course.colorIndex = colorByKey.get(key);
+      return;
+    }
+    const colorIndex = nextColor();
+    course.colorIndex = colorIndex;
+    if (key) colorByKey.set(key, colorIndex);
+  });
+
+  debug.log({ id: "assignCourseColors.complete" }, "Finished assigning course colors", {
+    assignedCourses: courses.length,
+  });
+}
+
 // Loads course color assignments from storage. Input: none. Output: array.
 export async function loadCourseColorAssignments() {
   if (useChromeStorage) {

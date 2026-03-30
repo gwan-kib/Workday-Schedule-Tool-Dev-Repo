@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "vite build -c vite.background.config.js && vite build -c vite.content.config.js",
+    "build": "vite build -c vite.background.config.js && vite build -c vite.content.config.js && vite build -c vite.popup.config.js",
     "dev": "vite build --watch"
   },
   "repository": {
