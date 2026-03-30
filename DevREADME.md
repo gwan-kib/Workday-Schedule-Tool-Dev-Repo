@@ -1,206 +1,185 @@
 # UBC Workday - Schedule Tool (Developer Guide)
 
-This repository contains a Manifest V3 Chrome extension for UBC Workday. It extracts course data from Workday pages, renders schedule and list views in a shadow-DOM panel, stores schedule snapshots locally, and provides a popup preview for saved schedules.
+This repo contains a Chrome (Manifest V3) extension that extracts course schedules from Workday, renders a weekly view, and exports calendars. This document covers local setup, build steps, and project structure.
 
----
-
-## Current Project State
-
-The extension currently includes:
-
-- a content script that mounts the main Workday panel
-- a background service worker used for Rate My Professors requests
-- a browser action popup that previews saved schedules
-- local Chrome storage for saved schedules, course color settings, and tooltip settings
-- external lookups for UBC Grades and Rate My Professors
-
-Main user-facing features today:
-
-- course list rendering with filtering and sorting
-- weekly schedule rendering with conflict highlighting
-- saved schedules with favorite/default selection
-- popup schedule preview
-- custom course color assignments
-- hover tooltip settings
-- `.ics` export
-- registration-page average grade buttons
-- Rate My Professors buttons on course cards
-
----
-
-## Requirements
-
-- Node.js
-- npm
-- Chrome or another Chromium browser that supports Manifest V3
-
----
-
-## Local Setup
-
-1. Install dependencies:
-
-```powershell
-npm install
-```
-
-2. Build the extension:
-
-```powershell
-npm run build
-```
-
-3. Load it in Chrome:
-
-- Open `chrome://extensions`
-- Enable Developer mode
-- Click Load unpacked
-- Select the repository root that contains `manifest.json`
-
-4. After source changes:
-
-- Run `npm run build` again
-- Reload the extension in `chrome://extensions`
-- Refresh any already-open Workday tabs so old content-script contexts do not linger
-
----
-
-## Build Notes
-
-The supported build command is:
-
-```powershell
-npm run build
-```
-
-That command builds three separate Vite entries:
-
-- `vite.background.config.js` -> `dist/background.js`
-- `vite.content.config.js` -> `dist/content.js` plus copied panel/CSS/icon assets
-- `vite.popup.config.js` -> `dist/popup.js` plus copied popup assets
-
-The repository also contains `npm run dev`, but it currently points at the default Vite build watch flow and does not provide a working full-extension development workflow.
-
----
-
-## Project Layout
-
-- `manifest.json`
-  Declares the MV3 extension, content script, popup, permissions, and web-accessible resources.
-
-- `src/background.js`
-  Background service worker entry. Handles async message requests for professor-rating lookups.
-
-- `src/content.js`
-  Main content-script entry. Boots the shadow-root panel, loads Workday data, wires events, and coordinates rendering.
-
-- `src/popup.js`
-  Toolbar popup entry. Renders a saved-schedule preview and favorite controls outside the Workday page.
-
-- `src/panel.html`
-  Markup for the in-page panel that is injected into Workday.
-
-- `src/popup.html`
-  Markup for the browser action popup.
-
-- `src/averageGrades/`
-  UBC Grades integration and the registration-page average button logic.
-
-- `src/core/`
-  Shared state used across the content-script UI.
-
-- `src/css/`
-  Static styling copied into `dist/css/`.
-
-- `src/exportLogic/`
-  `.ics` export logic.
-
-- `src/extraction/`
-  Workday DOM extraction, grid detection, and course parsing.
-
-- `src/mainPanel/`
-  Main panel controllers and renderers, including saved schedules, schedule view, tooltips, settings, and course colors.
-
-- `src/rateMyProfessor/`
-  Professor-name normalization and Rate My Professors request flow.
-
-- `src/utilities/`
-  Shared utilities such as DOM helpers, debug helpers, and shadow-root mounting.
-
-- `dist/`
-  Built extension output consumed by `manifest.json`.
-
----
-
-## Permissions and External Services
-
-Current extension permissions are intentionally small:
-
-- `storage`
-
-Current host permissions:
-
-- `https://*.myworkday.com/*`
-- `https://www.ratemyprofessors.com/*`
-
-External services currently used by the codebase:
-
-- `ubcgrades.com` for class averages
-- `ratemyprofessors.com` for professor ratings
-- Google Fonts for Material Symbols in the UI
-
-If you update documentation or privacy copy, keep those external dependencies in mind.
-
----
-
-## Storage
-
-The extension currently stores this data locally with Chrome storage:
-
-- saved schedules
-- preferred/favorite schedule id
-- course color assignments
-- hover tooltip enabled/disabled setting
-
-The popup and the content script both read from the same saved-schedule storage.
-
----
-
-## Troubleshooting
-
-- If the extension loads but no UI appears, make sure you are on a supported `*.myworkday.com` page and rebuild/reload the extension.
-- If styles are missing, confirm `dist/css/` exists and that `npm run build` completed successfully.
-- If you reload the extension while a Workday tab is already open, refresh the tab too. Old content-script contexts can throw `Extension context invalidated`.
-- If class averages fail, the course may not have supported data from UBC Grades.
-- If Rate My Professors returns no result, the instructor name may not normalize cleanly or there may be no matching profile.
-
----
-
-## Debug Logging
-
-Logging is controlled by `src/utilities/debugTool.js`.
-
-By default, most scopes are disabled. A common local debugging flow is:
-
-1. Turn on global logging in `src/utilities/debugTool.js`.
-2. Optionally enable only the scope you care about with `debugLog({ global: true, local: { someScope: true } })`.
-3. Rebuild the extension.
-4. Reload the extension and refresh the Workday tab.
-5. Inspect the page console or extension views in DevTools.
-
-When adding new logs:
-
-- use `debugFor("scopeName")`
-- prefer stable `id` values such as `feature.action`
-- log structured objects instead of long string dumps
+Make sure Node.js (https://nodejs.org) is installed on your device.
 
 ---
 
 ## Contributing
 
-- Keep changes focused.
-- Avoid adding permissions unless a feature truly requires them.
-- Preserve the existing plain-JavaScript code style unless the project direction changes.
-- If you touch CSS assets, make sure copied files and any loader references still match the build output.
+- Read this WHOLE file BEFORE you start touching ANYTHING.
+- Keep commits focused and small.
+- Avoid adding new permissions unless necessary.
+- Follow existing formatting and code style (plain JS, no TypeScript).
+- If you run into issues, let me know: gwantanak.3@gmail.com
 
-Questions: `gwantanak.3@gmail.com`
+---
+
+## Quick Start
+
+1. Install dependencies
+
+```powershell
+npm install
+```
+
+2. Build the extension (generates `dist/`)
+
+```powershell
+npm run build
+```
+
+Use `npm run build` for now. `npm run dev` is not currently a working full extension dev workflow.
+
+3. Load in Chrome
+
+- Open `chrome://extensions`
+- Enable "Developer mode"
+- Click "Load unpacked"
+- Select the repo root folder (the one that contains `manifest.json`)
+
+After making changes to source files, rebuild and then click "Reload" on the extension. If you already had Workday open, refresh that tab too so the content script reloads cleanly.
+
+---
+
+## Project Structure
+
+- `src/` extension source
+  - `src/background.js` service worker entry
+  - `src/content.js` content script entry (main UI, schedule rendering, buttons)
+  - `src/panel.html` extension panel UI
+  - `src/popup.js` extension popup entry
+  - `src/popup.html` extension popup UI
+
+  - `src/averageGrades/` UBC Grades API integration
+  - `src/core/` shared core helpers used across features
+  - `src/css/` styles (copied into `dist/css/` at build)
+    - `src/css/css-imports.css` if you ever add a css file, make sure to import it here and add it to `const cssFiles` (in `src/mainPanel/loadMainPanel.js`)
+    - `src/css/colors/` color tokens and theme files
+      - `src/css/colors/theme-tokens.css` color tokens (where colors are set for the whole extension; need to change a color? use this file)
+    - `src/css/formatting/` layout and component styling
+  - `src/exportLogic/` calendar export helpers
+  - `src/extraction/` Workday DOM parsing and schedule extraction
+    - `src/extraction/parsers/` text/DOM parsers for course and meeting details
+  - `src/mainPanel/` schedule panel UI rendering and interactions
+  - `src/rateMyProfessor/` Rate My Professors lookup logic
+  - `src/utilities/` shared utilities (debug, DOM, shadow mount, etc.)
+
+- `dist/` build output consumed by `manifest.json`
+- `node_modules/` dependencies installed by npm (local dev only)
+
+---
+
+## Average Grade Feature
+
+The "Class Averages (Past 5 Years)" button in Workday pulls data from the public UBC Grades API (`https://ubcgrades.com/api`). It only shows values for supported UBC courses. If the API does not return data, the UI shows "Average: unavailable".
+
+Relevant files:
+
+- `src/averageGrades/gradesApiCall.js`
+- `src/averageGrades/registrationAverageButtons.js`
+- `src/content.js`
+
+---
+
+## Professor Rating Feature
+
+The Rate My Professors buttons use the background service worker to fetch rating data and then render it in the course list when a supported instructor match is found.
+
+Relevant files:
+
+- `src/rateMyProfessor/rmpApi.js`
+- `src/background.js`
+- `src/mainPanel/renderCourseObjects.js`
+
+---
+
+## Manifest Notes
+
+`manifest.json` references built assets in `dist/`, including:
+
+- `dist/background.js`
+- `dist/content.js`
+- `dist/popup.js`
+- `dist/popup.html`
+- `dist/panel.html`
+- `dist/css/...`
+
+Make sure `dist/` exists before loading the extension.
+
+---
+
+## Troubleshooting
+
+- If the extension loads but nothing appears: confirm you are on a `*.myworkday.com` page that lists registered courses, then reload the extension.
+- If CSS is missing: rebuild and verify `dist/css/` exists.
+- If class averages fail: the API may not have data for the course, or the request may be blocked by network settings.
+- If professor ratings fail: the instructor may not have a matching Rate My Professors profile, or the lookup may be blocked.
+- If you see `Extension context invalidated`, reload the extension and refresh the open Workday tab.
+
+### Using the Debug Tool (for more detail, see src/utilities/debugTool.js)
+
+Logging is controlled by `src/utilities/debugTool.js`. By default, `global` logging is `false`, so nothing prints unless you enable it.
+
+Quick ways to enable logs:
+
+1. Temporary global on (fastest): edit `src/utilities/debugTool.js` and set:
+
+```js
+const logConfiguration = {
+  global: true,
+  local: {},
+  log: {},
+};
+```
+
+2. To see the output of a specific method, ensure this import is has been added to the file:
+
+```js
+import { debugLog } from "./utilities/debugTool.js";
+```
+
+Then add this near the top of the file you care about (example for schedule extraction, courseExtraction method):
+
+```js
+debugLog({ global: true, local: { courseExtraction: true } });
+```
+
+After changes:
+
+- Rebuild (`npm run build`)
+- Reload the extension in `chrome://extensions`
+- Refresh the Workday tab if it was already open
+- Open DevTools (ctrl+shift+i) on the Workday page and check the console
+
+Tip: each log includes a prefix like `[UBC Workday - Schedule Tool (file: courseExtraction)]` and many logs include an `id` to help you filter.
+
+### Adding a New Debug Log (eg. for file newFeatureFile.js)
+
+1. Create (or reuse) a scoped logger at the top of the file:
+
+```js
+import { debugFor } from "../utilities/debugTool.js";
+const debug = debugFor("newFeatureFile");
+```
+
+2. Add a log inside your new method:
+
+```js
+function newFeatureMethod(rows) {
+  // code...
+  debug.log({ id: "newFeatureMethod.done" }, "NewFeatureMethod row count", { rowsCount: rows.length });
+}
+```
+
+3. Turn logs on for that scope while debugging:
+
+```js
+debugLog({ global: true, local: { newFeatureFile: true } });
+```
+
+Notes:
+
+- Use a stable `id` (e.g., `feature.action`) so you can filter or disable specific logs later.
+- Prefer structured objects for context rather than long strings.
