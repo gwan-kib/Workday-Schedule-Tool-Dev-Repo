@@ -8,7 +8,6 @@ import { formatScheduleMeta, getFavoriteSchedule, getPreferredSchedule, loadSave
 
 // Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
 const ui = {
-  status: document.querySelector("#popup-status"),
   empty: document.querySelector("#popup-empty"),
   content: document.querySelector("#popup-content"),
   pickerWrap: document.querySelector("#popup-picker-wrap"),
@@ -97,7 +96,6 @@ function renderActiveSchedule() {
     cancelScheduledRender();
     ui.empty?.classList.remove("is-hidden");
     ui.content?.classList.add("is-hidden");
-    ui.status?.classList.remove("is-hidden");
     return;
   }
 
@@ -110,13 +108,7 @@ function renderActiveSchedule() {
 
   ui.empty?.classList.add("is-hidden");
   ui.content?.classList.remove("is-hidden");
-  ui.status?.classList.add("is-hidden");
   ui.meta.textContent = formatScheduleMeta(activeSchedule);
-  ui.status.textContent = isDefaultSchedule
-    ? "This is the schedule shown when you open the extension outside Workday."
-    : favoriteSchedule
-      ? "Previewing a different saved schedule."
-      : "No default schedule is starred yet, so the newest saved schedule is shown.";
 
   queueVisibleScheduleRender(activeSchedule);
 }

@@ -25,7 +25,7 @@ html,
 body {
   margin: 0;
   width: 670px;
-  min-height: 570px;
+  min-height: 600px;
 }
 
 body {
@@ -45,20 +45,46 @@ h3 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 570px;
+  height: 600px;
   gap: 16px;
+  padding-bottom: 20px;
   border: 3px solid var(--hex-brand-main-1);
   background: var(--hex-brand-accent-1);
-  overflow: auto;
+  overflow: visible;
 }
 
 .popup-eyebrow {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--hex-brand-main-2);
+}
+
+.popup-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 400px;
+  padding: 0px 0px 10px;
+
+  border: 2px solid var(--hex-brand-main-1);
+  border-radius: 18px;
+  border-top: none;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+
+  background: var(--hex-brand-accent-1);
+  box-shadow: 0 10px 24px var(--hex-brand-accent-3);
+  text-align: center;
+}
+
+.popup-brand-title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--hex-brand-main-1);
 }
 
 .popup-status {
