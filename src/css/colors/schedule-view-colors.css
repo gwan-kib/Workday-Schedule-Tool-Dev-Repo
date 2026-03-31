@@ -115,7 +115,6 @@
   color: var(--hex-brand-accent-1);
 }
 
-
 /* modal colors (moved here from widget-functionality-colors.css) */
 .schedule-modal-backdrop {
   background: rgba(64, 29, 129, 0.4);
@@ -187,4 +186,3 @@
   border-color: var(--hex-brand-main-2);
   outline: none;
 }
-

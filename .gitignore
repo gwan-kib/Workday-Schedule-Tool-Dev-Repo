@@ -1,5 +1,10 @@
 # Dependencies
 node_modules/
+.wxt/
+.output/
+dist/
+npm/dist/
+.pnpm-store/
 
 # Logs
 *.log
@@ -22,6 +27,8 @@ Thumbs.db
 
 # Coverage reports
 coverage/
+playwright-report/
+test-results/
 
 # Temporary files
 *.tmp

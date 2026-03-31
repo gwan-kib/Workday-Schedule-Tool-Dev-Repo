@@ -1,0 +1,1 @@
+export { extractCoursesData } from "./extractCourses";

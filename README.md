@@ -7,8 +7,6 @@ _Not affiliated with or endorsed by Workday._
 
 <h3 style="margin:0;">Simplify your semester.<br>Visualize your schedule.<br>Export it when you're ready.</h3>
 
-Chrome Extension: https://lnkd.in/gtMCjkjs
-
 </div>
 
 ---
@@ -123,7 +121,24 @@ Your schedule data stays on your device in Chrome storage.
 
 ## Development / Contributing
 
-- See `DevREADME.md`
+This repo now uses `WXT`, `React`, `TypeScript`, `Zustand`, `Vitest`, and `Playwright`.
+
+Quick start:
+
+```powershell
+corepack pnpm install
+corepack pnpm dev
+```
+
+Production build:
+
+```powershell
+corepack pnpm build
+```
+
+Load the unpacked extension from `.output/chrome-mv3`.
+
+- See `DevREADME.md` for the full workflow and project structure.
 
 ---
 

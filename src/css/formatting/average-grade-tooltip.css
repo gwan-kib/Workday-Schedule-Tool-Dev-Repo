@@ -5,7 +5,12 @@
   padding: 10px 12px;
   border-radius: 6px;
   font-size: 14px;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
   max-width: 360px;
   opacity: 0;
   transition: opacity 120ms ease;
@@ -14,4 +19,3 @@
 .wd-average-grade-tooltip.is-visible {
   opacity: 1;
 }
-

@@ -77,7 +77,7 @@
 
 #widget-search::placeholder {
   color: var(--hex-brand-main-1);
-  opacity: .7;
+  opacity: 0.7;
 }
 
 #widget-search:focus-visible {
@@ -107,4 +107,3 @@
 .export-option:hover {
   background: var(--hex-brand-accent-6);
 }
-
