@@ -22,6 +22,26 @@
   outline-color: var(--hex-brand-accent-6);
 }
 
+.team-member-card {
+  background: var(--hex-neutral-1);
+  border-color: var(--hex-brand-accent-6);
+}
+
+.team-social-button {
+  background: var(--hex-brand-accent-3);
+  color: var(--hex-brand-main-1);
+  border-color: var(--hex-brand-accent-6);
+}
+
+.team-social-button:hover {
+  background: var(--hex-brand-accent-1);
+  border-color: var(--hex-brand-main-2);
+}
+
+.team-social-button:focus-visible {
+  outline-color: var(--hex-brand-accent-6);
+}
+
 .widget-panel[data-panel="settings-panel"] .course-color-label {
   color: var(--hex-brand-main-1);
 }
