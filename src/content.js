@@ -6,6 +6,7 @@ import { debugFor, debugLog } from "./utilities/debugTool.js";
 import { extractCoursesData } from "./extraction/index.js";
 import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
+import { requestImportCoursesToCalendar } from "./googleCalendar/calendarIntegration.js";
 import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { createCourseColorController } from "./mainPanel/courseColorController.js";
 import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
@@ -154,9 +155,44 @@ debugLog({ local: { content: false } });
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     });
 
+    // Posts a transient status message into the widget footer; auto-clears after a few seconds.
+    let footerAlertTimeout = 0;
+    const showFooterAlert = (text, { tone = "info", durationMs = 6000 } = {}) => {
+      if (!ui.footerAlert) return;
+      clearTimeout(footerAlertTimeout);
+      ui.footerAlert.textContent = text;
+      ui.footerAlert.classList.remove("is-hidden");
+      ui.footerAlert.dataset.tone = tone;
+      if (durationMs > 0) {
+        footerAlertTimeout = setTimeout(() => {
+          ui.footerAlert.classList.add("is-hidden");
+          ui.footerAlert.textContent = "";
+        }, durationMs);
+      }
+    };
+
     const handleExport = async (type) => {
       debug.log({ id: "handleExport" }, "Handling export action", { type });
-      if (type === "ics") exportICS(STATE.currentScheduleName);
+      if (type === "ics") return exportICS(STATE.currentScheduleName);
+
+      if (type === "gcal") {
+        if (!STATE.filtered?.length) {
+          showFooterAlert("No courses to import — load a schedule first.", { tone: "warn" });
+          return;
+        }
+        showFooterAlert("Adding to Google Calendar…", { tone: "info", durationMs: 0 });
+        try {
+          const summary = await requestImportCoursesToCalendar(STATE.filtered);
+          const tone = summary.failed ? "warn" : "info";
+          const parts = [`Added ${summary.added} event(s) to Google Calendar`];
+          if (summary.failed) parts.push(`${summary.failed} failed`);
+          if (summary.skipped) parts.push(`${summary.skipped} unparseable line(s) skipped`);
+          showFooterAlert(parts.join(" • "), { tone });
+        } catch (error) {
+          debug.error("Calendar import failed", error);
+          showFooterAlert(`Could not add to Google Calendar: ${error.message}`, { tone: "warn" });
+        }
+      }
     };
 
     on(ui.exportMenu, "click", async (event) => {

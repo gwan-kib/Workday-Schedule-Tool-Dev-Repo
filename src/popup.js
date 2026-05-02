@@ -11,6 +11,10 @@ import {
   persistSavedSchedules,
   togglePreferredSchedule,
 } from "./mainPanel/scheduleStorage.js";
+import {
+  requestDisconnectCalendar,
+  requestImportCoursesToCalendar,
+} from "./googleCalendar/calendarIntegration.js";
 
 // Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
 const ui = {
@@ -24,6 +28,8 @@ const ui = {
   scheduleGrid: document.querySelector("#popup-schedule-grid"),
   scheduleTermPill: document.querySelector("#popup-term-pill"),
   footerAlert: document.querySelector("#popup-footer-alert"),
+  importGcalButton: document.querySelector("#popup-import-gcal"),
+  disconnectGcalButton: document.querySelector("#popup-disconnect-gcal"),
 };
 
 // Popup state mirrors the saved schedules in storage plus the schedule currently being previewed.
@@ -225,6 +231,64 @@ document.addEventListener("click", (event) => {
 window.addEventListener("resize", () => {
   if (!popupState.activeScheduleId) return;
   renderActiveSchedule();
+});
+
+let footerAlertTimeout = 0;
+
+// Posts a transient status message into the popup footer; auto-clears after a few seconds.
+function showFooterAlert(text, { tone = "info", durationMs = 6000 } = {}) {
+  if (!ui.footerAlert) return;
+  clearTimeout(footerAlertTimeout);
+  ui.footerAlert.textContent = text;
+  ui.footerAlert.dataset.tone = tone;
+  ui.footerAlert.classList.remove("is-hidden");
+  if (durationMs > 0) {
+    footerAlertTimeout = setTimeout(() => {
+      ui.footerAlert.classList.add("is-hidden");
+      ui.footerAlert.textContent = "";
+    }, durationMs);
+  }
+}
+
+ui.importGcalButton?.addEventListener("click", async () => {
+  const activeSchedule =
+    popupState.schedules.find((schedule) => schedule.id === popupState.activeScheduleId) ||
+    getPreferredSchedule(popupState.schedules);
+
+  if (!activeSchedule?.courses?.length) {
+    showFooterAlert("Select a saved schedule first.", { tone: "warn" });
+    return;
+  }
+
+  ui.importGcalButton.disabled = true;
+  showFooterAlert("Adding to Google Calendar…", { tone: "info", durationMs: 0 });
+  try {
+    const summary = await requestImportCoursesToCalendar(activeSchedule.courses);
+    const tone = summary.failed ? "warn" : "success";
+    const parts = [`Added ${summary.added} event(s) from "${activeSchedule.name}"`];
+    if (summary.failed) parts.push(`${summary.failed} failed`);
+    if (summary.skipped) parts.push(`${summary.skipped} skipped`);
+    showFooterAlert(parts.join(" • "), { tone });
+  } catch (error) {
+    showFooterAlert(`Could not add to Google Calendar: ${error.message}`, { tone: "warn" });
+  } finally {
+    ui.importGcalButton.disabled = false;
+  }
+});
+
+ui.disconnectGcalButton?.addEventListener("click", async () => {
+  ui.disconnectGcalButton.disabled = true;
+  try {
+    const { cleared } = await requestDisconnectCalendar();
+    showFooterAlert(
+      cleared ? "Disconnected from Google. You'll re-authorize on next import." : "No active Google session.",
+      { tone: "info" },
+    );
+  } catch (error) {
+    showFooterAlert(`Could not disconnect: ${error.message}`, { tone: "warn" });
+  } finally {
+    ui.disconnectGcalButton.disabled = false;
+  }
 });
 
 void boot();
