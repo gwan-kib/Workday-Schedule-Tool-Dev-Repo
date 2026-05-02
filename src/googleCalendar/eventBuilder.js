@@ -15,6 +15,25 @@ const DAY_CODES = {
 
 const ORDERED_DAY_CODES = Object.values(DAY_CODES);
 
+// Maps the Workday extension's 7 default course color slots to the closest of Google Calendar's 11 event colors.
+// Workday slot order (from courseColorSettings.COURSE_COLOR_LABELS): Red, Orange, Purple, Blue, Yellow, Green, Teal.
+// Google IDs: 1=Lavender, 2=Sage, 3=Grape, 4=Flamingo, 5=Banana, 6=Tangerine,
+//             7=Peacock, 8=Graphite, 9=Blueberry, 10=Basil, 11=Tomato.
+const WORKDAY_TO_GCAL_COLOR_ID = {
+  1: "11", // Red    -> Tomato
+  2: "6",  // Orange -> Tangerine
+  3: "3",  // Purple -> Grape
+  4: "9",  // Blue   -> Blueberry
+  5: "5",  // Yellow -> Banana
+  6: "10", // Green  -> Basil
+  7: "7",  // Teal   -> Peacock
+};
+
+const colorIdForCourse = (course) => {
+  const idx = course?.colorIndex;
+  return Number.isInteger(idx) ? WORKDAY_TO_GCAL_COLOR_ID[idx] : undefined;
+};
+
 const DATE_RANGE_RE = /(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/;
 const TIME_RANGE_RE = /(\d{1,2}):(\d{2})\s*([ap])\.?m\.?\s*-\s*(\d{1,2}):(\d{2})\s*([ap])\.?m\.?/i;
 const DAYS_RE = /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g;
@@ -159,6 +178,9 @@ const buildEvent = (course, line, timeZone) => {
     end: { dateTime: formatLocalDateTime(end), timeZone },
     recurrence: [`RRULE:FREQ=WEEKLY;BYDAY=${parsed.dayCodes.join(",")};UNTIL=${formatRRuleUntil(until)}`],
   };
+
+  const colorId = colorIdForCourse(course);
+  if (colorId) event.colorId = colorId;
 
   debug.log({ id: "buildEvent" }, event);
   return event;

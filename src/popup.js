@@ -12,8 +12,9 @@ import {
   togglePreferredSchedule,
 } from "./mainPanel/scheduleStorage.js";
 import {
+  buildCalendarViewUrl,
   requestDisconnectCalendar,
-  requestImportCoursesToCalendar,
+  requestSyncCoursesToCalendar,
 } from "./googleCalendar/calendarIntegration.js";
 
 // Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
@@ -28,7 +29,7 @@ const ui = {
   scheduleGrid: document.querySelector("#popup-schedule-grid"),
   scheduleTermPill: document.querySelector("#popup-term-pill"),
   footerAlert: document.querySelector("#popup-footer-alert"),
-  importGcalButton: document.querySelector("#popup-import-gcal"),
+  syncGcalButton: document.querySelector("#popup-sync-gcal"),
   disconnectGcalButton: document.querySelector("#popup-disconnect-gcal"),
 };
 
@@ -250,7 +251,7 @@ function showFooterAlert(text, { tone = "info", durationMs = 6000 } = {}) {
   }
 }
 
-ui.importGcalButton?.addEventListener("click", async () => {
+ui.syncGcalButton?.addEventListener("click", async () => {
   const activeSchedule =
     popupState.schedules.find((schedule) => schedule.id === popupState.activeScheduleId) ||
     getPreferredSchedule(popupState.schedules);
@@ -260,19 +261,25 @@ ui.importGcalButton?.addEventListener("click", async () => {
     return;
   }
 
-  ui.importGcalButton.disabled = true;
-  showFooterAlert("Adding to Google Calendar…", { tone: "info", durationMs: 0 });
+  ui.syncGcalButton.disabled = true;
+  showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
   try {
-    const summary = await requestImportCoursesToCalendar(activeSchedule.courses);
-    const tone = summary.failed ? "warn" : "success";
-    const parts = [`Added ${summary.added} event(s) from "${activeSchedule.name}"`];
+    const summary = await requestSyncCoursesToCalendar(activeSchedule.courses);
+    const tone = summary.failed || summary.deleteFailed ? "warn" : "success";
+    const parts = [`Synced ${summary.added} event(s) from "${activeSchedule.name}"`];
+    if (summary.removed) parts.push(`replaced ${summary.removed} previous`);
     if (summary.failed) parts.push(`${summary.failed} failed`);
+    if (summary.deleteFailed) parts.push(`${summary.deleteFailed} old not removed`);
     if (summary.skipped) parts.push(`${summary.skipped} skipped`);
     showFooterAlert(parts.join(" • "), { tone });
+
+    if (summary.added > 0) {
+      chrome.tabs.create({ url: buildCalendarViewUrl(activeSchedule.courses) });
+    }
   } catch (error) {
-    showFooterAlert(`Could not add to Google Calendar: ${error.message}`, { tone: "warn" });
+    showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn" });
   } finally {
-    ui.importGcalButton.disabled = false;
+    ui.syncGcalButton.disabled = false;
   }
 });
 

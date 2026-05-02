@@ -1,8 +1,8 @@
 import { queryProfRating, RMP_MESSAGE_TYPE } from "./rateMyProfessor/rmpApi.js";
 import {
-  addCoursesToCalendar,
   CALENDAR_MESSAGE_TYPE,
   disconnectCalendar,
+  syncCoursesToCalendar,
 } from "./googleCalendar/calendarIntegration.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
 
@@ -29,17 +29,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-// Handles Google Calendar import + disconnect requests from popup/content scripts.
+// Handles Google Calendar sync + disconnect requests from popup/content scripts.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type === CALENDAR_MESSAGE_TYPE.IMPORT) {
+  if (message?.type === CALENDAR_MESSAGE_TYPE.SYNC) {
     void (async () => {
       try {
         const { courses, options } = message.payload || {};
-        const summary = await addCoursesToCalendar(courses, options);
+        const summary = await syncCoursesToCalendar(courses, options);
         // Errors are Error objects which don't survive structured cloning intact — flatten to strings.
         sendResponse({
           ok: true,
           summary: {
+            removed: summary.removed,
+            deleteFailed: summary.deleteFailed,
             added: summary.added,
             failed: summary.failed,
             skipped: summary.skipped,
@@ -47,11 +49,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           },
         });
       } catch (error) {
-        debug.error("Calendar import failed", {
+        debug.error("Calendar sync failed", {
           sender: sender?.tab?.id || "unknown",
           error: String(error),
         });
-        sendResponse({ ok: false, error: error?.message || "Calendar import failed" });
+        sendResponse({ ok: false, error: error?.message || "Calendar sync failed" });
       }
     })();
     return true;

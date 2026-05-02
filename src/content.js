@@ -6,7 +6,7 @@ import { debugFor, debugLog } from "./utilities/debugTool.js";
 import { extractCoursesData } from "./extraction/index.js";
 import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
-import { requestImportCoursesToCalendar } from "./googleCalendar/calendarIntegration.js";
+import { buildCalendarViewUrl, requestSyncCoursesToCalendar } from "./googleCalendar/calendarIntegration.js";
 import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { createCourseColorController } from "./mainPanel/courseColorController.js";
 import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
@@ -175,22 +175,28 @@ debugLog({ local: { content: false } });
       debug.log({ id: "handleExport" }, "Handling export action", { type });
       if (type === "ics") return exportICS(STATE.currentScheduleName);
 
-      if (type === "gcal") {
+      if (type === "gcal-sync") {
         if (!STATE.filtered?.length) {
-          showFooterAlert("No courses to import — load a schedule first.", { tone: "warn" });
+          showFooterAlert("No courses to sync — load a schedule first.", { tone: "warn" });
           return;
         }
-        showFooterAlert("Adding to Google Calendar…", { tone: "info", durationMs: 0 });
+        showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
         try {
-          const summary = await requestImportCoursesToCalendar(STATE.filtered);
-          const tone = summary.failed ? "warn" : "info";
-          const parts = [`Added ${summary.added} event(s) to Google Calendar`];
+          const summary = await requestSyncCoursesToCalendar(STATE.filtered);
+          const tone = summary.failed || summary.deleteFailed ? "warn" : "info";
+          const parts = [`Synced ${summary.added} event(s) to Google Calendar`];
+          if (summary.removed) parts.push(`replaced ${summary.removed} previous`);
           if (summary.failed) parts.push(`${summary.failed} failed`);
+          if (summary.deleteFailed) parts.push(`${summary.deleteFailed} old not removed`);
           if (summary.skipped) parts.push(`${summary.skipped} unparseable line(s) skipped`);
           showFooterAlert(parts.join(" • "), { tone });
+
+          if (summary.added > 0) {
+            window.open(buildCalendarViewUrl(STATE.filtered), "_blank", "noopener");
+          }
         } catch (error) {
-          debug.error("Calendar import failed", error);
-          showFooterAlert(`Could not add to Google Calendar: ${error.message}`, { tone: "warn" });
+          debug.error("Calendar sync failed", error);
+          showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn" });
         }
       }
     };
