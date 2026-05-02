@@ -4,9 +4,17 @@
   "version": "2.0",
   "description": "A tool to make planning for your semester easier.",
 
-  "permissions": ["storage"],
+  "permissions": ["storage", "identity"],
 
-  "host_permissions": ["https://*.myworkday.com/*"],
+  "oauth2": {
+    "client_id": "1020167103835-09hkiumhohjn120mkuta5q2uc723p874.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/calendar.events"]
+  },
+
+  "host_permissions": [
+    "https://*.myworkday.com/*",
+    "https://www.googleapis.com/*"
+  ],
 
   "icons": {
     "16": "icon16.png",

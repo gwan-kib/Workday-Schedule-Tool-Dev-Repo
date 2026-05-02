@@ -26,3 +26,6 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+#API Key for Google Calendar
+client_secret_1020167103835-09hkiumhohjn120mkuta5q2uc723p874.apps.googleusercontent.com (1)
