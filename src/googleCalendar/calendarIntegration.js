@@ -23,6 +23,15 @@ export const CALENDAR_MESSAGE_TYPE = {
 // Wraps chrome.identity.getAuthToken in a Promise. Input: { interactive }. Output: token string.
 const fetchAuthToken = ({ interactive = true } = {}) =>
   new Promise((resolve, reject) => {
+    if (!chrome?.identity?.getAuthToken) {
+      reject(
+        new Error(
+          "Chrome Identity API is unavailable. Reload the extension from chrome://extensions in Google Chrome and make sure the identity permission is enabled.",
+        ),
+      );
+      return;
+    }
+
     chrome.identity.getAuthToken({ interactive }, (token) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message || "Auth failed"));
@@ -38,6 +47,7 @@ const fetchAuthToken = ({ interactive = true } = {}) =>
 const invalidateAuthToken = (token) =>
   new Promise((resolve) => {
     if (!token) return resolve();
+    if (!chrome?.identity?.removeCachedAuthToken) return resolve();
     chrome.identity.removeCachedAuthToken({ token }, () => resolve());
   });
 
