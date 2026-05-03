@@ -175,6 +175,16 @@ debugLog({ local: { content: false } });
       debug.log({ id: "handleExport" }, "Handling export action", { type });
       if (type === "ics") return exportICS(STATE.currentScheduleName);
 
+      if (type === "apple") {
+        if (!STATE.filtered?.length) {
+          showFooterAlert("No courses to export — load a schedule first.", { tone: "warn" });
+          return;
+        }
+        exportICS(STATE.currentScheduleName);
+        showFooterAlert("Downloaded .ics — open the file to add it to Apple Calendar.", { tone: "info" });
+        return;
+      }
+
       if (type === "gcal-sync") {
         if (!STATE.filtered?.length) {
           showFooterAlert("No courses to sync — load a schedule first.", { tone: "warn" });
