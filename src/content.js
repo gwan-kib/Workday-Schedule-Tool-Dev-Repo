@@ -6,6 +6,7 @@ import { debugFor, debugLog } from "./utilities/debugTool.js";
 import { extractCoursesData } from "./extraction/index.js";
 import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
+import { buildCalendarViewUrl, requestSyncCoursesToCalendar } from "./googleCalendar/calendarIntegration.js";
 import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { createCourseColorController } from "./mainPanel/courseColorController.js";
 import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
@@ -61,7 +62,7 @@ debugLog({ local: { content: false } });
     const renderAll = () => {
       if (STATE.sort?.key) sortCourses(STATE.sort.key);
       updateScheduleView();
-      renderCourseObjects(ui, STATE.filtered);
+      renderCourseObjects(ui, STATE.filtered, { hasLoadedSchedule: STATE.courses.length > 0 });
     };
 
     // Extract the current page's schedule data from Workday, normalize it into STATE,
@@ -154,9 +155,50 @@ debugLog({ local: { content: false } });
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     });
 
+    // Posts a transient status message into the widget footer; auto-clears after a few seconds.
+    let footerAlertTimeout = 0;
+    const showFooterAlert = (text, { tone = "info", durationMs = 6000 } = {}) => {
+      if (!ui.footerAlert) return;
+      clearTimeout(footerAlertTimeout);
+      ui.footerAlert.textContent = text;
+      ui.footerAlert.classList.remove("is-hidden");
+      ui.footerAlert.dataset.tone = tone;
+      if (durationMs > 0) {
+        footerAlertTimeout = setTimeout(() => {
+          ui.footerAlert.classList.add("is-hidden");
+          ui.footerAlert.textContent = "";
+        }, durationMs);
+      }
+    };
+
     const handleExport = async (type) => {
       debug.log({ id: "handleExport" }, "Handling export action", { type });
-      if (type === "ics") exportICS(STATE.currentScheduleName);
+      if (type === "ics") return exportICS(STATE.currentScheduleName);
+
+      if (type === "gcal-sync") {
+        if (!STATE.filtered?.length) {
+          showFooterAlert("No courses to sync — load a schedule first.", { tone: "warn" });
+          return;
+        }
+        showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
+        try {
+          const summary = await requestSyncCoursesToCalendar(STATE.filtered);
+          const tone = summary.failed || summary.deleteFailed ? "warn" : "info";
+          const parts = [`Synced ${summary.added} event(s) to Google Calendar`];
+          if (summary.removed) parts.push(`replaced ${summary.removed} previous`);
+          if (summary.failed) parts.push(`${summary.failed} failed`);
+          if (summary.deleteFailed) parts.push(`${summary.deleteFailed} old not removed`);
+          if (summary.skipped) parts.push(`${summary.skipped} unparseable line(s) skipped`);
+          showFooterAlert(parts.join(" • "), { tone });
+
+          if (summary.added > 0) {
+            window.open(buildCalendarViewUrl(STATE.filtered), "_blank", "noopener");
+          }
+        } catch (error) {
+          debug.error("Calendar sync failed", error);
+          showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn" });
+        }
+      }
     };
 
     on(ui.exportMenu, "click", async (event) => {

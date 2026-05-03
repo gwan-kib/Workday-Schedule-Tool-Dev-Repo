@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+chrome-load-unpacked/
 
 # Logs
 *.log

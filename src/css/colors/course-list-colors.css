@@ -14,6 +14,7 @@
 }
 
 .course-sort-button:hover {
+  color: var(--hex-brand-main-3);
   background: var(--hex-brand-accent-4);
 }
 
@@ -22,6 +23,16 @@
   color: var(--hex-neutral-1);
   background: var(--hex-brand-main-1);
   border-color: var(--hex-brand-main-1);
+}
+
+.course-list-empty {
+  color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-1);
+  border-color: var(--hex-brand-main-2);
+}
+
+.course-list-empty__icon {
+  color: var(--hex-brand-main-2);
 }
 
 .course-card {
