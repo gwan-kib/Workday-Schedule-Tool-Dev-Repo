@@ -356,11 +356,28 @@ async function loadAverageForButton(button, state) {
   }
 }
 
-// Renders course rows into the table body. Input: ui object, courses array. Output: none.
-export function renderCourseObjects(ui, courses) {
+// Renders course rows into the table body. Input: ui object, courses array/options. Output: none.
+export function renderCourseObjects(ui, courses, { hasLoadedSchedule = Boolean(courses?.length) } = {}) {
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
   const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
+
+  if (!hasLoadedSchedule) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "course-list-empty";
+    emptyState.innerHTML = `
+      <span class="course-list-empty__copy">
+        <span class="material-symbols-rounded course-list-empty__icon" aria-hidden="true">refresh</span>
+        <span class="course-list-empty__text">Click the refresh button to load in a schedule.</span>
+        <span class="course-list-empty__hint">You need to be on a page with a schedule table</span>
+        <span class="course-list-empty__hint">(e.g. the 'View My Courses' page or a 'Saved Schedule')</span>
+      </span>
+    `;
+    frag.appendChild(emptyState);
+    ui.tableBody.appendChild(frag);
+    debug.log({ id: "renderCourseObjects.empty" }, "Rendered empty schedule prompt");
+    return;
+  }
 
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();

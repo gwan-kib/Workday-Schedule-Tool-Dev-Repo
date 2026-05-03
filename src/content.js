@@ -62,7 +62,7 @@ debugLog({ local: { content: false } });
     const renderAll = () => {
       if (STATE.sort?.key) sortCourses(STATE.sort.key);
       updateScheduleView();
-      renderCourseObjects(ui, STATE.filtered);
+      renderCourseObjects(ui, STATE.filtered, { hasLoadedSchedule: STATE.courses.length > 0 });
     };
 
     // Extract the current page's schedule data from Workday, normalize it into STATE,
