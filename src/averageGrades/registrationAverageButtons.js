@@ -6,7 +6,8 @@ import {
 } from "./gradesApiCall.js";
 
 const registrationCardSelector = 'li[data-automation-id="compositeContainer"]';
-const averageButtonSelector = "div.WHPF.WFPF, div.WHMF.WFMF";
+const averageButtonSelector = registrationCardSelector;
+const coursePromptSelector = '[data-automation-id="compositeHeader"] div.WPJO.WIIO[data-automation-id="promptOption"]';
 const compositeSubHeaderSelector = '[data-automation-id="compositeSubHeaderOne"]';
 const debug = debugFor("registrationAverageButtons");
 debugLog({ local: { registrationAverageButtons: true } });
@@ -54,6 +55,12 @@ const summarizeDebugText = (text, maxLength = 160) => {
 const getRegistrationContainer = (headerWrapper) =>
   headerWrapper?.closest?.(registrationCardSelector) || headerWrapper || null;
 const getStaticButtonLabel = (reason) => (reason === "not-lecture" ? "Not a lecture" : "Average:\nunavailable");
+const hasDirectAverageButton = (row) =>
+  Array.from(row?.children || []).some((child) => child.classList?.contains("registration__avg-button"));
+const getCoursePromptOption = (row) =>
+  row?.querySelector?.(coursePromptSelector) ||
+  row?.querySelector?.('[data-automation-id="compositeHeader"] [data-automation-id="promptOption"]') ||
+  null;
 
 // Sets up registration average buttons on Workday pages. Input: none. Output: cleanup function.
 export function setupRegistrationAverageButtons() {
@@ -202,7 +209,7 @@ export function setupRegistrationAverageButtons() {
     if (!headerWrapper || !(headerWrapper instanceof Element)) return;
     const row = getRegistrationContainer(headerWrapper);
     const rowPreview = summarizeDebugText(row?.innerText || headerWrapper.innerText || "");
-    const alreadyHasButton = headerWrapper.previousElementSibling?.classList?.contains("registration__avg-button") || false;
+    const alreadyHasButton = hasDirectAverageButton(row);
     debug.log(
       { id: "setupRegistrationAverageButtons.ensureButton.rowState" },
       "Evaluating row button state",
@@ -235,10 +242,9 @@ export function setupRegistrationAverageButtons() {
       },
     );
 
-    const parentElement = headerWrapper.parentElement;
-    if (parentElement) {
-      parentElement.style.display = "flex";
-      parentElement.style.alignItems = "center";
+    if (row) {
+      row.style.display = "flex";
+      row.style.alignItems = "flex-start";
     }
 
     if (buttonState.buttonMode === "static") {
@@ -246,7 +252,7 @@ export function setupRegistrationAverageButtons() {
         mode: "static",
         staticReason: buttonState.staticReason,
       });
-      headerWrapper.parentNode?.insertBefore(button, headerWrapper);
+      row?.insertBefore(button, row.firstElementChild);
       debug.log({ id: "setupRegistrationAverageButtons.ensureButton.inserted" }, "Inserted static registration average button", {
         staticReason: buttonState.staticReason,
         rowPreview: buttonState.rowPreview || rowPreview,
@@ -254,7 +260,7 @@ export function setupRegistrationAverageButtons() {
       return;
     }
 
-    const promptOption = headerWrapper.querySelector?.('[data-automation-id="promptOption"]') || headerWrapper;
+    const promptOption = getCoursePromptOption(row) || headerWrapper;
     const promptText =
       promptOption.getAttribute?.("data-automation-label") ||
       promptOption.getAttribute?.("title") ||
@@ -268,7 +274,7 @@ export function setupRegistrationAverageButtons() {
         mode: "static",
         staticReason: "unavailable",
       });
-      headerWrapper.parentNode?.insertBefore(fallbackButton, headerWrapper);
+      row?.insertBefore(fallbackButton, row.firstElementChild);
       debug.warn(
         { id: "setupRegistrationAverageButtons.ensureButton.noCourseInfo" },
         "Could not parse course info for lecture row; inserted unavailable average button",
@@ -280,7 +286,7 @@ export function setupRegistrationAverageButtons() {
     }
 
     const button = createAverageButton({ courseInfo, mode: "interactive" });
-    headerWrapper.parentNode?.insertBefore(button, headerWrapper);
+    row?.insertBefore(button, row.firstElementChild);
     debug.log({ id: "setupRegistrationAverageButtons.ensureButton.inserted" }, "Inserted interactive registration average button", {
       courseInfo,
       rowPreview: buttonState.rowPreview || rowPreview,

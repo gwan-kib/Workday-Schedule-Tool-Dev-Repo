@@ -6,7 +6,7 @@ debugLog({ local: { gradesApiCall: false } });
 const API_BASE = "https://ubcgrades.com/api";
 const DEFAULT_API_VERSION = "v3";
 
-const TERM_CAMPUS_RE = /(\d{4})-\d{2}\s+(Winter|Summer)\s+Term\s+\d+\s+\((UBC-[VO])\)/i;
+const TERM_CAMPUS_RE = /(\d{4})(?:-\d{2})?\s+(Winter|Summer)\s+(?:Term\s+\d+|Session)\s+\((UBC-[VO])\)/i;
 
 const SUBJECT_COURSE_RE = /^\s*([A-Z][A-Z0-9_]{1,8})\s*(\d{3}[A-Z]?)\s*$/;
 
