@@ -2,6 +2,8 @@ import { queryProfRating, RMP_MESSAGE_TYPE } from "./rateMyProfessor/rmpApi.js";
 import {
   CALENDAR_MESSAGE_TYPE,
   disconnectCalendar,
+  getCalendarAuthState,
+  signInCalendar,
   syncCoursesToCalendar,
 } from "./googleCalendar/calendarIntegration.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
@@ -35,6 +37,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     void (async () => {
       try {
         const { courses, options } = message.payload || {};
+        const authState = await getCalendarAuthState();
+        if (!authState.signedIn) {
+          sendResponse({ ok: false, error: "Go to Settings and sign into Google first." });
+          return;
+        }
+
         const summary = await syncCoursesToCalendar(courses, options);
         // Errors are Error objects which don't survive structured cloning intact — flatten to strings.
         sendResponse({
@@ -54,6 +62,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           error: String(error),
         });
         sendResponse({ ok: false, error: error?.message || "Calendar sync failed" });
+      }
+    })();
+    return true;
+  }
+
+  if (message?.type === CALENDAR_MESSAGE_TYPE.AUTH_STATE) {
+    void (async () => {
+      try {
+        const result = await getCalendarAuthState();
+        sendResponse({ ok: true, signedIn: result.signedIn });
+      } catch (error) {
+        debug.error("Calendar auth state check failed", { error: String(error) });
+        sendResponse({ ok: false, error: error?.message || "Google auth state check failed" });
+      }
+    })();
+    return true;
+  }
+
+  if (message?.type === CALENDAR_MESSAGE_TYPE.SIGN_IN) {
+    void (async () => {
+      try {
+        const result = await signInCalendar();
+        sendResponse({ ok: true, signedIn: result.signedIn });
+      } catch (error) {
+        debug.error("Calendar sign-in failed", { error: String(error) });
+        sendResponse({ ok: false, error: error?.message || "Google sign-in failed" });
       }
     })();
     return true;

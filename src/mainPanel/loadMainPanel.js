@@ -108,6 +108,8 @@ export async function loadMainPanel(shadowRoot) {
     courseColorReset: shadowRoot.querySelector("#course-color-reset"),
 
     hoverTipsToggle: shadowRoot.querySelector("#setting-hover-tips"),
+    googleSignInButton: shadowRoot.querySelector("#setting-google-sign-in"),
+    googleSignOutButton: shadowRoot.querySelector("#setting-google-sign-out"),
   };
 
   debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", ui);

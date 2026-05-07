@@ -47,6 +47,40 @@
   line-height: 1.35;
 }
 
+.widget-panel[data-panel="settings-panel"] .settings-google-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.widget-panel[data-panel="settings-panel"] .settings-google-actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.widget-panel[data-panel="settings-panel"] .settings-google-actions .button[disabled] {
+  cursor: default;
+}
+
+.widget-panel[data-panel="settings-panel"] .settings-google-actions .button .material-symbols-rounded {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.widget-panel[data-panel="settings-panel"] .settings-google-actions .is-hidden {
+  display: none;
+}
+
 .settings-field--github-link {
   display: flex;
   flex-direction: column;

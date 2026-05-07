@@ -6,7 +6,13 @@ import { debugFor, debugLog } from "./utilities/debugTool.js";
 import { extractCoursesData } from "./extraction/index.js";
 import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
-import { buildCalendarViewUrl, requestSyncCoursesToCalendar } from "./googleCalendar/calendarIntegration.js";
+import {
+  buildCalendarViewUrl,
+  requestCalendarAuthState,
+  requestDisconnectCalendar,
+  requestSignInCalendar,
+  requestSyncCoursesToCalendar,
+} from "./googleCalendar/calendarIntegration.js";
 import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { createCourseColorController } from "./mainPanel/courseColorController.js";
 import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
@@ -171,13 +177,60 @@ debugLog({ local: { content: false } });
       }
     };
 
+    let googleCalendarSignedIn = false;
+
+    const renderGoogleAccountControls = () => {
+      if (!ui.googleSignInButton || !ui.googleSignOutButton) return;
+
+      if (googleCalendarSignedIn) {
+        const checkIcon = document.createElement("span");
+        checkIcon.className = "material-symbols-rounded";
+        checkIcon.setAttribute("aria-hidden", "true");
+        checkIcon.textContent = "check";
+        ui.googleSignInButton.replaceChildren(document.createTextNode("Signed In"), checkIcon);
+      } else {
+        const loginIcon = document.createElement("span");
+        loginIcon.className = "material-symbols-rounded";
+        loginIcon.setAttribute("aria-hidden", "true");
+        loginIcon.textContent = "login";
+        ui.googleSignInButton.replaceChildren(document.createTextNode("Sign into Your Google Account"), loginIcon);
+      }
+      ui.googleSignInButton.disabled = googleCalendarSignedIn;
+      ui.googleSignInButton.setAttribute("aria-pressed", String(googleCalendarSignedIn));
+      ui.googleSignOutButton.classList.toggle("is-hidden", !googleCalendarSignedIn);
+    };
+
+    const refreshGoogleAccountState = async () => {
+      const { signedIn } = await requestCalendarAuthState();
+      googleCalendarSignedIn = signedIn;
+      renderGoogleAccountControls();
+      return signedIn;
+    };
+
+    const requireGoogleSignInForSync = async () => {
+      let signedIn = false;
+      try {
+        signedIn = await refreshGoogleAccountState();
+      } catch (error) {
+        showFooterAlert(`Could not check Google sign-in: ${error.message}`, { tone: "warn" });
+        return false;
+      }
+
+      if (signedIn) return true;
+
+      showFooterAlert("Go to Settings and sign into Google first.", { tone: "warn" });
+      return false;
+    };
+
     const handleExport = async (type) => {
       debug.log({ id: "handleExport" }, "Handling export action", { type });
       if (type === "ics") return exportICS(STATE.currentScheduleName);
 
       if (type === "gcal-sync") {
+        if (!(await requireGoogleSignInForSync())) return;
+
         if (!STATE.filtered?.length) {
-          showFooterAlert("No courses to sync — load a schedule first.", { tone: "warn" });
+          showFooterAlert("No courses to sync.", { tone: "warn" });
           return;
         }
         showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
@@ -200,6 +253,46 @@ debugLog({ local: { content: false } });
         }
       }
     };
+
+    renderGoogleAccountControls();
+
+    on(ui.googleSignInButton, "click", async () => {
+      ui.googleSignInButton.disabled = true;
+      ui.googleSignOutButton.disabled = true;
+      try {
+        const { signedIn } = await requestSignInCalendar();
+        googleCalendarSignedIn = signedIn;
+        renderGoogleAccountControls();
+        showFooterAlert("Signed into Google.", { tone: "info" });
+      } catch (error) {
+        googleCalendarSignedIn = false;
+        renderGoogleAccountControls();
+        showFooterAlert(`Could not sign into Google: ${error.message}`, { tone: "warn" });
+      } finally {
+        ui.googleSignOutButton.disabled = false;
+        if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
+      }
+    });
+
+    on(ui.googleSignOutButton, "click", async () => {
+      ui.googleSignInButton.disabled = true;
+      ui.googleSignOutButton.disabled = true;
+      try {
+        await requestDisconnectCalendar();
+        googleCalendarSignedIn = false;
+        renderGoogleAccountControls();
+        showFooterAlert("Signed out of Google.", { tone: "info" });
+      } catch (error) {
+        await refreshGoogleAccountState().catch(() => {
+          googleCalendarSignedIn = false;
+          renderGoogleAccountControls();
+        });
+        showFooterAlert(`Could not sign out of Google: ${error.message}`, { tone: "warn" });
+      } finally {
+        ui.googleSignOutButton.disabled = false;
+        if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
+      }
+    });
 
     on(ui.exportMenu, "click", async (event) => {
       const action = event.target.closest("[data-export]");
@@ -358,6 +451,10 @@ debugLog({ local: { content: false } });
 
     // Initial startup restores saved state, loads the current page's schedule, and then
     // enables the extra page-level average buttons that live outside the panel UI.
+    await refreshGoogleAccountState().catch((error) => {
+      debug.warn({ id: "googleAuth.initialState" }, "Could not load Google sign-in state", error);
+    });
+
     wireTableSorting(ui);
 
     STATE.savedSchedules = await loadSavedSchedules();

@@ -13,6 +13,7 @@ import {
 } from "./mainPanel/scheduleStorage.js";
 import {
   buildCalendarViewUrl,
+  requestCalendarAuthState,
   requestDisconnectCalendar,
   requestSyncCoursesToCalendar,
 } from "./googleCalendar/calendarIntegration.js";
@@ -296,6 +297,19 @@ ui.syncGcalButton?.addEventListener("click", async () => {
     return;
   }
 
+  let signedIn = false;
+  try {
+    ({ signedIn } = await requestCalendarAuthState());
+  } catch (error) {
+    showFooterAlert(`Could not check Google sign-in: ${error.message}`, { tone: "warn" });
+    return;
+  }
+
+  if (!signedIn) {
+    showFooterAlert("Go to Settings and sign into Google first.", { tone: "warn" });
+    return;
+  }
+
   ui.syncGcalButton.disabled = true;
   showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
   try {
@@ -323,7 +337,7 @@ ui.disconnectGcalButton?.addEventListener("click", async () => {
   try {
     const { cleared } = await requestDisconnectCalendar();
     showFooterAlert(
-      cleared ? "Signed out of Google. You'll re-authorize on next import." : "No active Google session.",
+      cleared ? "Signed out of Google." : "No active Google session.",
       { tone: "info" },
     );
   } catch (error) {
