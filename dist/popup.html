@@ -14,12 +14,11 @@
     <main class="popup-shell">
 
       <section class="popup-empty is-hidden" id="popup-empty">
-        <h2>No saved schedules yet</h2>
-        <p>Open Workday, save a schedule there, and it will appear here the next time you click the extension icon.</p>
+        <h2>You have no saved schedules.</h2>
+        <p>When you save a schedule from Workday, it will appear here.</p>
       </section>
 
       <section class="popup-brand" aria-label="Extension name">
-        <p class="popup-eyebrow">Chrome Extension</p>
         <h1 class="popup-brand-title">UBC Workday - Schedule Tool</h1>
       </section>
 
@@ -47,8 +46,9 @@
             <span class="material-symbols-rounded" aria-hidden="true">sync</span>
             <span>Sync to Google Calendar</span>
           </button>
-          <button class="popup-action-link" id="popup-disconnect-gcal" type="button">
-            Disconnect Google
+          <button class="popup-action-button" id="popup-disconnect-gcal" type="button">
+            <span class="material-symbols-rounded" aria-hidden="true">logout</span>
+            <span>Sign out of Google</span>
           </button>
         </div>
 

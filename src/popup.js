@@ -147,7 +147,21 @@ function renderPicker() {
     favoriteIcon.textContent = "star";
     favoriteButton.appendChild(favoriteIcon);
 
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "schedule-saved-action delete";
+    deleteButton.dataset.action = "delete";
+    deleteButton.setAttribute("aria-label", "Delete schedule");
+    deleteButton.setAttribute("title", "Delete schedule");
+
+    const deleteIcon = document.createElement("span");
+    deleteIcon.className = "material-symbols-rounded";
+    deleteIcon.setAttribute("aria-hidden", "true");
+    deleteIcon.textContent = "delete";
+    deleteButton.appendChild(deleteIcon);
+
     actions.appendChild(favoriteButton);
+    actions.appendChild(deleteButton);
     card.appendChild(header);
     card.appendChild(actions);
     ui.savedMenu.appendChild(card);
@@ -205,6 +219,27 @@ ui.savedMenu?.addEventListener("click", async (event) => {
     return;
   }
 
+  if (actionButton?.dataset.action === "delete") {
+    event.stopPropagation();
+    const selected = popupState.schedules.find((schedule) => schedule.id === scheduleId);
+    if (!selected) return;
+
+    const confirmed = window.confirm(`Delete "${selected.name}"? This cannot be undone.`);
+    if (!confirmed) return;
+
+    popupState.schedules = popupState.schedules.filter((schedule) => schedule.id !== scheduleId);
+
+    if (popupState.activeScheduleId === scheduleId) {
+      popupState.activeScheduleId = getPreferredSchedule(popupState.schedules)?.id || null;
+    }
+
+    await persistSavedSchedules(popupState.schedules);
+    renderPicker();
+    renderActiveSchedule();
+    if (ui.savedDropdown && popupState.schedules.length > 1) ui.savedDropdown.open = true;
+    return;
+  }
+
   popupState.activeScheduleId = scheduleId;
   if (ui.savedDropdown) ui.savedDropdown.open = false;
   renderActiveSchedule();
@@ -215,7 +250,7 @@ ui.savedMenu?.addEventListener("keydown", (event) => {
   if (!card) return;
 
   if (event.key !== "Enter" && event.key !== " ") return;
-  if (event.target.closest("[data-action='favorite']")) return;
+  if (event.target.closest("[data-action]")) return;
 
   event.preventDefault();
   card.click();
@@ -288,11 +323,11 @@ ui.disconnectGcalButton?.addEventListener("click", async () => {
   try {
     const { cleared } = await requestDisconnectCalendar();
     showFooterAlert(
-      cleared ? "Disconnected from Google. You'll re-authorize on next import." : "No active Google session.",
+      cleared ? "Signed out of Google. You'll re-authorize on next import." : "No active Google session.",
       { tone: "info" },
     );
   } catch (error) {
-    showFooterAlert(`Could not disconnect: ${error.message}`, { tone: "warn" });
+    showFooterAlert(`Could not sign out of Google: ${error.message}`, { tone: "warn" });
   } finally {
     ui.disconnectGcalButton.disabled = false;
   }

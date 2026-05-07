@@ -232,6 +232,11 @@ debugLog({ local: { content: false } });
     // Saved schedule actions persist snapshots of the currently filtered schedule and restore them later.
     on(ui.saveScheduleButton, "click", async () => {
       debug.log({ id: "saveSchedule.click" }, "Save schedule button clicked");
+      if (!STATE.courses?.length) {
+        showFooterAlert("No schedule loaded - load a schedule before saving it.", { tone: "warn" });
+        return;
+      }
+
       if (!canSaveMoreSchedules(STATE.savedSchedules)) {
         await openScheduleModal({
           title: "Schedule limit reached",
