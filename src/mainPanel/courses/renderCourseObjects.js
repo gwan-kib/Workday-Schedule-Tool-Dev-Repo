@@ -2,6 +2,7 @@ import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { buildUbcGradesCourseUrl, fetchSectionGradesWithFallbackResult } from "../../api/averageGrades/gradesApiCall.js";
 import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../../api/rateMyProfessor/rmpApi.js";
 import {
+  COURSE_COLOR_COUNT,
   DEFAULT_COURSE_COLOR_ASSIGNMENTS,
   getCourseGroupRepresentatives,
   isValidCourseColorIndex,
@@ -493,7 +494,7 @@ export function renderCourseObjects(
 
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
-    const colorIndex = course?.colorIndex || (index % 7) + 1;
+    const colorIndex = course?.colorIndex || (index % COURSE_COLOR_COUNT) + 1;
     const subClass =
       course.isLab || course.isSeminar || course.isDiscussion || isExperientialCourse(course)
         ? " course-card--sub"
@@ -520,6 +521,48 @@ export function renderCourseObjects(
           }
           ${sectionLabel ? `<span class="course-code-section wd-hover-tooltip" data-tooltip="Section number">${escHTML(sectionLabel)}</span>` : ""}
           ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
+          ${
+            showColorPicker
+              ? `<div class="course-card__color-picker">
+                  <button
+                    class="course-card__color-button"
+                    type="button"
+                    aria-label="Change course color"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                  >
+                    <span
+                      class="course-card__color-swatch"
+                      style="${escHTML(colorSwatchStyle(colorIndex))}"
+                      aria-hidden="true"
+                    ></span>
+                  </button>
+                  <div class="course-card__color-menu" role="listbox" aria-label="Course colors">
+                    ${colorOptions
+                      .map((palette) => {
+                        const paletteId = Number(palette.id);
+                        if (!isValidCourseColorIndex(paletteId)) return "";
+                        const selected = paletteId === colorIndex;
+                        return `<button
+                          class="course-card__color-option${selected ? " is-selected" : ""}"
+                          type="button"
+                          role="option"
+                          aria-label="Select course color ${paletteId}"
+                          aria-selected="${selected}"
+                          data-color-index="${paletteId}"
+                        >
+                          <span
+                            class="course-card__color-option-swatch"
+                            style="${escHTML(colorSwatchStyle(paletteId))}"
+                            aria-hidden="true"
+                          ></span>
+                        </button>`;
+                      })
+                      .join("")}
+                  </div>
+                </div>`
+              : ""
+          }
         </div>
         <div class="course-card__instructor-wrap">
           ${
@@ -572,48 +615,6 @@ export function renderCourseObjects(
                 >
                   5 Year Average
                 </button>
-              </div>`
-            : ""
-        }
-        ${
-          showColorPicker
-            ? `<div class="course-card__color-picker">
-                <button
-                  class="course-card__color-button"
-                  type="button"
-                  aria-label="Change course color"
-                  aria-haspopup="listbox"
-                  aria-expanded="false"
-                >
-                  <span
-                    class="course-card__color-swatch"
-                    style="${escHTML(colorSwatchStyle(colorIndex))}"
-                    aria-hidden="true"
-                  ></span>
-                </button>
-                <div class="course-card__color-menu" role="listbox" aria-label="Course colors">
-                  ${colorOptions
-                    .map((palette) => {
-                      const paletteId = Number(palette.id);
-                      if (!isValidCourseColorIndex(paletteId)) return "";
-                      const selected = paletteId === colorIndex;
-                      return `<button
-                        class="course-card__color-option${selected ? " is-selected" : ""}"
-                        type="button"
-                        role="option"
-                        aria-label="Select course color ${paletteId}"
-                        aria-selected="${selected}"
-                        data-color-index="${paletteId}"
-                      >
-                        <span
-                          class="course-card__color-option-swatch"
-                          style="${escHTML(colorSwatchStyle(paletteId))}"
-                          aria-hidden="true"
-                        ></span>
-                      </button>`;
-                    })
-                    .join("")}
-                </div>
               </div>`
             : ""
         }

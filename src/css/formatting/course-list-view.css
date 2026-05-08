@@ -334,8 +334,8 @@
 }
 
 .course-card__color-button {
-  width: 34px;
-  height: 34px;
+  width: 23px;
+  height: 23px;
   border: 2px solid;
   border-radius: 100px;
   transition: all 0.2s ease;
@@ -349,8 +349,8 @@
 }
 
 .course-card__color-swatch {
-  width: 20px;
-  height: 20px;
+  width: 12px;
+  height: 12px;
 }
 
 .course-card__color-menu {
@@ -361,8 +361,8 @@
 
   display: none;
   grid-template-columns: repeat(4, 28px);
-  gap: 6px;
-  padding: 8px;
+  gap: 2px;
+  padding: 5px;
   border: 2px solid;
   border-radius: 10px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);

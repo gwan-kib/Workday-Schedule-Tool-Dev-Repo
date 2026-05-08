@@ -3,8 +3,8 @@ import { debugFor, debugLog } from "../../utilities/debugTool.js";
 const debug = debugFor("courseColorSettings");
 debugLog({ local: { courseColorSettings: false } });
 
-export const COURSE_COLOR_COUNT = 7;
-export const COURSE_COLOR_LABELS = ["Red", "Orange", "Purple", "Blue", "Yellow", "Green", "Teal"];
+export const COURSE_COLOR_COUNT = 8;
+export const COURSE_COLOR_LABELS = ["Red", "Orange", "Purple", "Blue", "Yellow", "Green", "Teal", "Pink"];
 export const DEFAULT_COURSE_COLOR_ASSIGNMENTS = Array.from({ length: COURSE_COLOR_COUNT }, (_, i) => i + 1);
 
 const STORAGE_KEY = "wdCourseColorAssignments";

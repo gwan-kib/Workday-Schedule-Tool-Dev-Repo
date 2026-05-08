@@ -2,6 +2,7 @@ import { extractStartDate } from "../../extraction/meetingPatternsInfo.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { createFooterNoteController } from "../shell/footerNoteController.js";
 import { detectScheduleConflicts } from "./scheduleCollisions.js";
+import { COURSE_COLOR_COUNT } from "../settings/courseColorSettings.js";
 const debug = debugFor("scheduleView");
 debugLog({ local: { scheduleView: false } });
 
@@ -159,7 +160,7 @@ function buildDayEvents(courses, semester) {
   let eventId = 0;
 
   (courses || []).forEach((course, courseIndex) => {
-    const colorIndex = course?.colorIndex || (courseIndex % 7) + 1;
+    const colorIndex = course?.colorIndex || (courseIndex % COURSE_COLOR_COUNT) + 1;
     const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
     const endDate = course.endDate || startDate || "";
     const courseSemester = getSemesterForRange(startDate, endDate);

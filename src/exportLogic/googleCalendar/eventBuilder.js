@@ -15,8 +15,8 @@ const DAY_CODES = {
 
 const ORDERED_DAY_CODES = Object.values(DAY_CODES);
 
-// Maps the Workday extension's 7 default course color slots to the closest of Google Calendar's 11 event colors.
-// Workday slot order (from courseColorSettings.COURSE_COLOR_LABELS): Red, Orange, Purple, Blue, Yellow, Green, Teal.
+// Maps the Workday extension's default course color slots to the closest of Google Calendar's 11 event colors.
+// Workday slot order (from courseColorSettings.COURSE_COLOR_LABELS): Red, Orange, Purple, Blue, Yellow, Green, Teal, Pink.
 // Google IDs: 1=Lavender, 2=Sage, 3=Grape, 4=Flamingo, 5=Banana, 6=Tangerine,
 //             7=Peacock, 8=Graphite, 9=Blueberry, 10=Basil, 11=Tomato.
 const WORKDAY_TO_GCAL_COLOR_ID = {
@@ -27,6 +27,7 @@ const WORKDAY_TO_GCAL_COLOR_ID = {
   5: "5",  // Yellow -> Banana
   6: "10", // Green  -> Basil
   7: "7",  // Teal   -> Peacock
+  8: "4",  // Pink   -> Flamingo
 };
 
 const colorIdForCourse = (course) => {

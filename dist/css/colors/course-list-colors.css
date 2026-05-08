@@ -142,7 +142,7 @@
   background: color-mix(in srgb, var(--hex-danger-1) 40%, transparent);
 }
 
-/* Course card color cycle (7) with 1 sub palette (card, chip) */
+/* Course card color cycle with 1 sub palette (card, chip) */
 .course-card--color-1 {
   --course-card-bg: var(--course-color-1-bg);
   --course-card-border: var(--course-color-1-border);
@@ -204,6 +204,15 @@
 
   --course-card-sub-bg: var(--course-color-7-sub-bg);
   --course-card-sub-chip-bg: var(--course-color-7-sub-chip);
+}
+
+.course-card--color-8 {
+  --course-card-bg: var(--course-color-8-bg);
+  --course-card-border: var(--course-color-8-border);
+  --course-card-chip-bg: var(--course-color-8-chip);
+
+  --course-card-sub-bg: var(--course-color-8-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-8-sub-chip);
 }
 
 /* Sub variant overrides the base palette */
