@@ -10,7 +10,7 @@ debugLog({ local: { singleCourseImport: false } });
 
 const WORKDAY_HOST_RE = /(^|\.)myworkday\.com$/i;
 const WORKDAY_COURSE_SECTION_SEGMENT_RE = /^15194\$\d+\.htmld$/i;
-export const WRONG_COURSE_LINK_ERROR = "Wrong Course Link";
+export const WRONG_COURSE_LINK_ERROR = "Wrong course link: Copy the link in the 'Section' column.";
 const WORKDAY_JSON_LABELS = new Set([
   "Course",
   "Instructor Teaching",

@@ -5,7 +5,6 @@ const debug = debugFor("courseExtraction");
 debugLog({ local: { courseExtraction: false } });
 
 const SELECTED_COURSE_SELECTOR = '[data-automation-id^="selectedItem_15194$"]';
-const COURSE_CONTAINER_SELECTOR = 'li[data-automation-id="compositeContainer"], tr, [role="row"]';
 
 const readElementLabel = (el) =>
   (
@@ -17,10 +16,6 @@ const readElementLabel = (el) =>
   )
     .replace(/\s+/g, " ")
     .trim();
-
-function getCourseContainer(selectedCourseEl) {
-  return selectedCourseEl?.closest?.(COURSE_CONTAINER_SELECTOR) || selectedCourseEl?.parentElement || selectedCourseEl;
-}
 
 function getPromptLabel(selectedCourseEl) {
   return readElementLabel(selectedCourseEl?.querySelector?.('[data-automation-id="promptOption"]')) || readElementLabel(selectedCourseEl);
@@ -77,7 +72,7 @@ function summarizeCourseNames(courses) {
   return names;
 }
 
-export function collectWorkdayCourseIdEntries(root = document) {
+function collectWorkdayCourseIdEntries(root = document) {
   const selectedCourseEls = Array.from(root?.querySelectorAll?.(SELECTED_COURSE_SELECTOR) || []);
   const seenIds = new Set();
   const entries = [];
@@ -94,7 +89,6 @@ export function collectWorkdayCourseIdEntries(root = document) {
       automationId,
       label: getPromptLabel(selectedCourseEl),
       element: selectedCourseEl,
-      container: getCourseContainer(selectedCourseEl),
     });
   }
 
@@ -126,8 +120,8 @@ async function extractCourseFromEntry(entry) {
 }
 
 // Extracts courses from Workday by collecting section IDs and fetching their JSON details.
-// Input: optional root/selector callback. Output: array of course objects or null on cancel.
-export async function extractCoursesData({ root = document, selectSchedule } = {}) {
+// Input: optional root. Output: array of course objects.
+export async function extractCoursesData({ root = document } = {}) {
   debug.log({ id: "extractCoursesData.start" }, "Starting course-ID based extraction");
 
   const entries = collectWorkdayCourseIdEntries(root);
@@ -136,24 +130,12 @@ export async function extractCoursesData({ root = document, selectSchedule } = {
     return [];
   }
 
-  const candidate = {
-    id: "workday-course-ids",
-    title: "Detected Workday Courses",
-    entries,
-  };
-
-  if (typeof selectSchedule === "function") {
-    debug.log({ id: "extractCoursesData.selectionSkipped" }, "Single course-ID candidate detected; schedule picker not needed", {
-      courseCount: entries.length,
-    });
-  }
-
-  const results = await Promise.allSettled(candidate.entries.map((entry) => extractCourseFromEntry(entry)));
+  const results = await Promise.allSettled(entries.map((entry) => extractCourseFromEntry(entry)));
   const courses = results
     .map((result, index) => {
       if (result.status === "fulfilled") return result.value;
 
-      const entry = candidate.entries[index];
+      const entry = entries[index];
       debug.warn({ id: "extractCoursesData.entryRejected" }, "Course extraction promise rejected", {
         courseId: entry?.courseId,
         error: String(result.reason?.message || result.reason),
@@ -165,9 +147,9 @@ export async function extractCoursesData({ root = document, selectSchedule } = {
   const extractedCourses = removeDuplicateCourses(courses);
 
   debug.log({ id: "extractCoursesData.done" }, "Course-ID extraction complete", {
-    requestedCount: candidate.entries.length,
+    requestedCount: entries.length,
     extractedCount: extractedCourses.length,
-    failedIds: candidate.entries
+    failedIds: entries
       .filter((entry) => !extractedCourses.some((course) => String(course.workdayCourseId) === String(entry.courseId)))
       .map((entry) => entry.courseId),
     courseNames: summarizeCourseNames(extractedCourses),

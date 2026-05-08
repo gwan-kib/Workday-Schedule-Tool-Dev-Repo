@@ -3,7 +3,7 @@ import { STATE } from "./core/state.js";
 import { ensureMount } from "./utilities/shadowMount.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
 
-import { extractCoursesData } from "./extraction/index.js";
+import { extractCoursesData } from "./extraction/extractCourses.js";
 import {
   extractWorkdayCourseIdFromElement,
   fetchCourseFromWorkdayId,
@@ -11,7 +11,7 @@ import {
   validateWorkdayCourseLink,
   WRONG_COURSE_LINK_ERROR,
 } from "./extraction/singleCourseImport.js";
-import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
+import { setupRegistrationAverageButtons } from "./api/averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
 import {
   buildCalendarViewUrl,
@@ -24,7 +24,7 @@ import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { createCourseColorController } from "./mainPanel/courseColorController.js";
 import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
 import { createPanelViewController } from "./mainPanel/panelViewController.js";
-import { createScheduleModalController, createSchedulePickerController } from "./mainPanel/scheduleModals.js";
+import { createScheduleModalController } from "./mainPanel/scheduleModals.js";
 import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courseViewSorting.js";
 import { renderCourseObjects } from "./mainPanel/renderCourseObjects.js";
 import { renderSchedule } from "./mainPanel/scheduleView.js";
@@ -54,7 +54,6 @@ debugLog({ local: { content: false } });
     await initializeHoverTooltipController(ui, STATE.view);
     const { setActiveView, toggleMainPanel } = createPanelViewController(ui, STATE.view);
     const { openScheduleModal } = createScheduleModalController(ui);
-    const { openSchedulePickerModal } = createSchedulePickerController(ui);
 
     // Rebuild the visual views from shared STATE whenever schedule data or view settings change.
     const updateScheduleView = () => {
@@ -85,14 +84,7 @@ debugLog({ local: { content: false } });
     // and preserve the current UI when requested.
     const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
       debug.log({ id: "loadCoursesFromPage.start" }, "Loading courses from page", { preserveExisting });
-      const extractedCourses = await extractCoursesData({
-        selectSchedule: (options) =>
-          openSchedulePickerModal({
-            title: "Select a schedule",
-            message: "Multiple schedule tables detected. Select the one you would like to load:",
-            options,
-          }),
-      });
+      const extractedCourses = await extractCoursesData();
 
       if (extractedCourses === null) {
         debug.warn({ id: "loadCoursesFromPage.noCourses" }, "No courses were extracted", { preserveExisting });
@@ -261,54 +253,45 @@ debugLog({ local: { content: false } });
 
     const importCourseFromRegistrationCard = async ({ row, link }) => {
       const courseId = extractWorkdayCourseIdFromElement(row);
-        if (courseId) {
-          try {
-            const course = await fetchCourseFromWorkdayId(courseId);
-            return addSingleCourseToSchedule(course);
-          } catch (error) {
-            debug.warn(
-              { id: "registrationCourseImport.idFetchFailed" },
-            "Could not fetch course by Workday ID",
-              {
-                courseId,
-                error: String(error?.message || error),
-              },
-            );
-            showFooterAlert("Could not load that course from Workday. Try again after opening the course details.", {
-              tone: "warn",
-            });
-            return false;
-          }
+      if (courseId) {
+        try {
+          const course = await fetchCourseFromWorkdayId(courseId);
+          return addSingleCourseToSchedule(course);
+        } catch (error) {
+          debug.warn({ id: "registrationCourseImport.idFetchFailed" }, "Could not fetch course by Workday ID", {
+            courseId,
+            error: String(error?.message || error),
+          });
+          showFooterAlert("Could not load that course from Workday. Try again after opening the course details.", {
+            tone: "warn",
+          });
+          return false;
         }
+      }
 
-        if (link) {
-          try {
-            const linkedCourse = await fetchCourseFromWorkdayLink(link);
-            return addSingleCourseToSchedule(linkedCourse);
-          } catch (error) {
-            debug.warn(
-              { id: "registrationCourseImport.linkFetchFailed" },
-            "Could not fetch course by Workday link",
-              {
-                error: String(error?.message || error),
-              },
-            );
-            showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
-            return false;
-          }
+      if (link) {
+        try {
+          const linkedCourse = await fetchCourseFromWorkdayLink(link);
+          return addSingleCourseToSchedule(linkedCourse);
+        } catch (error) {
+          debug.warn({ id: "registrationCourseImport.linkFetchFailed" }, "Could not fetch course by Workday link", {
+            error: String(error?.message || error),
+          });
+          showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
+          return false;
         }
+      }
 
-        showFooterAlert("Could not find a Workday course ID for that course card.", {
-          tone: "warn",
-        });
-        return false;
+      showFooterAlert("Could not find a Workday course ID for that course card.", {
+        tone: "warn",
+      });
+      return false;
     };
 
     const importCourseFromManualLink = async () => {
       const link = await openScheduleModal({
         title: "Add A Course",
-        message:
-          "Paste the Workday course section link.\n(for Saved Schedules, it's the link in the section column)",
+        message: "Paste the Workday course section link.\n(for Saved Schedules, it's the link in the section column)",
         confirmLabel: "Add A Course",
         showInput: true,
         showCancel: true,

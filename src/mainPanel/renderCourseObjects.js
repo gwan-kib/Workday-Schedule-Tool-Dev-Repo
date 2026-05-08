@@ -1,9 +1,6 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
-import {
-  buildUbcGradesCourseUrl,
-  fetchSectionGradesWithFallbackResult,
-} from "../averageGrades/gradesApiCall.js";
-import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../rateMyProfessor/rmpApi.js";
+import { buildUbcGradesCourseUrl, fetchSectionGradesWithFallbackResult } from "../api/averageGrades/gradesApiCall.js";
+import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../api/rateMyProfessor/rmpApi.js";
 
 const debug = debugFor("renderCourseObjects");
 debugLog({ local: { renderCourseObjects: false } });
@@ -446,7 +443,12 @@ export function renderCourseObjects(
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
     const sectionLabel = String(course.section_number || "").trim();
-    const isLectureCourse = !(course?.isLab || course?.isSeminar || course?.isDiscussion || isExperientialCourse(course));
+    const isLectureCourse = !(
+      course?.isLab ||
+      course?.isSeminar ||
+      course?.isDiscussion ||
+      isExperientialCourse(course)
+    );
 
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
     const codeInfo = splitCourseCode(course.code || "");
@@ -460,9 +462,10 @@ export function renderCourseObjects(
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
     const colorIndex = course?.colorIndex || (index % 7) + 1;
-    const subClass = course.isLab || course.isSeminar || course.isDiscussion || isExperientialCourse(course)
-      ? " course-card--sub"
-      : "";
+    const subClass =
+      course.isLab || course.isSeminar || course.isDiscussion || isExperientialCourse(course)
+        ? " course-card--sub"
+        : "";
     card.className = `course-card course-card--color-${colorIndex}${subClass}`;
     const courseConflictKey = normalizeConflictToken(course.code || course.title || "");
     const conflictPartners = conflictPartnersByCode.get(courseConflictKey) || [];
