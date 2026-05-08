@@ -111,13 +111,13 @@ function sameRows(leftRows, rightRows) {
   return leftRows.every((row, index) => row === rightRows[index]);
 }
 
-function getCandidateRoots() {
+function getCandidateRoots(root = document) {
   const uniqueRoots = [];
 
-  for (const root of $$(document, GRID_ROOT_SELECTOR)) {
-    if (!(root instanceof Element)) continue;
-    if (uniqueRoots.includes(root)) continue;
-    uniqueRoots.push(root);
+  for (const candidateRoot of $$(root, GRID_ROOT_SELECTOR)) {
+    if (!(candidateRoot instanceof Element)) continue;
+    if (uniqueRoots.includes(candidateRoot)) continue;
+    uniqueRoots.push(candidateRoot);
   }
 
   return uniqueRoots;
@@ -148,9 +148,9 @@ function scanRoot(root) {
   return { root, rows };
 }
 
-// Finds all Workday grid roots and rows that look like schedules. Input: none. Output: array of { root, rows }.
-export function findWorkdayGrids() {
-  const roots = getCandidateRoots();
+// Finds all Workday grid roots and rows that look like schedules. Input: optional root. Output: array of { root, rows }.
+export function findWorkdayGrids(root = document) {
+  const roots = getCandidateRoots(root);
   const matches = [];
 
   debug.log({ id: "findWorkdayGrid.roots" }, "Candidate roots found:", roots);
@@ -167,7 +167,7 @@ export function findWorkdayGrids() {
   return matches;
 }
 
-// Finds the first Workday grid root and rows. Input: none. Output: { root, rows } or null.
-export function findWorkdayGrid() {
-  return findWorkdayGrids()[0] || null;
+// Finds the first Workday grid root and rows. Input: optional root. Output: { root, rows } or null.
+export function findWorkdayGrid(root = document) {
+  return findWorkdayGrids(root)[0] || null;
 }

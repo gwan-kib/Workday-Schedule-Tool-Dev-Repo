@@ -50,11 +50,11 @@ function summarizeCourseNames(courses) {
   return names;
 }
 
-// Extracts courses from the Workday grids. Input: optional selector callback. Output: array of course objects or null on cancel.
-export async function extractCoursesData({ selectSchedule } = {}) {
+// Extracts courses from the Workday grids. Input: optional root/selector callback. Output: array of course objects or null on cancel.
+export async function extractCoursesData({ root = document, selectSchedule } = {}) {
   debug.log({ id: "extractCoursesData.start" }, "Starting course extraction");
 
-  const found = findWorkdayGrids();
+  const found = findWorkdayGrids(root);
 
   debug.log({ id: "extractCoursesData.tables" }, "findWorkdayGrid() result:", found);
 

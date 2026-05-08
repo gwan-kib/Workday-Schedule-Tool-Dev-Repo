@@ -4,6 +4,13 @@ import { ensureMount } from "./utilities/shadowMount.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
 
 import { extractCoursesData } from "./extraction/index.js";
+import {
+  extractCourseFromRegistrationCard,
+  extractWorkdayCourseIdFromElement,
+  fetchCourseFromWorkdayId,
+  fetchCourseFromWorkdayLink,
+  validateWorkdayCourseLink,
+} from "./extraction/singleCourseImport.js";
 import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
 import {
@@ -176,6 +183,107 @@ debugLog({ local: { content: false } });
         }, durationMs);
       }
     };
+
+    const getCourseIdentityKey = (course) =>
+      [
+        course?.code,
+        course?.section_number,
+      ]
+        .map((part) =>
+          String(part || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase(),
+        )
+        .join("|");
+
+    const addSingleCourseToSchedule = (course) => {
+      if (!course?.code || !course?.section_number) {
+        showFooterAlert("Could not add the course because its section details were incomplete.", { tone: "warn" });
+        return false;
+      }
+
+      const courseKey = getCourseIdentityKey(course);
+      if (STATE.courses.some((existing) => getCourseIdentityKey(existing) === courseKey)) {
+        showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "warn" });
+        return false;
+      }
+
+      // Add the course through the same state path used by full schedule imports so rendering,
+      // colors, conflict detection, search filtering, and exports stay consistent.
+      STATE.courses = [...STATE.courses, course];
+      courseColorController.assignCourseColors(STATE.courses);
+      STATE.currentSavedScheduleId = null;
+      STATE.currentScheduleName = null;
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      filterCourses(ui.searchInput.value);
+      renderAll();
+      showFooterAlert(`${course.code} ${course.section_number} added to the extension.`, { tone: "info" });
+      return true;
+    };
+
+    const importCourseFromRegistrationCard = async ({ row, link }) => {
+      if (link) {
+        try {
+          const linkedCourse = await fetchCourseFromWorkdayLink(link);
+          return addSingleCourseToSchedule(linkedCourse);
+        } catch (error) {
+          showFooterAlert(`Could not add that course: ${error.message}`, { tone: "warn" });
+          return false;
+        }
+      }
+
+      const courseId = extractWorkdayCourseIdFromElement(row);
+      if (courseId) {
+        try {
+          const linkedCourse = await fetchCourseFromWorkdayId(courseId);
+          return addSingleCourseToSchedule(linkedCourse);
+        } catch (error) {
+          debug.warn({ id: "registrationCourseImport.idFetchFailed" }, "Could not fetch course by Workday id", error);
+        }
+      }
+
+      const localCourse = extractCourseFromRegistrationCard(row);
+      if (localCourse) return addSingleCourseToSchedule(localCourse);
+
+      showFooterAlert("Could not parse that course card. Try opening the course details and using Add Course.", {
+        tone: "warn",
+      });
+      return false;
+    };
+
+    const importCourseFromManualLink = async () => {
+      const link = await openScheduleModal({
+        title: "Add Course",
+        message: "Paste the Workday URL copied from the course title.",
+        confirmLabel: "Add Course",
+        showInput: true,
+        showCancel: true,
+        inputLabel: "Course link",
+        inputPlaceholder: "https://...",
+      });
+      if (!link) return;
+
+      const validation = validateWorkdayCourseLink(link);
+      if (!validation.ok) {
+        showFooterAlert(validation.error, { tone: "warn" });
+        return;
+      }
+
+      if (ui.addCourseButton) ui.addCourseButton.disabled = true;
+      showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
+      try {
+        const course = await fetchCourseFromWorkdayLink(validation.url);
+        addSingleCourseToSchedule(course);
+      } catch (error) {
+        debug.warn({ id: "manualCourseImport.failed" }, "Manual course import failed", error);
+        showFooterAlert(`Could not add that course: ${error.message}`, { tone: "warn" });
+      } finally {
+        if (ui.addCourseButton) ui.addCourseButton.disabled = false;
+      }
+    };
+
+    on(ui.addCourseButton, "click", importCourseFromManualLink);
 
     let googleCalendarSignedIn = false;
 
@@ -468,7 +576,7 @@ debugLog({ local: { content: false } });
     renderAll();
 
     setActiveView(STATE.view.panel);
-    const cleanupAverageButtons = setupRegistrationAverageButtons();
+    const cleanupAverageButtons = setupRegistrationAverageButtons({ onAddCourse: importCourseFromRegistrationCard });
     if (typeof cleanupAverageButtons === "function") {
       debug.log({ id: "boot.averageButtonsReady" }, "Average button observer initialized");
       window.addEventListener("beforeunload", cleanupAverageButtons, { once: true });

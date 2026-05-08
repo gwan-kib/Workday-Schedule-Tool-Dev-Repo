@@ -22,7 +22,15 @@ export function createScheduleModalController(ui) {
     }
   };
 
-  const openScheduleModal = ({ title, message, confirmLabel = "Save", showInput = true, showCancel = true }) => {
+  const openScheduleModal = ({
+    title,
+    message,
+    confirmLabel = "Save",
+    showInput = true,
+    showCancel = true,
+    inputLabel = "Schedule name",
+    inputPlaceholder = "e.g. Fall semester plan",
+  }) => {
     if (!ui.saveModal) return Promise.resolve(null);
     debug.log({ id: "createScheduleModalController.open" }, "Opening schedule modal", {
       title,
@@ -34,6 +42,8 @@ export function createScheduleModalController(ui) {
     ui.saveModalTitle.textContent = title;
     ui.saveModalMessage.textContent = message;
     ui.saveModalConfirm.textContent = confirmLabel;
+    ui.saveModalField.querySelector(".schedule-modal-label").textContent = inputLabel;
+    ui.saveModalInput.placeholder = inputPlaceholder;
 
     ui.saveModalField.classList.toggle("is-hidden", !showInput);
     ui.saveModalCancel.classList.toggle("is-hidden", !showCancel);

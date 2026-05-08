@@ -68,6 +68,7 @@ export async function loadMainPanel(shadowRoot) {
     tableHead: shadowRoot.querySelector("#course-sortbar"),
 
     searchInput: shadowRoot.querySelector("#widget-search"),
+    addCourseButton: shadowRoot.querySelector("#widget-add-course"),
     refreshButton: shadowRoot.querySelector("#widget-refresh"),
     saveScheduleButton: shadowRoot.querySelector("#widget-save-schedule"),
     clearButton: shadowRoot.querySelector("#widget-clear"),

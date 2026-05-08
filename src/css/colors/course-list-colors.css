@@ -25,6 +25,17 @@
   border-color: var(--hex-brand-main-1);
 }
 
+.course-add-button {
+  color: var(--hex-neutral-1);
+  border-color: var(--hex-brand-main-1);
+  background: var(--hex-brand-main-1);
+}
+
+.course-add-button:hover:not([disabled]) {
+  color: var(--hex-brand-main-3);
+  background: var(--hex-brand-accent-4);
+}
+
 .course-list-empty {
   color: var(--hex-brand-main-1);
   background: var(--hex-brand-accent-1);
