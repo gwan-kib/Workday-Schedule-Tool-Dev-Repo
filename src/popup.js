@@ -11,6 +11,7 @@ import {
   persistSavedSchedules,
   togglePreferredSchedule,
 } from "./mainPanel/schedules/scheduleStorage.js";
+import { createFooterNoteController } from "./mainPanel/shell/footerNoteController.js";
 
 // Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
 const ui = {
@@ -25,6 +26,8 @@ const ui = {
   scheduleTermPill: document.querySelector("#popup-term-pill"),
   footerAlert: document.querySelector("#popup-footer-alert"),
 };
+
+ui.footerNotes = createFooterNoteController(ui.footerAlert);
 
 // Popup state mirrors the saved schedules in storage plus the schedule currently being previewed.
 const popupState = {

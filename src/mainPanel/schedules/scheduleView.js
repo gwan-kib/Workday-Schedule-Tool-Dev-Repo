@@ -1,5 +1,6 @@
 import { extractStartDate } from "../../extraction/meetingPatternsInfo.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
+import { createFooterNoteController } from "../shell/footerNoteController.js";
 import { detectScheduleConflicts } from "./scheduleCollisions.js";
 const debug = debugFor("scheduleView");
 debugLog({ local: { scheduleView: false } });
@@ -8,6 +9,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const START_HOUR = 8;
 const END_HOUR = 21;
 const SLOT_MINUTES = 30;
+const CONFLICT_FOOTER_NOTE_ID = "schedule-conflicts";
 
 const SLOTS = [];
 for (let h = START_HOUR; h < END_HOUR; h++) {
@@ -455,19 +457,29 @@ function buildConflictPartnerLookup(conflictBlocks = []) {
   return lookup;
 }
 
-function updateFooterConflictMessage(ui, conflictCodes) {
-  const alertEl = ui?.footerAlert || ui?.root?.querySelector("#schedule-conflict-alert");
-  if (!alertEl) return;
+function getFooterNoteController(ui) {
+  if (ui?.footerNotes) return ui.footerNotes;
 
+  const root = ui?.footerAlert || ui?.root?.querySelector("#schedule-footer-notes");
+  if (!root) return null;
+
+  ui.footerNotes = createFooterNoteController(root);
+  return ui.footerNotes;
+}
+
+function updateFooterConflictMessage(ui, conflictCodes) {
+  const footerNotes = getFooterNoteController(ui);
   const codes = Array.isArray(conflictCodes) ? conflictCodes.filter(Boolean) : [];
   if (!codes.length) {
-    alertEl.textContent = "";
-    alertEl.classList.add("is-hidden");
+    footerNotes?.removePersistent(CONFLICT_FOOTER_NOTE_ID);
     return;
   }
 
-  alertEl.textContent = `🚩 The following classes are in conflict: [${codes.join(", ")}].`;
-  alertEl.classList.remove("is-hidden");
+  footerNotes?.setPersistent(
+    CONFLICT_FOOTER_NOTE_ID,
+    `🚩 The following classes are in conflict: [${codes.join(", ")}].`,
+    { tone: "warn" },
+  );
 }
 function getActiveSemester(courses = []) {
   const counts = {};

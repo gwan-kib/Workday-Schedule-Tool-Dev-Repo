@@ -272,7 +272,11 @@ h3 {
   font-size: 13px;
 }
 
-.popup-alert {
+.popup-alert.footer-note-stack {
+  gap: 6px;
+}
+
+.popup-alert .footer-note {
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(185, 28, 28, 0.1);
@@ -280,15 +284,13 @@ h3 {
   font-size: 12px;
   font-weight: 700;
   border: 1px solid rgba(185, 28, 28, 0.2);
-}
-
-.popup-alert[data-tone="info"] {
+.popup-alert .footer-note[data-tone="info"] {
   background: rgba(37, 99, 235, 0.1);
   color: var(--hex-info-1);
   border-color: rgba(37, 99, 235, 0.25);
 }
 
-.popup-alert[data-tone="success"] {
+.popup-alert .footer-note[data-tone="success"] {
   background: rgba(22, 131, 71, 0.1);
   color: var(--hex-success-1);
   border-color: rgba(22, 131, 71, 0.25);

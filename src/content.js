@@ -21,6 +21,7 @@ import {
   requestSyncCoursesToCalendar,
 } from "./exportLogic/googleCalendar/calendarIntegration.js";
 import { loadMainPanel } from "./mainPanel/shell/loadMainPanel.js";
+import { createFooterNoteController } from "./mainPanel/shell/footerNoteController.js";
 import { createCourseColorController } from "./mainPanel/settings/courseColorController.js";
 import { initializeHoverTooltipController } from "./mainPanel/settings/hoverTooltipController.js";
 import { createPanelViewController } from "./mainPanel/shell/panelViewController.js";
@@ -50,6 +51,7 @@ debugLog({ local: { content: false } });
     // smaller controllers so this file mostly stays as the top-level coordinator.
     const shadowRoot = ensureMount();
     const ui = await loadMainPanel(shadowRoot);
+    ui.footerNotes = createFooterNoteController(ui.footerAlert);
     const courseColorController = await createCourseColorController(ui);
     await initializeHoverTooltipController(ui, STATE.view);
     const { setActiveView, toggleMainPanel } = createPanelViewController(ui, STATE.view);
@@ -163,20 +165,9 @@ debugLog({ local: { content: false } });
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     });
 
-    // Posts a transient status message into the widget footer; auto-clears after a few seconds.
-    let footerAlertTimeout = 0;
-    const showFooterAlert = (text, { tone = "info", durationMs = 6000 } = {}) => {
-      if (!ui.footerAlert) return;
-      clearTimeout(footerAlertTimeout);
-      ui.footerAlert.textContent = text;
-      ui.footerAlert.classList.remove("is-hidden");
-      ui.footerAlert.dataset.tone = tone;
-      if (durationMs > 0) {
-        footerAlertTimeout = setTimeout(() => {
-          ui.footerAlert.classList.add("is-hidden");
-          ui.footerAlert.textContent = "";
-        }, durationMs);
-      }
+    // Posts a transient status message into the widget footer without disturbing persistent notes.
+    const showFooterAlert = (text, { tone = "info", durationMs = 4000 } = {}) => {
+      return ui.footerNotes?.showTemporary(text, { tone, durationMs });
     };
 
     const getCourseIdentityKey = (course) =>
@@ -197,7 +188,7 @@ debugLog({ local: { content: false } });
 
       const courseKey = getCourseIdentityKey(course);
       if (STATE.courses.some((existing) => getCourseIdentityKey(existing) === courseKey)) {
-        showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "warn" });
+        showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "info" });
         return false;
       }
 
@@ -311,7 +302,7 @@ debugLog({ local: { content: false } });
       }
 
       if (ui.addCourseButton) ui.addCourseButton.disabled = true;
-      showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
+      const loadingNoteId = showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
       try {
         const course = await fetchCourseFromWorkdayLink(validation.url);
         addSingleCourseToSchedule(course);
@@ -319,6 +310,7 @@ debugLog({ local: { content: false } });
         debug.warn({ id: "manualCourseImport.failed" }, "Manual course import failed", error);
         showFooterAlert(getManualCourseImportFailureMessage(error), { tone: "warn" });
       } finally {
+        ui.footerNotes?.removeTemporary(loadingNoteId);
         if (ui.addCourseButton) ui.addCourseButton.disabled = false;
       }
     };
@@ -381,7 +373,7 @@ debugLog({ local: { content: false } });
           showFooterAlert("No courses to sync.", { tone: "warn" });
           return;
         }
-        showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
+        const syncingNoteId = showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
         try {
           const summary = await requestSyncCoursesToCalendar(STATE.filtered);
           const tone = summary.failed || summary.deleteFailed ? "warn" : "info";
@@ -398,6 +390,8 @@ debugLog({ local: { content: false } });
         } catch (error) {
           debug.error("Calendar sync failed", error);
           showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn" });
+        } finally {
+          ui.footerNotes?.removeTemporary(syncingNoteId);
         }
       }
     };
