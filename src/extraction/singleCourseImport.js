@@ -189,13 +189,16 @@ export function extractWorkdayCourseIdFromElement(root) {
 }
 
 function buildMeetingDisplay(meetingLines, isOnline) {
-  if (!meetingLines.length) return isOnline ? "No meeting time listed\nOnline" : "No meeting time listed";
+  if (!meetingLines.length) {
+    return isOnline ? "No meeting time listed\nOnline" : "No meeting time listed\nNo location listed";
+  }
 
   const meetingObj = formatMeetingLineForPanel(meetingLines[0]);
   if (isOnline) meetingObj.location = "Online";
 
   const meeting = [meetingObj.days, meetingObj.time].filter(Boolean).join(" | ");
-  return normalizeMeetingPatternsText(`${meeting}\n${meetingObj.location || (isOnline ? "Online" : "")}`);
+  const location = meetingObj.location || (isOnline ? "Online" : "No location listed");
+  return normalizeMeetingPatternsText(`${meeting}\n${location}`);
 }
 
 export function extractCourseFromWorkdayJson(data, { sourceUrl = "" } = {}) {
