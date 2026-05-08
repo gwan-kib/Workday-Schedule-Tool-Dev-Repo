@@ -3,7 +3,7 @@ import {
   extractStartDate,
   formatMeetingLineForPanel,
   normalizeMeetingPatternsText,
-} from "./parsers/meetingPatternsInfo.js";
+} from "./meetingPatternsInfo.js";
 
 const debug = debugFor("singleCourseImport");
 debugLog({ local: { singleCourseImport: false } });
