@@ -1,5 +1,5 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
-import { parseSectionLinkString } from "../extraction/parsers/sectionLinkInfo.js";
+import { fetchCourseFromWorkdayId } from "../extraction/singleCourseImport.js";
 
 const debug = debugFor("gradesApiCall");
 debugLog({ local: { gradesApiCall: false } });
@@ -160,20 +160,45 @@ function parseCourseCode(code) {
   return { subject, course };
 }
 
-// Parses a course prompt string. Input: prompt text string. Output: course info object or null.
-export function parseCourseInfoFromPromptText(promptText) {
-  const parsed = parseSectionLinkString(promptText);
-  if (!parsed) return null;
-
-  const codeInfo = parseCourseCode(parsed.code);
+// Parses average lookup info from the extension's normalized course object. Input: course object. Output: course info or null.
+export function parseCourseInfoFromCourseObject(courseData) {
+  const codeInfo = parseCourseCode(courseData?.code);
   if (!codeInfo) return null;
 
   return {
     ...codeInfo,
-    section: normalizeSection(parsed.section_number),
-    title: parsed.title,
-    full: parsed.full,
+    section: normalizeSection(courseData?.section_number),
+    title: courseData?.title || "",
+    full: [courseData?.code, courseData?.section_number, courseData?.title].filter(Boolean).join(" - "),
+    workdayCourseId: courseData?.workdayCourseId || "",
   };
+}
+
+// Resolves average lookup info from the Workday course ID. Input: courseId string. Output: course info or null.
+export async function resolveCourseInfoForAverage({ courseId } = {}) {
+  if (!courseId) {
+    debug.warn({ id: "resolveCourseInfoForAverage.noId" }, "Could not resolve course info without a Workday ID");
+    return null;
+  }
+
+  try {
+    const courseData = await fetchCourseFromWorkdayId(courseId);
+    const courseInfo = parseCourseInfoFromCourseObject(courseData);
+    if (courseInfo) {
+      debug.log({ id: "resolveCourseInfoForAverage.idSuccess" }, "Resolved course info from Workday ID", {
+        courseId,
+        courseInfo,
+      });
+      return courseInfo;
+    }
+  } catch (error) {
+    debug.warn({ id: "resolveCourseInfoForAverage.idFailed" }, "Could not resolve course info from Workday ID", {
+      courseId,
+      error: String(error?.message || error),
+    });
+  }
+
+  return null;
 }
 
 // Reads term campus info from text. Input: page text string. Output: { campus, yearsession } or null.

@@ -1,44 +1,26 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
-import { parseSectionLinkString } from "./parsers/sectionLinkInfo.js";
 import {
-  extractMeetingLines,
   extractStartDate,
   formatMeetingLineForPanel,
-  isOnlineDelivery,
   normalizeMeetingPatternsText,
 } from "./parsers/meetingPatternsInfo.js";
 
 const debug = debugFor("singleCourseImport");
 debugLog({ local: { singleCourseImport: false } });
 
-const SECTION_PROMPT_SELECTOR = '[data-automation-id="promptOption"]';
-const COMPOSITE_SUBHEADER_SELECTOR = '[data-automation-id="compositeSubHeaderOne"]';
 const WORKDAY_HOST_RE = /(^|\.)myworkday\.com$/i;
-const WORKDAY_JSON_LABELS = new Set(["Course", "Instructor Teaching", "Instructional Formats", "Meeting Patterns"]);
-const MEETING_LINE_RE =
-  /\b\d{4}-\d{2}-\d{2}\s*-\s*\d{4}-\d{2}-\d{2}\b(?:(?!\b\d{4}-\d{2}-\d{2}\s*-\s*\d{4}-\d{2}-\d{2}\b)[\s\S])*?\b\d{1,2}:\d{2}\s*[ap]\.?m\.?\s*-\s*\d{1,2}:\d{2}\s*[ap]\.?m\.?/gi;
-
-const readElementLabel = (el) =>
-  (
-    el?.getAttribute?.("data-automation-label") ||
-    el?.getAttribute?.("title") ||
-    el?.getAttribute?.("aria-label") ||
-    el?.textContent ||
-    ""
-  ).trim();
-
+const WORKDAY_JSON_LABELS = new Set([
+  "Course",
+  "Instructor Teaching",
+  "Instructional Formats",
+  "Meeting Patterns",
+  "Delivery Mode",
+]);
 const normalizeSpaces = (value) =>
   String(value || "")
     .replace(/\u00A0/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-
-const getReadableLines = (root) =>
-  String(root?.innerText || root?.textContent || "")
-    .replace(/\u00A0/g, " ")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
 
 const hasText = (value, pattern) => pattern.test(String(value || ""));
 const labLike = (text) => hasText(text, /\b(laboratory|lab)\b/i);
@@ -106,32 +88,54 @@ function buildWorkdayJsonUrlFromId(courseId, baseUrl = window.location.href) {
   return `${base.origin}/${tenant}/inst/1$15194/15194$${courseId}.htmld`;
 }
 
-function parseSectionTitleText(titleText, courseText = "") {
-  const direct = parseSectionLinkString(titleText);
-  if (direct) return direct;
+function parseWorkdaySectionLabel(labelText) {
+  const text = normalizeSpaces(labelText).replace(/\s*\n\s*/g, " ");
+  if (!text) return null;
 
-  const match = normalizeSpaces(titleText).match(/^(.+?)-(\S+)\s*-\s*(.+)$/);
+  const match = text.match(/^\s*([A-Z][A-Z0-9_]*\s*\d{3}[A-Z]?)\s*-\s*(\S+)(?:\s*[-–—]\s*(.+))?\s*$/i);
   if (match) {
     return {
       code: normalizeSpaces(match[1]),
       section_number: normalizeSpaces(match[2]),
-      title: normalizeSpaces(match[3]).replace(/\s*:\s*/g, ":\n"),
-      full: titleText,
-    };
-  }
-
-  const courseParts = normalizeSpaces(courseText).split(/\s+-\s+/);
-  const sectionMatch = normalizeSpaces(titleText).match(/^[^-]+-(\S+)/);
-  if (courseParts[0] && sectionMatch?.[1]) {
-    return {
-      code: courseParts[0],
-      section_number: sectionMatch[1],
-      title: courseParts.slice(1).join(" - "),
-      full: titleText || courseText,
+      title: normalizeSpaces(match[3] || "").replace(/\s*:\s*/g, ":\n"),
+      full: text,
     };
   }
 
   return null;
+}
+
+function parseCourseLabel(labelText) {
+  const text = normalizeSpaces(labelText).replace(/\s*\n\s*/g, " ");
+  const match = text.match(/^\s*([A-Z][A-Z0-9_]*\s*\d{3}[A-Z]?)(?:\s*[-–—]\s*(.+))?\s*$/i);
+  if (!match) return null;
+
+  return {
+    code: normalizeSpaces(match[1]),
+    title: normalizeSpaces(match[2] || "").replace(/\s*:\s*/g, ":\n"),
+    full: text,
+  };
+}
+
+function parseSectionTitleText(titleText, courseText = "") {
+  const direct = parseWorkdaySectionLabel(titleText);
+  if (direct?.title) return direct;
+
+  const courseDetails = parseCourseLabel(courseText);
+  const sectionMatch =
+    normalizeSpaces(titleText).match(/^[A-Z][A-Z0-9_]*\s*\d{3}[A-Z]?\s*-\s*(\S+)/i) ||
+    normalizeSpaces(titleText).match(/\bSection\s+(\S+)/i);
+
+  if (courseDetails?.code && (direct?.section_number || sectionMatch?.[1])) {
+    return {
+      code: courseDetails.code,
+      section_number: direct?.section_number || normalizeSpaces(sectionMatch[1]),
+      title: direct?.title || courseDetails.title,
+      full: normalizeSpaces(titleText || courseText),
+    };
+  }
+
+  return direct;
 }
 
 function createCourseObject({
@@ -164,74 +168,19 @@ function createCourseObject({
   };
 }
 
-function findSectionDetails(root) {
-  const prompts = Array.from(root?.querySelectorAll?.(SECTION_PROMPT_SELECTOR) || []);
-
-  for (const prompt of prompts) {
-    const details = parseSectionLinkString(readElementLabel(prompt));
-    if (details) return { details, prompt };
-  }
-
-  const textDetails = parseSectionLinkString(normalizeSpaces(root?.innerText || root?.textContent || ""));
-  return textDetails ? { details: textDetails, prompt: null } : null;
+export function parseWorkdayCourseIdFromAutomationId(automationId) {
+  const match = String(automationId || "").match(/^selectedItem_15194\$(\d+)$/);
+  return match?.[1] || "";
 }
 
 export function extractWorkdayCourseIdFromElement(root) {
-  const selectedCourseEl = root?.querySelector?.('[data-automation-id^="selectedItem_15194"]');
+  const selectedCourseEl = root?.matches?.('[data-automation-id^="selectedItem_15194$"]')
+    ? root
+    : root?.querySelector?.('[data-automation-id^="selectedItem_15194$"]');
   const automationId = selectedCourseEl?.getAttribute?.("data-automation-id") || "";
-  const courseId = automationId.split("_")[1]?.split("$")[1] || "";
+  const courseId = parseWorkdayCourseIdFromAutomationId(automationId);
 
   return courseId;
-}
-
-function splitCompositeSubHeader(root) {
-  const subHeaderText = readElementLabel(root?.querySelector?.(COMPOSITE_SUBHEADER_SELECTOR));
-  return subHeaderText
-    .split("|")
-    .map((part) => normalizeSpaces(part))
-    .filter(Boolean);
-}
-
-function readValueAfterLabel(lines, labels) {
-  const labelSet = new Set(labels.map((label) => label.toLowerCase()));
-  const stopLabelRe = /^(instructor|instructors|meeting patterns?|delivery mode|instructional format|status|section|credits?)\b/i;
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const compact = line.replace(/:$/, "").toLowerCase();
-
-    if (labelSet.has(compact)) {
-      const next = lines.slice(index + 1).find((candidate) => candidate && !stopLabelRe.test(candidate));
-      if (next) return next;
-    }
-
-    const inlineMatch = line.match(new RegExp(`^(${labels.join("|")})\\s*:?\\s+(.+)$`, "i"));
-    if (inlineMatch?.[2]) return inlineMatch[2].trim();
-  }
-
-  return "";
-}
-
-function readInstructionalFormat(root, lines) {
-  const compositeFormat = splitCompositeSubHeader(root)[0] || "";
-  const labelText = readValueAfterLabel(lines, ["Instructional Format", "Format"]);
-  const source = normalizeSpaces(compositeFormat || labelText || "");
-
-  if (labLike(source)) return "Lab";
-  if (seminarLike(source)) return "Seminar";
-  if (discussionLike(source)) return "Discussion";
-  if (/\blecture\b/i.test(source)) return "Lecture";
-
-  return source;
-}
-
-function extractMeetingLinesFromText(lines) {
-  const text = lines.join("\n");
-  const matches = text.match(MEETING_LINE_RE) || [];
-
-  return matches
-    .map((line) => normalizeSpaces(line.replace(/\n/g, " ")))
-    .filter((line) => /\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/i.test(line));
 }
 
 function buildMeetingDisplay(meetingLines, isOnline) {
@@ -242,44 +191,6 @@ function buildMeetingDisplay(meetingLines, isOnline) {
 
   const meeting = [meetingObj.days, meetingObj.time].filter(Boolean).join(" | ");
   return normalizeMeetingPatternsText(`${meeting}\n${meetingObj.location || (isOnline ? "Online" : "")}`);
-}
-
-// Extracts one course from a Workday registration card/detail root. Input: Element/Document. Output: course object or null.
-export function extractCourseFromRegistrationCard(root) {
-  if (!root) return null;
-
-  const sectionMatch = findSectionDetails(root);
-  if (!sectionMatch?.details) {
-    debug.warn({ id: "extractCourseFromRegistrationCard.noSection" }, "Could not find section link text");
-    return null;
-  }
-
-  const lines = getReadableLines(root);
-  const instructionalFormat = readInstructionalFormat(root, lines);
-  const instructor = readValueAfterLabel(lines, ["Instructor", "Instructors"]) || "N/A";
-  const meetingLines = extractMeetingLines(root).concat(extractMeetingLinesFromText(lines));
-  const uniqueMeetingLines = [...new Set(meetingLines)];
-  const isOnline = isOnlineDelivery(root) || lines.some((line) => /online learning/i.test(line));
-
-  if (!uniqueMeetingLines.length) {
-    debug.log({ id: "extractCourseFromRegistrationCard.noMeeting" }, "No meeting lines found; adding unscheduled course", {
-      section: sectionMatch.details.full,
-    });
-  }
-
-  const course = {
-    ...createCourseObject({
-      sectionDetails: sectionMatch.details,
-      instructors: instructor && instructor !== "N/A" ? [instructor] : [],
-      instructionalFormat,
-      meetingLines: uniqueMeetingLines,
-      isOnline,
-      workdayCourseId: extractWorkdayCourseIdFromElement(root),
-    }),
-  };
-
-  debug.log({ id: "extractCourseFromRegistrationCard.result" }, "Extracted single course", course);
-  return course;
 }
 
 export function extractCourseFromWorkdayJson(data, { sourceUrl = "" } = {}) {
@@ -296,6 +207,7 @@ export function extractCourseFromWorkdayJson(data, { sourceUrl = "" } = {}) {
   const instructors = readNodeInstances(findNode("Instructor Teaching"));
   const instructionalFormat = readNodeInstances(findNode("Instructional Formats"))[0] || "";
   const meetingLines = readNodeInstances(findNode("Meeting Patterns"));
+  const deliveryModes = readNodeInstances(findNode("Delivery Mode"));
   const workdayCourseId = getCourseIdFromUrl(sourceUrl);
 
   const course = createCourseObject({
@@ -303,7 +215,7 @@ export function extractCourseFromWorkdayJson(data, { sourceUrl = "" } = {}) {
     instructors,
     instructionalFormat,
     meetingLines,
-    isOnline: false,
+    isOnline: deliveryModes.some((mode) => /online learning/i.test(mode)),
     workdayCourseId,
   });
 

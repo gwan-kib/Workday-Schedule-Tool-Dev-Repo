@@ -1,9 +1,10 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 import {
   fetchSectionGradesWithFallback,
-  parseCourseInfoFromPromptText,
   readTermCampus,
+  resolveCourseInfoForAverage,
 } from "./gradesApiCall.js";
+import { extractWorkdayCourseIdFromElement } from "../extraction/singleCourseImport.js";
 
 const registrationCardSelector = 'li[data-automation-id="compositeContainer"]';
 const averageButtonSelector = registrationCardSelector;
@@ -212,7 +213,12 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
     };
   };
 
-  const createAverageButton = ({ courseInfo = null, mode = "interactive", staticReason = null } = {}) => {
+  const createAverageButton = ({
+    courseInfo = null,
+    courseId = "",
+    mode = "interactive",
+    staticReason = null,
+  } = {}) => {
     debug.log({ id: "setupRegistrationAverageButtons.createButton" }, "Creating registration average button", {
       courseInfo,
       mode,
@@ -251,24 +257,36 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
       }
 
       try {
+        const resolvedCourseInfo = await resolveCourseInfoForAverage({ courseId });
+
+        if (!resolvedCourseInfo) {
+          debug.warn({ id: "setupRegistrationAverageButtons.fetch.noCourseInfo" }, "Could not resolve course info", {
+            courseId,
+          });
+          button.textContent = "Average:\nunavailable";
+          return;
+        }
+
         const data = await fetchSectionGradesWithFallback(
           {
             campus: termCampus.campus,
             yearsession: termCampus.yearsession,
-            subject: courseInfo.subject,
-            course: courseInfo.course,
-            section: courseInfo.section,
+            subject: resolvedCourseInfo.subject,
+            course: resolvedCourseInfo.course,
+            section: resolvedCourseInfo.section,
           },
           { isValid: hasValidAverage },
         );
 
         if (!data) {
-          debug.warn({ id: "setupRegistrationAverageButtons.fetch.noData" }, "No average data returned", { courseInfo });
+          debug.warn({ id: "setupRegistrationAverageButtons.fetch.noData" }, "No average data returned", {
+            courseInfo: resolvedCourseInfo,
+          });
           button.textContent = "Average:\nunavailable";
         } else {
           const average = extractAverage(data);
           debug.log({ id: "setupRegistrationAverageButtons.fetch.success" }, "Average data loaded", {
-            courseInfo,
+            courseInfo: resolvedCourseInfo,
             average,
           });
           button.textContent = buildAverageLabel(average);
@@ -348,15 +366,9 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
     }
 
     const promptOption = getCoursePromptOption(row) || headerWrapper;
-    const promptText =
-      promptOption.getAttribute?.("data-automation-label") ||
-      promptOption.getAttribute?.("title") ||
-      promptOption.getAttribute?.("aria-label") ||
-      promptOption.textContent ||
-      "";
+    const courseId = extractWorkdayCourseIdFromElement(row);
 
-    const courseInfo = parseCourseInfoFromPromptText(promptText);
-    if (!courseInfo) {
+    if (!courseId) {
       const fallbackButton = createAverageButton({
         mode: "static",
         staticReason: "unavailable",
@@ -364,8 +376,8 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
       stack?.appendChild(fallbackButton);
       ensureCourseImportButton(row, { headerWrapper, promptOption });
       debug.warn(
-        { id: "setupRegistrationAverageButtons.ensureButton.noCourseInfo" },
-        "Could not parse course info for lecture row; inserted unavailable average button",
+        { id: "setupRegistrationAverageButtons.ensureButton.noCourseId" },
+        "Could not find Workday course ID for lecture row; inserted unavailable average button",
         {
           rowPreview: buttonState.rowPreview || rowPreview,
         },
@@ -373,11 +385,11 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
       return;
     }
 
-    const button = createAverageButton({ courseInfo, mode: "interactive" });
+    const button = createAverageButton({ courseId, mode: "interactive" });
     stack?.appendChild(button);
-    ensureCourseImportButton(row, { headerWrapper, promptOption, courseInfo });
+    ensureCourseImportButton(row, { headerWrapper, promptOption });
     debug.log({ id: "setupRegistrationAverageButtons.ensureButton.inserted" }, "Inserted interactive registration average button", {
-      courseInfo,
+      courseId,
       rowPreview: buttonState.rowPreview || rowPreview,
     });
   };

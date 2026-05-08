@@ -5,7 +5,6 @@ import { debugFor, debugLog } from "./utilities/debugTool.js";
 
 import { extractCoursesData } from "./extraction/index.js";
 import {
-  extractCourseFromRegistrationCard,
   extractWorkdayCourseIdFromElement,
   fetchCourseFromWorkdayId,
   fetchCourseFromWorkdayLink,
@@ -185,10 +184,7 @@ debugLog({ local: { content: false } });
     };
 
     const getCourseIdentityKey = (course) =>
-      [
-        course?.code,
-        course?.section_number,
-      ]
+      (course?.workdayCourseId ? [`id:${course.workdayCourseId}`] : [course?.code, course?.section_number])
         .map((part) =>
           String(part || "")
             .replace(/\s+/g, " ")
@@ -223,33 +219,48 @@ debugLog({ local: { content: false } });
     };
 
     const importCourseFromRegistrationCard = async ({ row, link }) => {
-      if (link) {
-        try {
-          const linkedCourse = await fetchCourseFromWorkdayLink(link);
-          return addSingleCourseToSchedule(linkedCourse);
-        } catch (error) {
-          showFooterAlert(`Could not add that course: ${error.message}`, { tone: "warn" });
-          return false;
-        }
-      }
-
       const courseId = extractWorkdayCourseIdFromElement(row);
-      if (courseId) {
-        try {
-          const linkedCourse = await fetchCourseFromWorkdayId(courseId);
-          return addSingleCourseToSchedule(linkedCourse);
-        } catch (error) {
-          debug.warn({ id: "registrationCourseImport.idFetchFailed" }, "Could not fetch course by Workday id", error);
+        if (courseId) {
+          try {
+            const course = await fetchCourseFromWorkdayId(courseId);
+            return addSingleCourseToSchedule(course);
+          } catch (error) {
+            debug.warn(
+              { id: "registrationCourseImport.idFetchFailed" },
+            "Could not fetch course by Workday ID",
+              {
+                courseId,
+                error: String(error?.message || error),
+              },
+            );
+            showFooterAlert("Could not load that course from Workday. Try again after opening the course details.", {
+              tone: "warn",
+            });
+            return false;
+          }
         }
-      }
 
-      const localCourse = extractCourseFromRegistrationCard(row);
-      if (localCourse) return addSingleCourseToSchedule(localCourse);
+        if (link) {
+          try {
+            const linkedCourse = await fetchCourseFromWorkdayLink(link);
+            return addSingleCourseToSchedule(linkedCourse);
+          } catch (error) {
+            debug.warn(
+              { id: "registrationCourseImport.linkFetchFailed" },
+            "Could not fetch course by Workday link",
+              {
+                error: String(error?.message || error),
+              },
+            );
+            showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
+            return false;
+          }
+        }
 
-      showFooterAlert("Could not parse that course card. Try opening the course details and using Add Course.", {
-        tone: "warn",
-      });
-      return false;
+        showFooterAlert("Could not find a Workday course ID for that course card.", {
+          tone: "warn",
+        });
+        return false;
     };
 
     const importCourseFromManualLink = async () => {
