@@ -1,4 +1,4 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("calendar-event-builder");
 debugLog({ local: { "calendar-event-builder": false } });

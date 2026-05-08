@@ -1,5 +1,5 @@
-import { on } from "../utilities/dom.js";
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { on } from "../../utilities/dom.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("scheduleModals");
 debugLog({ local: { scheduleModals: false } });

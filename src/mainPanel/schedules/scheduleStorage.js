@@ -1,4 +1,4 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 const debug = debugFor("scheduleStorage");
 debugLog({ local: { scheduleStorage: false } });
 

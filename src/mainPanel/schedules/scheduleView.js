@@ -1,5 +1,5 @@
-import { extractStartDate } from "../extraction/meetingPatternsInfo.js";
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { extractStartDate } from "../../extraction/meetingPatternsInfo.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { detectScheduleConflicts } from "./scheduleCollisions.js";
 const debug = debugFor("scheduleView");
 debugLog({ local: { scheduleView: false } });

@@ -2,15 +2,15 @@ import {
   applyCourseColorAssignments,
   captureCourseColorPalettes,
   normalizeCourseColorAssignments,
-} from "./mainPanel/courseColorSettings.js";
-import { renderSchedule } from "./mainPanel/scheduleView.js";
+} from "./mainPanel/settings/courseColorSettings.js";
+import { renderSchedule } from "./mainPanel/schedules/scheduleView.js";
 import {
   formatScheduleMeta,
   getPreferredSchedule,
   loadSavedSchedules,
   persistSavedSchedules,
   togglePreferredSchedule,
-} from "./mainPanel/scheduleStorage.js";
+} from "./mainPanel/schedules/scheduleStorage.js";
 
 // Cache the popup's small set of DOM nodes once so render helpers can stay focused on state updates.
 const ui = {

@@ -19,15 +19,15 @@ import {
   requestDisconnectCalendar,
   requestSignInCalendar,
   requestSyncCoursesToCalendar,
-} from "./googleCalendar/calendarIntegration.js";
-import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
-import { createCourseColorController } from "./mainPanel/courseColorController.js";
-import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
-import { createPanelViewController } from "./mainPanel/panelViewController.js";
-import { createScheduleModalController } from "./mainPanel/scheduleModals.js";
-import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courseViewSorting.js";
-import { renderCourseObjects } from "./mainPanel/renderCourseObjects.js";
-import { renderSchedule } from "./mainPanel/scheduleView.js";
+} from "./exportLogic/googleCalendar/calendarIntegration.js";
+import { loadMainPanel } from "./mainPanel/shell/loadMainPanel.js";
+import { createCourseColorController } from "./mainPanel/settings/courseColorController.js";
+import { initializeHoverTooltipController } from "./mainPanel/settings/hoverTooltipController.js";
+import { createPanelViewController } from "./mainPanel/shell/panelViewController.js";
+import { createScheduleModalController } from "./mainPanel/schedules/scheduleModals.js";
+import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courses/courseViewSorting.js";
+import { renderCourseObjects } from "./mainPanel/courses/renderCourseObjects.js";
+import { renderSchedule } from "./mainPanel/schedules/scheduleView.js";
 import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
@@ -36,7 +36,7 @@ import {
   persistSavedSchedules,
   renderSavedSchedules,
   togglePreferredSchedule,
-} from "./mainPanel/scheduleStorage.js";
+} from "./mainPanel/schedules/scheduleStorage.js";
 
 const debug = debugFor("content");
 debugLog({ local: { content: false } });
