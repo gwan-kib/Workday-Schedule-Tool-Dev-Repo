@@ -318,6 +318,72 @@
   transition: all 0.2s ease;
 }
 
+.course-card__color-picker {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.course-card__color-button,
+.course-card__color-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.course-card__color-button {
+  width: 34px;
+  height: 34px;
+  border: 2px solid;
+  border-radius: 100px;
+  transition: all 0.2s ease;
+}
+
+.course-card__color-swatch,
+.course-card__color-option-swatch {
+  display: block;
+  border: 2px solid;
+  border-radius: 100px;
+}
+
+.course-card__color-swatch {
+  width: 20px;
+  height: 20px;
+}
+
+.course-card__color-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 10;
+
+  display: none;
+  grid-template-columns: repeat(4, 28px);
+  gap: 6px;
+  padding: 8px;
+  border: 2px solid;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+.course-card__color-picker.is-open .course-card__color-menu {
+  display: grid;
+}
+
+.course-card__color-option {
+  width: 28px;
+  height: 28px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+
+.course-card__color-option-swatch {
+  width: 16px;
+  height: 16px;
+}
+
 .course-card__delete-button .material-symbols-rounded {
   font-size: 20px;
   line-height: 1;

@@ -58,54 +58,6 @@
   outline-color: var(--hex-brand-accent-6);
 }
 
-.widget-panel[data-panel="settings-panel"] .course-color-label {
-  color: var(--hex-brand-main-1);
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-select-button {
-  background-color: var(--hex-neutral-1);
-  color: var(--hex-brand-main-1);
-  border-color: var(--hex-brand-accent-6);
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-select-button:hover,
-.widget-panel[data-panel="settings-panel"] .course-color-select.is-open .course-color-select-button {
-  background-color: var(--hex-neutral-1);
-  color: var(--hex-brand-main-1);
-  border-color: var(--hex-brand-accent-6);
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-select-button:focus-visible {
-  outline: 2px solid var(--hex-brand-accent-6);
-  outline-offset: 2px;
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-select-menu {
-  background: var(--hex-brand-accent-1);
-  border-color: var(--hex-brand-main-2);
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-select-option {
-  background: var(--hex-brand-accent-4);
-  color: var(--hex-brand-main-1);
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-select-option:hover,
-.widget-panel[data-panel="settings-panel"] .course-color-select-option:focus-visible {
-  background: var(--hex-brand-accent-6);
-  color: var(--hex-brand-accent-1);
-  outline: none;
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-select-option.is-selected {
-  border-color: var(--hex-brand-main-2);
-}
-
-.widget-panel[data-panel="settings-panel"] .course-color-swatch {
-  background: var(--hex-brand-accent-2);
-  border-color: var(--hex-brand-accent-6);
-}
-
 .widget-panel[data-panel="settings-panel"] .settings-tooltip-toggle {
   background: var(--hex-neutral-1);
   border-color: var(--hex-brand-accent-6);

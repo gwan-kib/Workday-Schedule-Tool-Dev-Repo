@@ -106,6 +106,33 @@
   border-color: var(--hex-danger-1);
 }
 
+.course-card__color-button {
+  background: var(--hex-neutral-1);
+  border-color: var(--course-card-border);
+}
+
+.course-card__color-button:hover,
+.course-card__color-picker.is-open .course-card__color-button {
+  background: var(--course-card-chip-bg);
+}
+
+.course-card__color-menu {
+  background: var(--hex-neutral-1);
+  border-color: var(--course-card-border);
+}
+
+.course-card__color-option {
+  background: var(--hex-neutral-1);
+  border-color: transparent;
+}
+
+.course-card__color-option:hover,
+.course-card__color-option:focus-visible,
+.course-card__color-option.is-selected {
+  background: var(--course-card-chip-bg);
+  border-color: var(--course-card-border);
+}
+
 .course-card__rmp-button:hover:not([disabled]),
 .course-card__avg-button:hover:not([disabled]) {
   background: var(--course-card-chip-bg);

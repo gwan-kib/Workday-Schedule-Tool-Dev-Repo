@@ -19,6 +19,7 @@ const normalizeSpaces = (value) =>
     .replace(/\s+/g, " ")
     .trim();
 const isValidCourseIndex = (value) => Number.isInteger(value) && value >= 1;
+export const isValidCourseColorIndex = isValidPaletteId;
 
 export const normalizeCourseColorAssignments = (value) => {
   if (!Array.isArray(value)) return [...DEFAULT_COURSE_COLOR_ASSIGNMENTS];
@@ -54,19 +55,22 @@ const fallbackCourseGroupKey = (course, index) => {
   return identity || `course:${index}`;
 };
 
-const isLectureCourse = (course) =>
+export const getCourseGroupKey = (course, index = 0) =>
+  normalizeCourseGroupKey(course) || fallbackCourseGroupKey(course, index);
+
+export const isLectureCourse = (course) =>
   !(course?.isLab || course?.isSeminar || course?.isDiscussion || course?.isExperiential || experientialLike(course));
 
 const colorIndexForCourseIndex = (courseIndex) => ((courseIndex - 1) % COURSE_COLOR_COUNT) + 1;
 
-function collectCourseGroups(courses) {
+export function collectCourseGroups(courses) {
   const groupsByKey = new Map();
 
   courses.forEach((course, index) => {
     if (!course) return;
 
     const stableKey = normalizeCourseGroupKey(course);
-    const registryKey = stableKey || fallbackCourseGroupKey(course, index);
+    const registryKey = getCourseGroupKey(course, index);
 
     if (stableKey) course.courseGroupKey = stableKey;
     else delete course.courseGroupKey;
@@ -79,15 +83,26 @@ function collectCourseGroups(courses) {
         firstIndex: index,
         firstLectureIndex: Number.POSITIVE_INFINITY,
         requestedCourseIndex: null,
+        manualColorIndex: null,
+        representativeCourse: course,
       });
     }
 
     const group = groupsByKey.get(registryKey);
     group.courses.push(course);
-    if (isLectureCourse(course)) group.firstLectureIndex = Math.min(group.firstLectureIndex, index);
+    if (isLectureCourse(course)) {
+      group.firstLectureIndex = Math.min(group.firstLectureIndex, index);
+      if (!isLectureCourse(group.representativeCourse) || index <= group.firstLectureIndex) {
+        group.representativeCourse = course;
+      }
+    }
 
     if (group.requestedCourseIndex == null && isValidCourseIndex(course.courseIndex)) {
       group.requestedCourseIndex = course.courseIndex;
+    }
+
+    if (group.manualColorIndex == null && isValidPaletteId(course.manualColorIndex)) {
+      group.manualColorIndex = course.manualColorIndex;
     }
   });
 
@@ -129,11 +144,14 @@ export function assignCourseIndexesAndColors(courses) {
   });
 
   groups.forEach((group) => {
-    const colorIndex = colorIndexForCourseIndex(group.courseIndex);
+    const hasManualColor = isValidPaletteId(group.manualColorIndex);
+    const colorIndex = hasManualColor ? group.manualColorIndex : colorIndexForCourseIndex(group.courseIndex);
     group.courses.forEach((course) => {
       course.courseIndex = group.courseIndex;
       course.colorIndex = colorIndex;
       if (group.stableKey) course.courseGroupKey = group.stableKey;
+      if (hasManualColor) course.manualColorIndex = colorIndex;
+      else delete course.manualColorIndex;
     });
   });
 
@@ -146,6 +164,28 @@ export function assignCourseIndexesAndColors(courses) {
 // Backwards-compatible name used by the panel controller and existing import paths.
 export function assignCourseColors(courses) {
   assignCourseIndexesAndColors(courses);
+}
+
+export function getCourseGroupRepresentatives(courses) {
+  const representatives = new WeakSet();
+  collectCourseGroups(courses).forEach((group) => {
+    if (group.representativeCourse) representatives.add(group.representativeCourse);
+  });
+  return representatives;
+}
+
+export function assignManualCourseGroupColor(courses, targetCourse, colorIndex) {
+  if (!Array.isArray(courses) || !targetCourse || !isValidPaletteId(colorIndex)) return false;
+
+  const targetGroup = collectCourseGroups(courses).find((group) => group.courses.includes(targetCourse));
+  if (!targetGroup) return false;
+
+  targetGroup.courses.forEach((course) => {
+    course.manualColorIndex = colorIndex;
+    course.colorIndex = colorIndex;
+  });
+
+  return true;
 }
 
 // Loads course color assignments from storage. Input: none. Output: array.

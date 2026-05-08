@@ -1,6 +1,11 @@
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { buildUbcGradesCourseUrl, fetchSectionGradesWithFallbackResult } from "../../api/averageGrades/gradesApiCall.js";
 import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../../api/rateMyProfessor/rmpApi.js";
+import {
+  DEFAULT_COURSE_COLOR_ASSIGNMENTS,
+  getCourseGroupRepresentatives,
+  isValidCourseColorIndex,
+} from "../settings/courseColorSettings.js";
 
 const debug = debugFor("renderCourseObjects");
 debugLog({ local: { renderCourseObjects: false } });
@@ -70,6 +75,8 @@ const normalizeConflictToken = (value) =>
     .toUpperCase();
 const isExperientialCourse = (course) =>
   Boolean(course?.isExperiential) || /\bexperiential\b/i.test(String(course?.instructionalFormat || ""));
+const colorSwatchStyle = (colorIndex) =>
+  `background: var(--course-color-${colorIndex}-bg); border-color: var(--course-color-${colorIndex}-border);`;
 
 // Normalizes whitespace in multi-line strings. Input: string. Output: cleaned string.
 function cleanLines(text) {
@@ -414,14 +421,38 @@ async function loadAverageForButton(button, state) {
 export function renderCourseObjects(
   ui,
   courses,
-  { hasLoadedSchedule = Boolean(courses?.length), onRemoveCourse = null } = {},
+  {
+    hasLoadedSchedule = Boolean(courses?.length),
+    onRemoveCourse = null,
+    onChangeCourseColor = null,
+    courseColorPalettes = [],
+    allCourses = courses,
+  } = {},
 ) {
   if (typeof onRemoveCourse === "function") ui.onRemoveCourse = onRemoveCourse;
+  if (typeof onChangeCourseColor === "function") ui.onChangeCourseColor = onChangeCourseColor;
+
+  if (!ui.courseColorPickerCloseBound && ui.root) {
+    ui.root.addEventListener("click", (event) => {
+      if (event.target.closest?.(".course-card__color-picker")) return;
+      ui.tableBody?.querySelectorAll(".course-card__color-picker.is-open").forEach((picker) => {
+        picker.classList.remove("is-open");
+        picker.querySelector(".course-card__color-button")?.setAttribute("aria-expanded", "false");
+      });
+    });
+    ui.courseColorPickerCloseBound = true;
+  }
 
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
   const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
   const removeCourseHandler = typeof onRemoveCourse === "function" ? onRemoveCourse : ui.onRemoveCourse;
+  const changeCourseColorHandler =
+    typeof onChangeCourseColor === "function" ? onChangeCourseColor : ui.onChangeCourseColor;
+  const groupRepresentatives = getCourseGroupRepresentatives(allCourses || courses);
+  const colorOptions = Array.isArray(courseColorPalettes) && courseColorPalettes.length
+    ? courseColorPalettes
+    : DEFAULT_COURSE_COLOR_ASSIGNMENTS.map((id) => ({ id }));
 
   if (!hasLoadedSchedule) {
     const emptyState = document.createElement("div");
@@ -458,6 +489,7 @@ export function renderCourseObjects(
     const instructorName = (course.instructor || "").trim() || "TBA";
     const rmpInfo = buildRmpLookupInfo(course);
     const rmpState = getCourseRmpState(course);
+    const showColorPicker = groupRepresentatives.has(course) && typeof changeCourseColorHandler === "function";
 
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
@@ -543,11 +575,89 @@ export function renderCourseObjects(
               </div>`
             : ""
         }
+        ${
+          showColorPicker
+            ? `<div class="course-card__color-picker">
+                <button
+                  class="course-card__color-button"
+                  type="button"
+                  aria-label="Change course color"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  <span
+                    class="course-card__color-swatch"
+                    style="${escHTML(colorSwatchStyle(colorIndex))}"
+                    aria-hidden="true"
+                  ></span>
+                </button>
+                <div class="course-card__color-menu" role="listbox" aria-label="Course colors">
+                  ${colorOptions
+                    .map((palette) => {
+                      const paletteId = Number(palette.id);
+                      if (!isValidCourseColorIndex(paletteId)) return "";
+                      const selected = paletteId === colorIndex;
+                      return `<button
+                        class="course-card__color-option${selected ? " is-selected" : ""}"
+                        type="button"
+                        role="option"
+                        aria-label="Select course color ${paletteId}"
+                        aria-selected="${selected}"
+                        data-color-index="${paletteId}"
+                      >
+                        <span
+                          class="course-card__color-option-swatch"
+                          style="${escHTML(colorSwatchStyle(paletteId))}"
+                          aria-hidden="true"
+                        ></span>
+                      </button>`;
+                    })
+                    .join("")}
+                </div>
+              </div>`
+            : ""
+        }
         <button class="course-card__delete-button" type="button" aria-label="Remove course">
           <span class="material-symbols-rounded" aria-hidden="true">delete</span>
         </button>
       </div>
     `;
+
+    const colorPicker = card.querySelector(".course-card__color-picker");
+    const colorButton = card.querySelector(".course-card__color-button");
+    const colorMenu = card.querySelector(".course-card__color-menu");
+    if (colorPicker && colorButton && colorMenu && typeof changeCourseColorHandler === "function") {
+      colorButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const isOpen = colorPicker.classList.toggle("is-open");
+        colorButton.setAttribute("aria-expanded", String(isOpen));
+        ui.tableBody?.querySelectorAll(".course-card__color-picker.is-open").forEach((picker) => {
+          if (picker === colorPicker) return;
+          picker.classList.remove("is-open");
+          picker.querySelector(".course-card__color-button")?.setAttribute("aria-expanded", "false");
+        });
+      });
+
+      colorMenu.addEventListener("click", (event) => {
+        const option = event.target.closest(".course-card__color-option");
+        if (!option) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        const selectedColorIndex = Number(option.dataset.colorIndex);
+        if (isValidCourseColorIndex(selectedColorIndex)) changeCourseColorHandler(course, selectedColorIndex);
+      });
+
+      colorPicker.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        colorPicker.classList.remove("is-open");
+        colorButton.setAttribute("aria-expanded", "false");
+        colorButton.focus();
+      });
+    }
 
     const deleteButton = card.querySelector(".course-card__delete-button");
     if (deleteButton && typeof removeCourseHandler === "function") {

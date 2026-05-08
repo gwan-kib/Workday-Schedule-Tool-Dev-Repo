@@ -79,6 +79,9 @@ debugLog({ local: { content: false } });
       renderCourseObjects(ui, STATE.filtered, {
         hasLoadedSchedule: STATE.courses.length > 0,
         onRemoveCourse: removeCourseFromSchedule,
+        onChangeCourseColor: changeCourseGroupColor,
+        courseColorPalettes: courseColorController.getPalettes(),
+        allCourses: STATE.courses,
       });
     };
 
@@ -234,6 +237,18 @@ debugLog({ local: { content: false } });
       showFooterAlert(`${course.code || "Course"} ${course.section_number || ""} removed from the extension.`, {
         tone: "warn",
       });
+    };
+
+    const changeCourseGroupColor = (course, colorIndex) => {
+      const changed = courseColorController.assignManualCourseGroupColor(STATE.courses, course, colorIndex);
+      if (!changed) return;
+
+      courseColorController.assignCourseColors(STATE.courses);
+      STATE.currentSavedScheduleId = null;
+      STATE.currentScheduleName = null;
+      filterCourses(ui.searchInput.value);
+      renderAll();
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     };
 
     const getManualCourseImportFailureMessage = (error) => {
@@ -493,7 +508,7 @@ debugLog({ local: { content: false } });
 
       if (!name) return;
 
-      const snapshot = createScheduleSnapshot(name, STATE.filtered, courseColorController.getAssignments());
+      const snapshot = createScheduleSnapshot(name, STATE.filtered, null);
       if (!STATE.savedSchedules.length) snapshot.isFavorite = true;
       STATE.savedSchedules = [snapshot, ...STATE.savedSchedules];
       debug.log({ id: "saveSchedule.saved" }, "Saved schedule snapshot", {
@@ -547,10 +562,6 @@ debugLog({ local: { content: false } });
       STATE.currentSavedScheduleId = scheduleId;
       STATE.currentScheduleName = selected.name;
       debug.log({ id: "savedMenu.load" }, "Loading saved schedule", { scheduleId, scheduleName: selected.name });
-      if (selected.colorAssignments) {
-        await courseColorController.applyAndPersistCourseColors(selected.colorAssignments);
-      }
-
       STATE.courses = [...selected.courses];
       courseColorController.assignCourseColors(STATE.courses);
       STATE.filtered = [...STATE.courses];

@@ -105,9 +105,6 @@ export async function loadMainPanel(shadowRoot) {
 
     footerAlert: shadowRoot.querySelector("#schedule-footer-notes"),
 
-    courseColorGrid: shadowRoot.querySelector("#course-color-grid"),
-    courseColorReset: shadowRoot.querySelector("#course-color-reset"),
-
     hoverTipsToggle: shadowRoot.querySelector("#setting-hover-tips"),
     googleSignInButton: shadowRoot.querySelector("#setting-google-sign-in"),
     googleSignOutButton: shadowRoot.querySelector("#setting-google-sign-out"),
