@@ -36,15 +36,9 @@
         <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
       </button>
       <div class="export-menu" id="widget-export-menu" role="menu">
-        <button class="export-option" type="button" data-export="ics" aria-label="Download .ics">
-          Download .ics
-        </button>
-        <button
-          class="export-option"
-          type="button"
-          data-export="gcal-sync"
-          aria-label="Sync to Google Calendar"
-        >
+        <button class="export-option" type="button" data-export="ics" aria-label="Download .ics">Download .ics</button>
+        <button class="export-option" type="button" data-export="gcal-sync" aria-label="Sync to Google Calendar">
+          <span class="material-symbols-rounded" aria-hidden="true">sync</span>
           Sync to Google Calendar
         </button>
       </div>
@@ -52,12 +46,7 @@
     <button class="button help" type="button" aria-label="help-panel" data-tooltip="help-panel">
       <span class="material-symbols-rounded"> help </span><span class="text">Help</span>
     </button>
-    <button
-      class="button settings symbolOnly"
-      type="button"
-      aria-label="settings-panel"
-      data-tooltip="settings-panel"
-    >
+    <button class="button settings symbolOnly" type="button" aria-label="settings-panel" data-tooltip="settings-panel">
       <span class="material-symbols-rounded">settings</span>
     </button>
   </div>
@@ -120,7 +109,7 @@
       aria-label="Clear schedule"
       data-tooltip="Clear schedule"
     >
-      <span class="material-symbols-rounded"> delete_forever </span>
+      <span class="material-symbols-rounded"> ink_eraser </span>
     </button>
   </div>
   <!-- ========================= -->
@@ -132,11 +121,19 @@
     <!-- ========================= -->
     <div class="widget-panel is-active" data-panel="course-list-panel">
       <div class="course-list-toolbar">
-        <span class="course-list-label">Sort By:</span>
-        <div class="course-sortbar" id="course-sortbar">
-          <button class="course-sort-button" type="button" data-key="title">Title</button>
-          <button class="course-sort-button" type="button" data-key="meeting">Meeting Days</button>
-          <button class="course-sort-button" type="button" data-key="instructionalFormat">Class Type</button>
+        <div class="course-list-toolbar__section course-list-toolbar__sort-section">
+          <span class="course-list-label">Sort By:</span>
+          <div class="course-sortbar" id="course-sortbar">
+            <button class="course-sort-button" type="button" data-key="title">Title</button>
+            <button class="course-sort-button" type="button" data-key="meeting">Meeting Days</button>
+            <button class="course-sort-button" type="button" data-key="instructionalFormat">Class Type</button>
+          </div>
+        </div>
+        <div class="course-list-toolbar__section course-list-toolbar__add-course">
+          <button class="course-add-button" id="widget-add-course" type="button">
+            <span class="material-symbols-rounded" aria-hidden="true">add_ad</span>
+            <span>Add A Course</span>
+          </button>
         </div>
       </div>
 
@@ -158,6 +155,20 @@
       <div class="settings-panel">
         <h2>Settings</h2>
         <div class="settings-box settings-box--stack">
+          <div class="settings-section settings-section--google-account">
+            <h3>Google Account</h3>
+            <p>Manage the Google account used for Calendar sync.</p>
+            <div class="settings-google-actions">
+              <button class="button settings-google-sign-in" id="setting-google-sign-in" type="button">
+                Sign into Google
+                <span class="material-symbols-rounded" aria-hidden="true">login</span>
+              </button>
+              <button class="button settings-google-sign-out is-hidden" id="setting-google-sign-out" type="button">
+                Sign out of Google Account
+                <span class="material-symbols-rounded" aria-hidden="true">undo</span>
+              </button>
+            </div>
+          </div>
           <div class="settings-section settings-section--display">
             <h3>Display</h3>
             <p>Control hover tips across the tool.</p>

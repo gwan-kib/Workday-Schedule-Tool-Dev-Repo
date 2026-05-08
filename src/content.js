@@ -4,9 +4,22 @@ import { ensureMount } from "./utilities/shadowMount.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
 
 import { extractCoursesData } from "./extraction/index.js";
+import {
+  extractWorkdayCourseIdFromElement,
+  fetchCourseFromWorkdayId,
+  fetchCourseFromWorkdayLink,
+  validateWorkdayCourseLink,
+  WRONG_COURSE_LINK_ERROR,
+} from "./extraction/singleCourseImport.js";
 import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
-import { buildCalendarViewUrl, requestSyncCoursesToCalendar } from "./googleCalendar/calendarIntegration.js";
+import {
+  buildCalendarViewUrl,
+  requestCalendarAuthState,
+  requestDisconnectCalendar,
+  requestSignInCalendar,
+  requestSyncCoursesToCalendar,
+} from "./googleCalendar/calendarIntegration.js";
 import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
 import { createCourseColorController } from "./mainPanel/courseColorController.js";
 import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
@@ -62,7 +75,10 @@ debugLog({ local: { content: false } });
     const renderAll = () => {
       if (STATE.sort?.key) sortCourses(STATE.sort.key);
       updateScheduleView();
-      renderCourseObjects(ui, STATE.filtered, { hasLoadedSchedule: STATE.courses.length > 0 });
+      renderCourseObjects(ui, STATE.filtered, {
+        hasLoadedSchedule: STATE.courses.length > 0,
+        onRemoveCourse: removeCourseFromSchedule,
+      });
     };
 
     // Extract the current page's schedule data from Workday, normalize it into STATE,
@@ -171,13 +187,215 @@ debugLog({ local: { content: false } });
       }
     };
 
+    const getCourseIdentityKey = (course) =>
+      (course?.workdayCourseId ? [`id:${course.workdayCourseId}`] : [course?.code, course?.section_number])
+        .map((part) =>
+          String(part || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase(),
+        )
+        .join("|");
+
+    const addSingleCourseToSchedule = (course) => {
+      if (!course?.code || !course?.section_number) {
+        showFooterAlert("Could not add the course because its section details were incomplete.", { tone: "warn" });
+        return false;
+      }
+
+      const courseKey = getCourseIdentityKey(course);
+      if (STATE.courses.some((existing) => getCourseIdentityKey(existing) === courseKey)) {
+        showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "warn" });
+        return false;
+      }
+
+      // Add the course through the same state path used by full schedule imports so rendering,
+      // colors, conflict detection, search filtering, and exports stay consistent.
+      STATE.courses = [...STATE.courses, course];
+      courseColorController.assignCourseColors(STATE.courses);
+      STATE.currentSavedScheduleId = null;
+      STATE.currentScheduleName = null;
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      filterCourses(ui.searchInput.value);
+      renderAll();
+      showFooterAlert(`${course.code} ${course.section_number} added to the extension.`, { tone: "success" });
+      return true;
+    };
+
+    const removeCourseFromSchedule = (course) => {
+      const courseKey = getCourseIdentityKey(course);
+      const initialCount = STATE.courses.length;
+      let removed = false;
+
+      STATE.courses = STATE.courses.filter((existing) => {
+        if (existing === course && !removed) {
+          removed = true;
+          return false;
+        }
+
+        if (!removed && courseKey && getCourseIdentityKey(existing) === courseKey) {
+          removed = true;
+          return false;
+        }
+
+        return true;
+      });
+
+      if (STATE.courses.length === initialCount) return;
+
+      STATE.currentSavedScheduleId = null;
+      STATE.currentScheduleName = null;
+      filterCourses(ui.searchInput.value);
+      renderAll();
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      showFooterAlert(`${course.code || "Course"} ${course.section_number || ""} removed from the extension.`, {
+        tone: "warn",
+      });
+    };
+
+    const getManualCourseImportFailureMessage = (error) => {
+      const message = String(error?.message || error || "Unknown error");
+      if (message === WRONG_COURSE_LINK_ERROR) return "Could not add course: Wrong course link";
+      return `Could not add that course: ${message}`;
+    };
+
+    const importCourseFromRegistrationCard = async ({ row, link }) => {
+      const courseId = extractWorkdayCourseIdFromElement(row);
+        if (courseId) {
+          try {
+            const course = await fetchCourseFromWorkdayId(courseId);
+            return addSingleCourseToSchedule(course);
+          } catch (error) {
+            debug.warn(
+              { id: "registrationCourseImport.idFetchFailed" },
+            "Could not fetch course by Workday ID",
+              {
+                courseId,
+                error: String(error?.message || error),
+              },
+            );
+            showFooterAlert("Could not load that course from Workday. Try again after opening the course details.", {
+              tone: "warn",
+            });
+            return false;
+          }
+        }
+
+        if (link) {
+          try {
+            const linkedCourse = await fetchCourseFromWorkdayLink(link);
+            return addSingleCourseToSchedule(linkedCourse);
+          } catch (error) {
+            debug.warn(
+              { id: "registrationCourseImport.linkFetchFailed" },
+            "Could not fetch course by Workday link",
+              {
+                error: String(error?.message || error),
+              },
+            );
+            showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
+            return false;
+          }
+        }
+
+        showFooterAlert("Could not find a Workday course ID for that course card.", {
+          tone: "warn",
+        });
+        return false;
+    };
+
+    const importCourseFromManualLink = async () => {
+      const link = await openScheduleModal({
+        title: "Add A Course",
+        message:
+          "Paste the Workday course section link.\n(for Saved Schedules, it's the link in the section column)",
+        confirmLabel: "Add A Course",
+        showInput: true,
+        showCancel: true,
+        inputLabel: "Course link",
+        inputPlaceholder: "Paste Workday course URL here",
+      });
+      if (!link) return;
+
+      const validation = validateWorkdayCourseLink(link);
+      if (!validation.ok) {
+        const message =
+          validation.error === WRONG_COURSE_LINK_ERROR
+            ? getManualCourseImportFailureMessage(validation.error)
+            : validation.error;
+        showFooterAlert(message, { tone: "warn" });
+        return;
+      }
+
+      if (ui.addCourseButton) ui.addCourseButton.disabled = true;
+      showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
+      try {
+        const course = await fetchCourseFromWorkdayLink(validation.url);
+        addSingleCourseToSchedule(course);
+      } catch (error) {
+        debug.warn({ id: "manualCourseImport.failed" }, "Manual course import failed", error);
+        showFooterAlert(getManualCourseImportFailureMessage(error), { tone: "warn" });
+      } finally {
+        if (ui.addCourseButton) ui.addCourseButton.disabled = false;
+      }
+    };
+
+    on(ui.addCourseButton, "click", importCourseFromManualLink);
+
+    let googleCalendarSignedIn = false;
+
+    const renderGoogleAccountControls = () => {
+      if (!ui.googleSignInButton || !ui.googleSignOutButton) return;
+
+      if (googleCalendarSignedIn) {
+        const checkIcon = document.createElement("span");
+        checkIcon.className = "material-symbols-rounded";
+        checkIcon.setAttribute("aria-hidden", "true");
+        checkIcon.textContent = "check";
+        ui.googleSignInButton.replaceChildren(document.createTextNode("Signed In"), checkIcon);
+      } else {
+        const loginIcon = document.createElement("span");
+        loginIcon.className = "material-symbols-rounded";
+        loginIcon.setAttribute("aria-hidden", "true");
+        loginIcon.textContent = "login";
+        ui.googleSignInButton.replaceChildren(document.createTextNode("Sign into Your Google Account"), loginIcon);
+      }
+      ui.googleSignInButton.disabled = googleCalendarSignedIn;
+      ui.googleSignInButton.setAttribute("aria-pressed", String(googleCalendarSignedIn));
+      ui.googleSignOutButton.classList.toggle("is-hidden", !googleCalendarSignedIn);
+    };
+
+    const refreshGoogleAccountState = async () => {
+      const { signedIn } = await requestCalendarAuthState();
+      googleCalendarSignedIn = signedIn;
+      renderGoogleAccountControls();
+      return signedIn;
+    };
+
+    const requireGoogleSignInForSync = async () => {
+      let signedIn = false;
+      try {
+        signedIn = await refreshGoogleAccountState();
+      } catch (error) {
+        showFooterAlert(`Could not check Google sign-in: ${error.message}`, { tone: "warn" });
+        return false;
+      }
+
+      if (signedIn) return true;
+
+      showFooterAlert("Go to Settings and sign into Google first.", { tone: "warn" });
+      return false;
+    };
+
     const handleExport = async (type) => {
       debug.log({ id: "handleExport" }, "Handling export action", { type });
       if (type === "ics") return exportICS(STATE.currentScheduleName);
 
       if (type === "gcal-sync") {
+        if (!(await requireGoogleSignInForSync())) return;
+
         if (!STATE.filtered?.length) {
-          showFooterAlert("No courses to sync — load a schedule first.", { tone: "warn" });
+          showFooterAlert("No courses to sync.", { tone: "warn" });
           return;
         }
         showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
@@ -200,6 +418,46 @@ debugLog({ local: { content: false } });
         }
       }
     };
+
+    renderGoogleAccountControls();
+
+    on(ui.googleSignInButton, "click", async () => {
+      ui.googleSignInButton.disabled = true;
+      ui.googleSignOutButton.disabled = true;
+      try {
+        const { signedIn } = await requestSignInCalendar();
+        googleCalendarSignedIn = signedIn;
+        renderGoogleAccountControls();
+        showFooterAlert("Signed into Google.", { tone: "info" });
+      } catch (error) {
+        googleCalendarSignedIn = false;
+        renderGoogleAccountControls();
+        showFooterAlert(`Could not sign into Google: ${error.message}`, { tone: "warn" });
+      } finally {
+        ui.googleSignOutButton.disabled = false;
+        if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
+      }
+    });
+
+    on(ui.googleSignOutButton, "click", async () => {
+      ui.googleSignInButton.disabled = true;
+      ui.googleSignOutButton.disabled = true;
+      try {
+        await requestDisconnectCalendar();
+        googleCalendarSignedIn = false;
+        renderGoogleAccountControls();
+        showFooterAlert("Signed out of Google.", { tone: "warn" });
+      } catch (error) {
+        await refreshGoogleAccountState().catch(() => {
+          googleCalendarSignedIn = false;
+          renderGoogleAccountControls();
+        });
+        showFooterAlert(`Could not sign out of Google: ${error.message}`, { tone: "warn" });
+      } finally {
+        ui.googleSignOutButton.disabled = false;
+        if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
+      }
+    });
 
     on(ui.exportMenu, "click", async (event) => {
       const action = event.target.closest("[data-export]");
@@ -232,6 +490,11 @@ debugLog({ local: { content: false } });
     // Saved schedule actions persist snapshots of the currently filtered schedule and restore them later.
     on(ui.saveScheduleButton, "click", async () => {
       debug.log({ id: "saveSchedule.click" }, "Save schedule button clicked");
+      if (!STATE.courses?.length) {
+        showFooterAlert("No schedule loaded - load a schedule before saving it.", { tone: "warn" });
+        return;
+      }
+
       if (!canSaveMoreSchedules(STATE.savedSchedules)) {
         await openScheduleModal({
           title: "Schedule limit reached",
@@ -353,6 +616,10 @@ debugLog({ local: { content: false } });
 
     // Initial startup restores saved state, loads the current page's schedule, and then
     // enables the extra page-level average buttons that live outside the panel UI.
+    await refreshGoogleAccountState().catch((error) => {
+      debug.warn({ id: "googleAuth.initialState" }, "Could not load Google sign-in state", error);
+    });
+
     wireTableSorting(ui);
 
     STATE.savedSchedules = await loadSavedSchedules();
@@ -366,7 +633,7 @@ debugLog({ local: { content: false } });
     renderAll();
 
     setActiveView(STATE.view.panel);
-    const cleanupAverageButtons = setupRegistrationAverageButtons();
+    const cleanupAverageButtons = setupRegistrationAverageButtons({ onAddCourse: importCourseFromRegistrationCard });
     if (typeof cleanupAverageButtons === "function") {
       debug.log({ id: "boot.averageButtonsReady" }, "Average button observer initialized");
       window.addEventListener("beforeunload", cleanupAverageButtons, { once: true });

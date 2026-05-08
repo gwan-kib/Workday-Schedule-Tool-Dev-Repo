@@ -15,7 +15,7 @@
 .course-list-toolbar {
   position: relative;
   top: 0;
-  width: fit-content;
+  width: auto;
   z-index: 5;
 
   display: flex;
@@ -24,11 +24,18 @@
   gap: 10px;
   flex-wrap: wrap;
 
-  padding: 8px 20px;
   margin: -10px -8px 8px;
-  border-radius: 10px;
+}
 
-  translate: 50%;
+.course-list-toolbar__section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  padding: 8px 20px;
+  border-radius: 10px;
 }
 
 .course-list-label {
@@ -76,6 +83,29 @@
   font-size: 11px;
   line-height: 1;
   vertical-align: middle;
+}
+
+.course-add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 5px 12px;
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.course-add-button .material-symbols-rounded {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .course-list {
@@ -270,6 +300,27 @@
   gap: 8px;
   flex-wrap: wrap;
   flex: 0 0 auto;
+}
+
+.course-card__delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid;
+  border-radius: 10px;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.course-card__delete-button .material-symbols-rounded {
+  font-size: 20px;
+  line-height: 1;
 }
 
 .course-card__avg-button,

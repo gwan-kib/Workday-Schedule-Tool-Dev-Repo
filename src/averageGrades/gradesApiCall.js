@@ -1,12 +1,13 @@
 import { debugFor, debugLog } from "../utilities/debugTool.js";
-import { parseSectionLinkString } from "../extraction/parsers/sectionLinkInfo.js";
+import { fetchCourseFromWorkdayId } from "../extraction/singleCourseImport.js";
 
 const debug = debugFor("gradesApiCall");
 debugLog({ local: { gradesApiCall: false } });
 const API_BASE = "https://ubcgrades.com/api";
+const UBCGRADES_BASE = "https://ubcgrades.com/";
 const DEFAULT_API_VERSION = "v3";
 
-const TERM_CAMPUS_RE = /(\d{4})-\d{2}\s+(Winter|Summer)\s+Term\s+\d+\s+\((UBC-[VO])\)/i;
+const TERM_CAMPUS_RE = /(\d{4})(?:-\d{2})?\s+(Winter|Summer)\s+(?:Term\s+\d+|Session)\s+\((UBC-[VO])\)/i;
 
 const SUBJECT_COURSE_RE = /^\s*([A-Z][A-Z0-9_]{1,8})\s*(\d{3}[A-Z]?)\s*$/;
 
@@ -33,6 +34,19 @@ const buildGradesUrl = ({ version, campus, yearsession, subject, course, section
 // Builds the yearsessions API URL. Input: params object. Output: URL string.
 const buildYearsessionsUrl = ({ version, campus }) =>
   `${API_BASE}/${version}/yearsessions/${campus}/`;
+
+// Builds the public UBCGrades course page URL. Input: course params. Output: URL string.
+export const buildUbcGradesCourseUrl = ({ campus, yearsession, subject, course, section }) => {
+  const parts = [campus, yearsession, subject, course, section]
+    .map((part) =>
+      String(part || "")
+        .trim()
+        .toUpperCase(),
+    )
+    .filter(Boolean);
+
+  return parts.length >= 4 ? `${UBCGRADES_BASE}#${parts.map(encodeURIComponent).join("-")}` : "";
+};
 
 // Builds a cache key for API responses. Input: version, campus, yearsession, subject, course, section. Output: string.
 const cacheKey = (version, campus, yearsession, subject, course, section) =>
@@ -160,20 +174,45 @@ function parseCourseCode(code) {
   return { subject, course };
 }
 
-// Parses a course prompt string. Input: prompt text string. Output: course info object or null.
-export function parseCourseInfoFromPromptText(promptText) {
-  const parsed = parseSectionLinkString(promptText);
-  if (!parsed) return null;
-
-  const codeInfo = parseCourseCode(parsed.code);
+// Parses average lookup info from the extension's normalized course object. Input: course object. Output: course info or null.
+export function parseCourseInfoFromCourseObject(courseData) {
+  const codeInfo = parseCourseCode(courseData?.code);
   if (!codeInfo) return null;
 
   return {
     ...codeInfo,
-    section: normalizeSection(parsed.section_number),
-    title: parsed.title,
-    full: parsed.full,
+    section: normalizeSection(courseData?.section_number),
+    title: courseData?.title || "",
+    full: [courseData?.code, courseData?.section_number, courseData?.title].filter(Boolean).join(" - "),
+    workdayCourseId: courseData?.workdayCourseId || "",
   };
+}
+
+// Resolves average lookup info from the Workday course ID. Input: courseId string. Output: course info or null.
+export async function resolveCourseInfoForAverage({ courseId } = {}) {
+  if (!courseId) {
+    debug.warn({ id: "resolveCourseInfoForAverage.noId" }, "Could not resolve course info without a Workday ID");
+    return null;
+  }
+
+  try {
+    const courseData = await fetchCourseFromWorkdayId(courseId);
+    const courseInfo = parseCourseInfoFromCourseObject(courseData);
+    if (courseInfo) {
+      debug.log({ id: "resolveCourseInfoForAverage.idSuccess" }, "Resolved course info from Workday ID", {
+        courseId,
+        courseInfo,
+      });
+      return courseInfo;
+    }
+  } catch (error) {
+    debug.warn({ id: "resolveCourseInfoForAverage.idFailed" }, "Could not resolve course info from Workday ID", {
+      courseId,
+      error: String(error?.message || error),
+    });
+  }
+
+  return null;
 }
 
 // Reads term campus info from text. Input: page text string. Output: { campus, yearsession } or null.
@@ -233,8 +272,8 @@ async function fetchCourseGrades(
   return data;
 }
 
-// Fetches course grades with yearsession fallback. Input: params object and optional options. Output: API JSON or null.
-export async function fetchSectionGradesWithFallback(
+// Fetches course grades with yearsession fallback and metadata. Input: params/options. Output: result object.
+export async function fetchSectionGradesWithFallbackResult(
   { campus, yearsession, subject, course, section },
   { signal, useCache = true, isValid } = {},
 ) {
@@ -285,7 +324,18 @@ export async function fetchSectionGradesWithFallback(
         { campus, yearsession: candidate, subject, course, version: DEFAULT_API_VERSION },
         { signal, useCache },
       );
-      if (typeof isValid !== "function" || isValid(data)) return data;
+      if (typeof isValid !== "function" || isValid(data)) {
+        return {
+          data,
+          params: {
+            campus,
+            yearsession: candidate,
+            subject,
+            course,
+            section,
+          },
+        };
+      }
       debug.warn(
         { id: "fetchSectionGradesWithFallback.invalidData" },
         "course-level v3 returned invalid data; trying next yearsession",
@@ -297,4 +347,10 @@ export async function fetchSectionGradesWithFallback(
   }
 
   return null;
+}
+
+// Fetches course grades with yearsession fallback. Input: params object and optional options. Output: API JSON or null.
+export async function fetchSectionGradesWithFallback(params, options = {}) {
+  const result = await fetchSectionGradesWithFallbackResult(params, options);
+  return result?.data || null;
 }

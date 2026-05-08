@@ -1,4 +1,4 @@
-import { extractStartDate } from "../extraction/parsers/meetingPatternsInfo.js";
+import { extractStartDate } from "../extraction/meetingPatternsInfo.js";
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 import { detectScheduleConflicts } from "./scheduleCollisions.js";
 const debug = debugFor("scheduleView");
@@ -56,6 +56,8 @@ const normalizeConflictToken = (value) =>
     .replace(/\s+/g, " ")
     .trim()
     .toUpperCase();
+const isExperientialCourse = (course) =>
+  Boolean(course?.isExperiential) || /\bexperiential\b/i.test(String(course?.instructionalFormat || ""));
 
 // Parses a time token into minutes since midnight. Input: token string. Output: minutes number or null.
 function parseTimeToken(token) {
@@ -164,8 +166,25 @@ function buildDayEvents(courses, semester) {
 
     const lines = course.meetingLines?.length ? course.meetingLines : [];
 
-    const label = course.isLab ? "[LAB]" : course.isSeminar ? "[SEM]" : course.isDiscussion ? "[DISC]" : "";
-    const eventType = course.isLab ? "lab" : course.isSeminar ? "seminar" : course.isDiscussion ? "discussion" : "";
+    const isExperiential = isExperientialCourse(course);
+    const label = course.isLab
+      ? "[LAB]"
+      : course.isSeminar
+        ? "[SEM]"
+        : course.isDiscussion
+          ? "[DISC]"
+          : isExperiential
+            ? "[EXP]"
+            : "";
+    const eventType = course.isLab
+      ? "lab"
+      : course.isSeminar
+        ? "seminar"
+        : course.isDiscussion
+          ? "discussion"
+          : isExperiential
+            ? "experiential"
+            : "";
 
     lines.forEach((line) => {
       const parsed = parseMeetingLine(line);
@@ -333,7 +352,10 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
       const block = document.createElement("div");
       const colorClass = ev.colorIndex ? ` schedule-entry--color-${ev.colorIndex}` : "";
       const subClass =
-        ev.eventType === "lab" || ev.eventType === "seminar" || ev.eventType === "discussion"
+        ev.eventType === "lab" ||
+        ev.eventType === "seminar" ||
+        ev.eventType === "discussion" ||
+        ev.eventType === "experiential"
           ? " schedule-entry--sub"
           : "";
       block.className = `schedule-entry-float${colorClass}${subClass}`;

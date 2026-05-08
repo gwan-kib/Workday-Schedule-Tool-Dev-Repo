@@ -1,4 +1,4 @@
-.course-list-toolbar {
+.course-list-toolbar__section {
   background: var(--hex-brand-accent-3);
   border: 1px solid var(--hex-brand-accent-6);
 }
@@ -21,8 +21,19 @@
 .course-sort-button.sorted-asc,
 .course-sort-button.sorted-desc {
   color: var(--hex-neutral-1);
-  background: var(--hex-brand-main-1);
+  background: var(--hex-brand-main-2);
   border-color: var(--hex-brand-main-1);
+}
+
+.course-add-button {
+  color: var(--hex-brand-main-2);
+  border-color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-1);
+}
+
+.course-add-button:hover:not([disabled]) {
+  color: var(--hex-brand-main-3);
+  background: var(--hex-brand-accent-4);
 }
 
 .course-list-empty {
@@ -89,9 +100,19 @@
   border-color: var(--course-card-border);
 }
 
+.course-card__delete-button {
+  color: var(--hex-danger-1);
+  background: color-mix(in srgb, var(--hex-danger-1) 20%, transparent);
+  border-color: var(--hex-danger-1);
+}
+
 .course-card__rmp-button:hover:not([disabled]),
 .course-card__avg-button:hover:not([disabled]) {
   background: var(--course-card-chip-bg);
+}
+
+.course-card__delete-button:hover {
+  background: color-mix(in srgb, var(--hex-danger-1) 40%, transparent);
 }
 
 /* Course card color cycle (7) with 1 sub palette (card, chip) */

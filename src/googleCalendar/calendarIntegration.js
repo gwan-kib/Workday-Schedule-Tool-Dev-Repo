@@ -17,8 +17,12 @@ const WST_PRIVATE_VALUE = "workday-import";
 // instead of the underlying functions directly.
 export const CALENDAR_MESSAGE_TYPE = {
   SYNC: "SYNC_GCAL",
+  AUTH_STATE: "AUTH_STATE_GCAL",
+  SIGN_IN: "SIGN_IN_GCAL",
   DISCONNECT: "DISCONNECT_GCAL",
 };
+
+const GCAL_SIGNED_IN_STORAGE_KEY = "wstGoogleCalendarSignedIn";
 
 // Wraps chrome.identity.getAuthToken in a Promise. Input: { interactive }. Output: token string.
 const fetchAuthToken = ({ interactive = true } = {}) =>
@@ -49,6 +53,30 @@ const invalidateAuthToken = (token) =>
     if (!token) return resolve();
     if (!chrome?.identity?.removeCachedAuthToken) return resolve();
     chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+  });
+
+// Reads the extension-level Google sign-in state. Input: none. Output: boolean.
+const loadStoredSignedInState = () =>
+  new Promise((resolve) => {
+    if (!chrome?.storage?.local) {
+      resolve(false);
+      return;
+    }
+
+    chrome.storage.local.get({ [GCAL_SIGNED_IN_STORAGE_KEY]: false }, (result) => {
+      resolve(Boolean(result?.[GCAL_SIGNED_IN_STORAGE_KEY]));
+    });
+  });
+
+// Persists the extension-level Google sign-in state. Input: boolean. Output: none.
+const persistSignedInState = (signedIn) =>
+  new Promise((resolve) => {
+    if (!chrome?.storage?.local) {
+      resolve();
+      return;
+    }
+
+    chrome.storage.local.set({ [GCAL_SIGNED_IN_STORAGE_KEY]: Boolean(signedIn) }, () => resolve());
   });
 
 // Stamps the WST marker onto an event so list/delete can find it later. Input: event. Output: tagged event.
@@ -202,10 +230,26 @@ export async function syncCoursesToCalendar(courses, options = {}) {
   return summary;
 }
 
+// Reports whether the user has signed into Google from this extension.
+//   Input: none. Output: { signedIn: boolean }.
+export async function getCalendarAuthState() {
+  return { signedIn: await loadStoredSignedInState() };
+}
+
+// Starts the interactive Google sign-in flow and records that this extension may sync.
+//   Input: none. Output: { signedIn: boolean }.
+export async function signInCalendar() {
+  await fetchAuthToken({ interactive: true });
+  await persistSignedInState(true);
+  return { signedIn: true };
+}
+
 // Clears the cached OAuth token so the next import re-prompts for permission.
 // Useful if the user wants to switch Google accounts or revoke access locally.
 //   Input: none. Output: { cleared: boolean }.
 export async function disconnectCalendar() {
+  await persistSignedInState(false);
+
   try {
     const token = await fetchAuthToken({ interactive: false });
     await invalidateAuthToken(token);
@@ -257,6 +301,20 @@ const sendMessage = (type, payload) =>
 export async function requestSyncCoursesToCalendar(courses, options = {}) {
   const response = await sendMessage(CALENDAR_MESSAGE_TYPE.SYNC, { courses, options });
   return response.summary;
+}
+
+// Asks the background worker for the extension-level Google sign-in state.
+//   Input: none. Output: { signedIn: boolean }.
+export async function requestCalendarAuthState() {
+  const response = await sendMessage(CALENDAR_MESSAGE_TYPE.AUTH_STATE, {});
+  return { signedIn: Boolean(response.signedIn) };
+}
+
+// Asks the background worker to start the interactive Google sign-in flow.
+//   Input: none. Output: { signedIn: boolean }.
+export async function requestSignInCalendar() {
+  const response = await sendMessage(CALENDAR_MESSAGE_TYPE.SIGN_IN, {});
+  return { signedIn: Boolean(response.signedIn) };
 }
 
 // Asks the background worker to clear the cached OAuth token.
