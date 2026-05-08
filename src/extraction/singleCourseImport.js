@@ -9,6 +9,8 @@ const debug = debugFor("singleCourseImport");
 debugLog({ local: { singleCourseImport: false } });
 
 const WORKDAY_HOST_RE = /(^|\.)myworkday\.com$/i;
+const WORKDAY_COURSE_SECTION_SEGMENT_RE = /^15194\$\d+\.htmld$/i;
+export const WRONG_COURSE_LINK_ERROR = "Wrong Course Link";
 const WORKDAY_JSON_LABELS = new Set([
   "Course",
   "Instructor Teaching",
@@ -26,6 +28,7 @@ const hasText = (value, pattern) => pattern.test(String(value || ""));
 const labLike = (text) => hasText(text, /\b(laboratory|lab)\b/i);
 const seminarLike = (text) => hasText(text, /\bseminar\b/i);
 const discussionLike = (text) => hasText(text, /\bdiscussion\b/i);
+const experientialLike = (text) => hasText(text, /\bexperiential\b/i);
 
 function readInstanceText(instance) {
   if (!instance || typeof instance !== "object") return normalizeSpaces(instance);
@@ -150,6 +153,7 @@ function createCourseObject({
   const isLab = labLike(format);
   const isSeminar = seminarLike(format);
   const isDiscussion = discussionLike(format);
+  const isExperiential = experientialLike(format);
   const uniqueMeetingLines = [...new Set(meetingLines.map(normalizeSpaces).filter(Boolean))];
 
   return {
@@ -164,6 +168,7 @@ function createCourseObject({
     isLab,
     isSeminar,
     isDiscussion,
+    isExperiential,
     workdayCourseId,
   };
 }
@@ -237,6 +242,11 @@ export function validateWorkdayCourseLink(value) {
 
   if (!/^https?:$/i.test(url.protocol) || !WORKDAY_HOST_RE.test(url.hostname)) {
     return { ok: false, error: "Use a Workday link from a myworkday.com page." };
+  }
+
+  const pathParts = url.pathname.split("/").filter(Boolean);
+  if (pathParts.includes("inst") && !WORKDAY_COURSE_SECTION_SEGMENT_RE.test(pathParts[pathParts.length - 1] || "")) {
+    return { ok: false, error: WRONG_COURSE_LINK_ERROR };
   }
 
   return { ok: true, url: normalizeWorkdayJsonUrl(url.href) };

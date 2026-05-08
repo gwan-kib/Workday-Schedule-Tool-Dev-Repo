@@ -68,6 +68,8 @@ const normalizeConflictToken = (value) =>
     .replace(/\s+/g, " ")
     .trim()
     .toUpperCase();
+const isExperientialCourse = (course) =>
+  Boolean(course?.isExperiential) || /\bexperiential\b/i.test(String(course?.instructionalFormat || ""));
 
 // Normalizes whitespace in multi-line strings. Input: string. Output: cleaned string.
 function cleanLines(text) {
@@ -357,10 +359,17 @@ async function loadAverageForButton(button, state) {
 }
 
 // Renders course rows into the table body. Input: ui object, courses array/options. Output: none.
-export function renderCourseObjects(ui, courses, { hasLoadedSchedule = Boolean(courses?.length) } = {}) {
+export function renderCourseObjects(
+  ui,
+  courses,
+  { hasLoadedSchedule = Boolean(courses?.length), onRemoveCourse = null } = {},
+) {
+  if (typeof onRemoveCourse === "function") ui.onRemoveCourse = onRemoveCourse;
+
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
   const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
+  const removeCourseHandler = typeof onRemoveCourse === "function" ? onRemoveCourse : ui.onRemoveCourse;
 
   if (!hasLoadedSchedule) {
     const emptyState = document.createElement("div");
@@ -382,7 +391,7 @@ export function renderCourseObjects(ui, courses, { hasLoadedSchedule = Boolean(c
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
     const sectionLabel = String(course.section_number || "").trim();
-    const isLectureCourse = !(course?.isLab || course?.isSeminar || course?.isDiscussion);
+    const isLectureCourse = !(course?.isLab || course?.isSeminar || course?.isDiscussion || isExperientialCourse(course));
 
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
     const codeInfo = splitCourseCode(course.code || "");
@@ -396,7 +405,9 @@ export function renderCourseObjects(ui, courses, { hasLoadedSchedule = Boolean(c
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
     const colorIndex = course?.colorIndex || (index % 7) + 1;
-    const subClass = course.isLab || course.isSeminar || course.isDiscussion ? " course-card--sub" : "";
+    const subClass = course.isLab || course.isSeminar || course.isDiscussion || isExperientialCourse(course)
+      ? " course-card--sub"
+      : "";
     card.className = `course-card course-card--color-${colorIndex}${subClass}`;
     const courseConflictKey = normalizeConflictToken(course.code || course.title || "");
     const conflictPartners = conflictPartnersByCode.get(courseConflictKey) || [];
@@ -474,8 +485,20 @@ export function renderCourseObjects(ui, courses, { hasLoadedSchedule = Boolean(c
               </div>`
             : ""
         }
+        <button class="course-card__delete-button" type="button" aria-label="Remove course">
+          <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+        </button>
       </div>
     `;
+
+    const deleteButton = card.querySelector(".course-card__delete-button");
+    if (deleteButton && typeof removeCourseHandler === "function") {
+      deleteButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        removeCourseHandler(course);
+      });
+    }
 
     const averageButton = card.querySelector(".course-card__avg-button");
     if (averageButton && showAverageButton) {
@@ -537,7 +560,7 @@ export function reorderCourseObjects(ui, courses) {
     const card = cardsByKey.get(key);
 
     if (!card) {
-      renderCourseObjects(ui, courses);
+      renderCourseObjects(ui, courses, { onRemoveCourse: ui.onRemoveCourse });
       return;
     }
 

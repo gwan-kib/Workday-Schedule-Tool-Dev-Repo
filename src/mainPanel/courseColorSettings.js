@@ -12,6 +12,7 @@ const useChromeStorage = typeof chrome !== "undefined" && chrome.storage && chro
 
 const isValidPaletteId = (value) =>
   Number.isInteger(value) && value >= 1 && value <= COURSE_COLOR_COUNT;
+const experientialLike = (course) => /\bexperiential\b/i.test(String(course?.instructionalFormat || ""));
 
 export const normalizeCourseColorAssignments = (value) => {
   if (!Array.isArray(value)) return [...DEFAULT_COURSE_COLOR_ASSIGNMENTS];
@@ -43,7 +44,8 @@ export function assignCourseColors(courses) {
       .toUpperCase();
   };
 
-  const isLecture = (course) => !(course?.isLab || course?.isSeminar || course?.isDiscussion);
+  const isLecture = (course) =>
+    !(course?.isLab || course?.isSeminar || course?.isDiscussion || course?.isExperiential || experientialLike(course));
   const hasValidColor = (course) =>
     Number.isInteger(course?.colorIndex) && course.colorIndex >= 1 && course.colorIndex <= COURSE_COLOR_COUNT;
 

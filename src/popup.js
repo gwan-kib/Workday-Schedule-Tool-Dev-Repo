@@ -338,7 +338,7 @@ ui.disconnectGcalButton?.addEventListener("click", async () => {
     const { cleared } = await requestDisconnectCalendar();
     showFooterAlert(
       cleared ? "Signed out of Google." : "No active Google session.",
-      { tone: "info" },
+      { tone: "warn" },
     );
   } catch (error) {
     showFooterAlert(`Could not sign out of Google: ${error.message}`, { tone: "warn" });

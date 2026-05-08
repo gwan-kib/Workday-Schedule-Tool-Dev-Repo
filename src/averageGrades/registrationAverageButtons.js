@@ -49,7 +49,9 @@ const lectureLike = (text) => /\blecture\b/i.test(String(text || ""));
 const labLike = (text) => /\b(laboratory)\b/i.test(String(text || ""));
 const seminarLike = (text) => /\bseminar\b/i.test(String(text || ""));
 const discussionLike = (text) => /\bdiscussion\b/i.test(String(text || ""));
-const isLectureFormat = (text) => lectureLike(text) && !labLike(text) && !seminarLike(text) && !discussionLike(text);
+const experientialLike = (text) => /\bexperiential\b/i.test(String(text || ""));
+const isLectureFormat = (text) =>
+  lectureLike(text) && !labLike(text) && !seminarLike(text) && !discussionLike(text) && !experientialLike(text);
 const summarizeDebugText = (text, maxLength = 160) => {
   const normalized = String(text || "").replace(/\s+/g, " ").trim();
   if (!normalized) return "";

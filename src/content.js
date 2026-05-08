@@ -9,6 +9,7 @@ import {
   fetchCourseFromWorkdayId,
   fetchCourseFromWorkdayLink,
   validateWorkdayCourseLink,
+  WRONG_COURSE_LINK_ERROR,
 } from "./extraction/singleCourseImport.js";
 import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
@@ -74,7 +75,10 @@ debugLog({ local: { content: false } });
     const renderAll = () => {
       if (STATE.sort?.key) sortCourses(STATE.sort.key);
       updateScheduleView();
-      renderCourseObjects(ui, STATE.filtered, { hasLoadedSchedule: STATE.courses.length > 0 });
+      renderCourseObjects(ui, STATE.filtered, {
+        hasLoadedSchedule: STATE.courses.length > 0,
+        onRemoveCourse: removeCourseFromSchedule,
+      });
     };
 
     // Extract the current page's schedule data from Workday, normalize it into STATE,
@@ -218,6 +222,43 @@ debugLog({ local: { content: false } });
       return true;
     };
 
+    const removeCourseFromSchedule = (course) => {
+      const courseKey = getCourseIdentityKey(course);
+      const initialCount = STATE.courses.length;
+      let removed = false;
+
+      STATE.courses = STATE.courses.filter((existing) => {
+        if (existing === course && !removed) {
+          removed = true;
+          return false;
+        }
+
+        if (!removed && courseKey && getCourseIdentityKey(existing) === courseKey) {
+          removed = true;
+          return false;
+        }
+
+        return true;
+      });
+
+      if (STATE.courses.length === initialCount) return;
+
+      STATE.currentSavedScheduleId = null;
+      STATE.currentScheduleName = null;
+      filterCourses(ui.searchInput.value);
+      renderAll();
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      showFooterAlert(`${course.code || "Course"} ${course.section_number || ""} removed from the extension.`, {
+        tone: "info",
+      });
+    };
+
+    const getManualCourseImportFailureMessage = (error) => {
+      const message = String(error?.message || error || "Unknown error");
+      if (message === WRONG_COURSE_LINK_ERROR) return "Could not add course: Wrong course link";
+      return `Could not add that course: ${message}`;
+    };
+
     const importCourseFromRegistrationCard = async ({ row, link }) => {
       const courseId = extractWorkdayCourseIdFromElement(row);
         if (courseId) {
@@ -266,18 +307,23 @@ debugLog({ local: { content: false } });
     const importCourseFromManualLink = async () => {
       const link = await openScheduleModal({
         title: "Add Course",
-        message: "Paste the Workday URL copied from the course title.",
+        message:
+          "Paste the Workday course section link.\n(for Saved Schedules, it's the link in the section column)",
         confirmLabel: "Add Course",
         showInput: true,
         showCancel: true,
         inputLabel: "Course link",
-        inputPlaceholder: "https://...",
+        inputPlaceholder: "Paste Workday course URL here",
       });
       if (!link) return;
 
       const validation = validateWorkdayCourseLink(link);
       if (!validation.ok) {
-        showFooterAlert(validation.error, { tone: "warn" });
+        const message =
+          validation.error === WRONG_COURSE_LINK_ERROR
+            ? getManualCourseImportFailureMessage(validation.error)
+            : validation.error;
+        showFooterAlert(message, { tone: "warn" });
         return;
       }
 
@@ -288,7 +334,7 @@ debugLog({ local: { content: false } });
         addSingleCourseToSchedule(course);
       } catch (error) {
         debug.warn({ id: "manualCourseImport.failed" }, "Manual course import failed", error);
-        showFooterAlert(`Could not add that course: ${error.message}`, { tone: "warn" });
+        showFooterAlert(getManualCourseImportFailureMessage(error), { tone: "warn" });
       } finally {
         if (ui.addCourseButton) ui.addCourseButton.disabled = false;
       }
@@ -400,7 +446,7 @@ debugLog({ local: { content: false } });
         await requestDisconnectCalendar();
         googleCalendarSignedIn = false;
         renderGoogleAccountControls();
-        showFooterAlert("Signed out of Google.", { tone: "info" });
+        showFooterAlert("Signed out of Google.", { tone: "warn" });
       } catch (error) {
         await refreshGoogleAccountState().catch(() => {
           googleCalendarSignedIn = false;

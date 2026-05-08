@@ -328,15 +328,15 @@ h3 {
 }
 
 .popup-alert[data-tone="info"] {
-  background: rgba(34, 139, 230, 0.08);
-  color: var(--hex-brand-main-1);
-  border-color: rgba(34, 139, 230, 0.25);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--hex-info-1);
+  border-color: rgba(37, 99, 235, 0.25);
 }
 
 .popup-alert[data-tone="success"] {
-  background: rgba(46, 160, 67, 0.1);
-  color: #1f7a3a;
-  border-color: rgba(46, 160, 67, 0.25);
+  background: rgba(22, 131, 71, 0.1);
+  color: var(--hex-success-1);
+  border-color: rgba(22, 131, 71, 0.25);
 }
 
 .popup-shell::-webkit-scrollbar,

@@ -109,7 +109,7 @@
       aria-label="Clear schedule"
       data-tooltip="Clear schedule"
     >
-      <span class="material-symbols-rounded"> delete_forever </span>
+      <span class="material-symbols-rounded"> ink_eraser </span>
     </button>
   </div>
   <!-- ========================= -->
@@ -121,13 +121,17 @@
     <!-- ========================= -->
     <div class="widget-panel is-active" data-panel="course-list-panel">
       <div class="course-list-toolbar">
-        <span class="course-list-label">Sort By:</span>
-        <div class="course-sortbar" id="course-sortbar">
-          <button class="course-sort-button" type="button" data-key="title">Title</button>
-          <button class="course-sort-button" type="button" data-key="meeting">Meeting Days</button>
-          <button class="course-sort-button" type="button" data-key="instructionalFormat">Class Type</button>
+        <div class="course-list-toolbar__section course-list-toolbar__sort-section">
+          <span class="course-list-label">Sort By:</span>
+          <div class="course-sortbar" id="course-sortbar">
+            <button class="course-sort-button" type="button" data-key="title">Title</button>
+            <button class="course-sort-button" type="button" data-key="meeting">Meeting Days</button>
+            <button class="course-sort-button" type="button" data-key="instructionalFormat">Class Type</button>
+          </div>
         </div>
-        <button class="course-add-button" id="widget-add-course" type="button">Add Course</button>
+        <div class="course-list-toolbar__section course-list-toolbar__add-course">
+          <button class="course-add-button" id="widget-add-course" type="button">Add Course</button>
+        </div>
       </div>
 
       <div class="course-list" id="course-list"></div>
