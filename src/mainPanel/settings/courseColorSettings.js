@@ -13,6 +13,12 @@ const useChromeStorage = typeof chrome !== "undefined" && chrome.storage && chro
 const isValidPaletteId = (value) =>
   Number.isInteger(value) && value >= 1 && value <= COURSE_COLOR_COUNT;
 const experientialLike = (course) => /\bexperiential\b/i.test(String(course?.instructionalFormat || ""));
+const COURSE_CODE_RE = /\b([A-Z][A-Z0-9_]{0,12})\s*(\d{3}[A-Z]?)\b/i;
+const normalizeSpaces = (value) =>
+  String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+const isValidCourseIndex = (value) => Number.isInteger(value) && value >= 1;
 
 export const normalizeCourseColorAssignments = (value) => {
   if (!Array.isArray(value)) return [...DEFAULT_COURSE_COLOR_ASSIGNMENTS];
@@ -22,78 +28,124 @@ export const normalizeCourseColorAssignments = (value) => {
   });
 };
 
-// Assigns stable color indices to courses if missing. Input: courses array. Output: none.
-export function assignCourseColors(courses) {
+export const normalizeCourseGroupKey = (course) => {
+  if (!course) return "";
+
+  const candidates = [course.code, course.courseCode, course.title];
+  for (const candidate of candidates) {
+    const text = normalizeSpaces(candidate).toUpperCase();
+    if (!text) continue;
+
+    const match = text.match(COURSE_CODE_RE);
+    if (match) return `${match[1]} ${match[2]}`;
+  }
+
+  return "";
+};
+
+const fallbackCourseGroupKey = (course, index) => {
+  const workdayId = normalizeSpaces(course?.workdayCourseId);
+  if (workdayId) return `id:${workdayId}`;
+
+  const identity = [course?.code, course?.section_number]
+    .map((part) => normalizeSpaces(part).toUpperCase())
+    .filter(Boolean)
+    .join("|");
+  return identity || `course:${index}`;
+};
+
+const isLectureCourse = (course) =>
+  !(course?.isLab || course?.isSeminar || course?.isDiscussion || course?.isExperiential || experientialLike(course));
+
+const colorIndexForCourseIndex = (courseIndex) => ((courseIndex - 1) % COURSE_COLOR_COUNT) + 1;
+
+function collectCourseGroups(courses) {
+  const groupsByKey = new Map();
+
+  courses.forEach((course, index) => {
+    if (!course) return;
+
+    const stableKey = normalizeCourseGroupKey(course);
+    const registryKey = stableKey || fallbackCourseGroupKey(course, index);
+
+    if (stableKey) course.courseGroupKey = stableKey;
+    else delete course.courseGroupKey;
+
+    if (!groupsByKey.has(registryKey)) {
+      groupsByKey.set(registryKey, {
+        key: registryKey,
+        stableKey,
+        courses: [],
+        firstIndex: index,
+        firstLectureIndex: Number.POSITIVE_INFINITY,
+        requestedCourseIndex: null,
+      });
+    }
+
+    const group = groupsByKey.get(registryKey);
+    group.courses.push(course);
+    if (isLectureCourse(course)) group.firstLectureIndex = Math.min(group.firstLectureIndex, index);
+
+    if (group.requestedCourseIndex == null && isValidCourseIndex(course.courseIndex)) {
+      group.requestedCourseIndex = course.courseIndex;
+    }
+  });
+
+  return [...groupsByKey.values()].sort((a, b) => {
+    const aOrder = Number.isFinite(a.firstLectureIndex) ? a.firstLectureIndex : a.firstIndex;
+    const bOrder = Number.isFinite(b.firstLectureIndex) ? b.firstLectureIndex : b.firstIndex;
+    return aOrder - bOrder || a.firstIndex - b.firstIndex;
+  });
+}
+
+// Assigns stable course group and color indices. Input: courses array. Output: none.
+export function assignCourseIndexesAndColors(courses) {
   if (!Array.isArray(courses)) {
     debug.warn({ id: "assignCourseColors.invalidInput" }, "assignCourseColors called with non-array input");
     return;
   }
-  debug.log({ id: "assignCourseColors.start" }, "Assigning course colors", { courseCount: courses.length });
+  debug.log({ id: "assignCourseColors.start" }, "Assigning course groups and colors", { courseCount: courses.length });
 
-  const getCourseKey = (course) => {
-    if (!course) return "";
-    const code = String(course.code || "")
-      .trim()
-      .toUpperCase();
-    const title = String(course.title || "")
-      .trim()
-      .toUpperCase();
-    if (code || title) return `${code}||${title}`;
-    return String(course.section_number || "")
-      .trim()
-      .toUpperCase();
-  };
+  const groups = collectCourseGroups(courses);
+  const usedCourseIndexes = new Set();
+  let nextCourseIndex = 0;
 
-  const isLecture = (course) =>
-    !(course?.isLab || course?.isSeminar || course?.isDiscussion || course?.isExperiential || experientialLike(course));
-  const hasValidColor = (course) =>
-    Number.isInteger(course?.colorIndex) && course.colorIndex >= 1 && course.colorIndex <= COURSE_COLOR_COUNT;
+  groups.forEach((group) => {
+    const requested = group.requestedCourseIndex;
+    if (!isValidCourseIndex(requested) || usedCourseIndexes.has(requested)) return;
 
-  let colorCursor = 0;
-  const colorByKey = new Map();
-
-  const nextColor = () => {
-    colorCursor += 1;
-    return ((colorCursor - 1) % COURSE_COLOR_COUNT) + 1;
-  };
-
-  courses.forEach((course) => {
-    if (!course) return;
-    const key = getCourseKey(course);
-    if (hasValidColor(course)) {
-      if (key && !colorByKey.has(key)) colorByKey.set(key, course.colorIndex);
-      return;
-    }
-    if (!isLecture(course)) return;
-    if (key && colorByKey.has(key)) {
-      course.colorIndex = colorByKey.get(key);
-      return;
-    }
-    const colorIndex = nextColor();
-    course.colorIndex = colorIndex;
-    if (key) colorByKey.set(key, colorIndex);
+    group.courseIndex = requested;
+    usedCourseIndexes.add(requested);
+    nextCourseIndex = Math.max(nextCourseIndex, requested);
   });
 
-  courses.forEach((course) => {
-    if (!course) return;
-    if (hasValidColor(course)) {
-      const key = getCourseKey(course);
-      if (key && !colorByKey.has(key)) colorByKey.set(key, course.colorIndex);
-      return;
-    }
-    const key = getCourseKey(course);
-    if (key && colorByKey.has(key)) {
-      course.colorIndex = colorByKey.get(key);
-      return;
-    }
-    const colorIndex = nextColor();
-    course.colorIndex = colorIndex;
-    if (key) colorByKey.set(key, colorIndex);
+  groups.forEach((group) => {
+    if (isValidCourseIndex(group.courseIndex)) return;
+
+    nextCourseIndex += 1;
+    while (usedCourseIndexes.has(nextCourseIndex)) nextCourseIndex += 1;
+    group.courseIndex = nextCourseIndex;
+    usedCourseIndexes.add(nextCourseIndex);
+  });
+
+  groups.forEach((group) => {
+    const colorIndex = colorIndexForCourseIndex(group.courseIndex);
+    group.courses.forEach((course) => {
+      course.courseIndex = group.courseIndex;
+      course.colorIndex = colorIndex;
+      if (group.stableKey) course.courseGroupKey = group.stableKey;
+    });
   });
 
   debug.log({ id: "assignCourseColors.complete" }, "Finished assigning course colors", {
     assignedCourses: courses.length,
+    assignedGroups: groups.length,
   });
+}
+
+// Backwards-compatible name used by the panel controller and existing import paths.
+export function assignCourseColors(courses) {
+  assignCourseIndexesAndColors(courses);
 }
 
 // Loads course color assignments from storage. Input: none. Output: array.
