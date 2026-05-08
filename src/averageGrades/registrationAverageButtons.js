@@ -62,6 +62,29 @@ const getRegistrationContainer = (headerWrapper) =>
 const getStaticButtonLabel = (reason) => (reason === "not-lecture" ? "Not a lecture" : "Average:\nunavailable");
 const hasAverageButton = (row) => Boolean(row?.querySelector?.(".registration__avg-button"));
 const hasCourseImportButton = (row) => Boolean(row?.querySelector?.(courseImportButtonSelector));
+const createMaterialIcon = (name) => {
+  const icon = document.createElement("span");
+  icon.className = "material-symbols-rounded";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = name;
+
+  return icon;
+};
+const setAverageButtonContent = (button, text) => {
+  const label = document.createElement("span");
+  label.className = "registration__button-label";
+  label.textContent = text;
+
+  button.classList.add("registration__avg-button--with-icon");
+  button.replaceChildren(createMaterialIcon("bar_chart"), label);
+};
+const setCourseImportButtonContent = (button) => {
+  const label = document.createElement("span");
+  label.className = "registration__button-label";
+  label.textContent = "Add into extension";
+
+  button.replaceChildren(createMaterialIcon("add_ad"), label);
+};
 const getCoursePromptOption = (row) =>
   row?.querySelector?.(coursePromptSelector) ||
   row?.querySelector?.('[data-automation-id="compositeHeader"] [data-automation-id="promptOption"]') ||
@@ -111,14 +134,13 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "registration__course-import-button";
-    button.textContent = "Add course into extension";
+    setCourseImportButtonContent(button);
 
     button.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopPropagation();
 
       if (button.dataset.loading === "true") return;
-      const originalText = button.textContent;
       button.dataset.loading = "true";
       button.disabled = true;
       button.textContent = "Adding...";
@@ -131,7 +153,11 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
           courseInfo,
           link: getPromptLink(promptOption),
         });
-        button.textContent = added ? "Added" : originalText;
+        if (added) {
+          button.textContent = "Added";
+        } else {
+          setCourseImportButtonContent(button);
+        }
       } catch (error) {
         debug.error({ id: "setupRegistrationAverageButtons.addCourse.error" }, "Failed to add course", {
           courseInfo,
@@ -142,7 +168,7 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
         button.dataset.loading = "false";
         setTimeout(() => {
           button.disabled = false;
-          button.textContent = originalText;
+          setCourseImportButtonContent(button);
         }, 1600);
       }
     });
@@ -231,13 +257,17 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
     button.className = "registration__avg-button";
     if (mode === "static") {
       button.classList.add("registration__avg-button--static");
-      button.textContent = getStaticButtonLabel(staticReason);
+      if (staticReason === "not-lecture") {
+        button.textContent = getStaticButtonLabel(staticReason);
+      } else {
+        setAverageButtonContent(button, getStaticButtonLabel(staticReason));
+      }
       button.disabled = true;
       button.tabIndex = -1;
       return button;
     }
 
-    button.textContent = "Class Average\n(past 5 years)";
+    setAverageButtonContent(button, "Class Average\n(past 5 years)");
 
     button.addEventListener("click", async (event) => {
       event.preventDefault();
@@ -252,7 +282,7 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
       termCampus = readTermCampus() || termCampus;
       if (!termCampus) {
         debug.warn({ id: "setupRegistrationAverageButtons.fetch.noTermCampus" }, "Could not determine term campus");
-        button.textContent = "Average:\nunavailable";
+        setAverageButtonContent(button, "Average:\nunavailable");
         button.disabled = false;
         button.dataset.loading = "false";
         return;
@@ -265,7 +295,7 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
           debug.warn({ id: "setupRegistrationAverageButtons.fetch.noCourseInfo" }, "Could not resolve course info", {
             courseId,
           });
-          button.textContent = "Average:\nunavailable";
+          setAverageButtonContent(button, "Average:\nunavailable");
           return;
         }
 
@@ -284,21 +314,21 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
           debug.warn({ id: "setupRegistrationAverageButtons.fetch.noData" }, "No average data returned", {
             courseInfo: resolvedCourseInfo,
           });
-          button.textContent = "Average:\nunavailable";
+          setAverageButtonContent(button, "Average:\nunavailable");
         } else {
           const average = extractAverage(data);
           debug.log({ id: "setupRegistrationAverageButtons.fetch.success" }, "Average data loaded", {
             courseInfo: resolvedCourseInfo,
             average,
           });
-          button.textContent = buildAverageLabel(average);
+          setAverageButtonContent(button, buildAverageLabel(average));
         }
       } catch (error) {
         debug.error({ id: "setupRegistrationAverageButtons.fetch.error" }, "Failed to load average data", {
           courseInfo,
           error: String(error),
         });
-        button.textContent = "Average:\nunavailable";
+        setAverageButtonContent(button, "Average:\nunavailable");
       } finally {
         button.disabled = false;
         button.dataset.loading = "false";
