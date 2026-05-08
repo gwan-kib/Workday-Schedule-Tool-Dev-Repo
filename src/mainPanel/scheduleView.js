@@ -1,4 +1,4 @@
-import { extractStartDate } from "../extraction/parsers/meetingPatternsInfo.js";
+import { extractStartDate } from "../extraction/meetingPatternsInfo.js";
 import { debugFor, debugLog } from "../utilities/debugTool.js";
 import { detectScheduleConflicts } from "./scheduleCollisions.js";
 const debug = debugFor("scheduleView");
