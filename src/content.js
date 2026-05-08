@@ -218,7 +218,7 @@ debugLog({ local: { content: false } });
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       filterCourses(ui.searchInput.value);
       renderAll();
-      showFooterAlert(`${course.code} ${course.section_number} added to the extension.`, { tone: "info" });
+      showFooterAlert(`${course.code} ${course.section_number} added to the extension.`, { tone: "success" });
       return true;
     };
 
@@ -249,7 +249,7 @@ debugLog({ local: { content: false } });
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       showFooterAlert(`${course.code || "Course"} ${course.section_number || ""} removed from the extension.`, {
-        tone: "info",
+        tone: "warn",
       });
     };
 
@@ -306,10 +306,10 @@ debugLog({ local: { content: false } });
 
     const importCourseFromManualLink = async () => {
       const link = await openScheduleModal({
-        title: "Add Course",
+        title: "Add A Course",
         message:
           "Paste the Workday course section link.\n(for Saved Schedules, it's the link in the section column)",
-        confirmLabel: "Add Course",
+        confirmLabel: "Add A Course",
         showInput: true,
         showCancel: true,
         inputLabel: "Course link",

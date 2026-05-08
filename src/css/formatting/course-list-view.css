@@ -86,6 +86,11 @@
 }
 
 .course-add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
   border: 1px solid;
   border-radius: 999px;
   padding: 5px 12px;
@@ -96,6 +101,11 @@
 
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.course-add-button .material-symbols-rounded {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .course-list {

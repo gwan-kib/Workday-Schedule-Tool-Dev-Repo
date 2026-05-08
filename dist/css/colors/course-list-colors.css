@@ -26,9 +26,9 @@
 }
 
 .course-add-button {
-  color: var(--hex-neutral-1);
+  color: var(--hex-brand-main-2);
   border-color: var(--hex-brand-main-1);
-  background: var(--hex-brand-main-2);
+  background: var(--hex-brand-accent-1);
 }
 
 .course-add-button:hover:not([disabled]) {
