@@ -611,9 +611,10 @@ export function renderCourseObjects(
           ${
             courseWorkdayLink
               ? `<button
-                  class="course-card__link-button"
+                  class="course-card__link-button wd-hover-tooltip"
                   type="button"
                   title="Open course link"
+                  data-tooltip="Open course link"
                   data-course-link="${escHTML(courseWorkdayLink)}"
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">link</span>

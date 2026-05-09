@@ -71,9 +71,10 @@ ${n} / 5`:"RateMyProf: N/A"}function _r(e){const n=pr(e?.instructor);return n?{p
                   </div>
                 </div>`:""}
           ${v?`<button
-                  class="course-card__link-button"
+                  class="course-card__link-button wd-hover-tooltip"
                   type="button"
                   title="Open course link"
+                  data-tooltip="Open course link"
                   data-course-link="${_(v)}"
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">link</span>
