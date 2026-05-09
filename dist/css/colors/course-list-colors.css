@@ -106,6 +106,42 @@
   border-color: var(--hex-danger-1);
 }
 
+.course-card__color-button {
+  background: var(--course-card-border);
+  border-color: var(--course-card-border);
+}
+
+.course-card__color-button:hover,
+.course-card__color-picker.is-open .course-card__color-button {
+  background: var(--course-card-chip-bg);
+}
+
+.course-card__link-button {
+  color: var(--course-card-border);
+  background: transparent;
+}
+
+.course-card__link-button:hover {
+  background: transparent;
+}
+
+.course-card__color-menu {
+  background: var(--hex-neutral-1);
+  border-color: var(--course-card-border);
+}
+
+.course-card__color-option {
+  background: var(--hex-neutral-1);
+  border-color: transparent;
+}
+
+.course-card__color-option:hover,
+.course-card__color-option:focus-visible,
+.course-card__color-option.is-selected {
+  background: var(--course-card-chip-bg);
+  border-color: var(--course-card-border);
+}
+
 .course-card__rmp-button:hover:not([disabled]),
 .course-card__avg-button:hover:not([disabled]) {
   background: var(--course-card-chip-bg);
@@ -115,7 +151,7 @@
   background: color-mix(in srgb, var(--hex-danger-1) 40%, transparent);
 }
 
-/* Course card color cycle (7) with 1 sub palette (card, chip) */
+/* Course card color cycle with 1 sub palette (card, chip) */
 .course-card--color-1 {
   --course-card-bg: var(--course-color-1-bg);
   --course-card-border: var(--course-color-1-border);
@@ -177,6 +213,15 @@
 
   --course-card-sub-bg: var(--course-color-7-sub-bg);
   --course-card-sub-chip-bg: var(--course-color-7-sub-chip);
+}
+
+.course-card--color-8 {
+  --course-card-bg: var(--course-color-8-bg);
+  --course-card-border: var(--course-color-8-border);
+  --course-card-chip-bg: var(--course-color-8-chip);
+
+  --course-card-sub-bg: var(--course-color-8-sub-bg);
+  --course-card-sub-chip-bg: var(--course-color-8-sub-chip);
 }
 
 /* Sub variant overrides the base palette */

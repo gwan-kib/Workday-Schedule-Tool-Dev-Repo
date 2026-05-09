@@ -1,5 +1,5 @@
-import { on } from "../utilities/dom.js";
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { on } from "../../utilities/dom.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const MAIN_PANEL_VIEWS = new Set(["course-list-panel", "schedule-panel"]);
 const debug = debugFor("panelViewController");

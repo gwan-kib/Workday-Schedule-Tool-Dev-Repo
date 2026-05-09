@@ -1,6 +1,8 @@
-import { extractStartDate } from "../extraction/meetingPatternsInfo.js";
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { extractStartDate } from "../../extraction/meetingPatternsInfo.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
+import { createFooterNoteController } from "../shell/footerNoteController.js";
 import { detectScheduleConflicts } from "./scheduleCollisions.js";
+import { COURSE_COLOR_COUNT } from "../settings/courseColorSettings.js";
 const debug = debugFor("scheduleView");
 debugLog({ local: { scheduleView: false } });
 
@@ -8,6 +10,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const START_HOUR = 8;
 const END_HOUR = 21;
 const SLOT_MINUTES = 30;
+const CONFLICT_FOOTER_NOTE_ID = "schedule-conflicts";
 
 const SLOTS = [];
 for (let h = START_HOUR; h < END_HOUR; h++) {
@@ -157,7 +160,7 @@ function buildDayEvents(courses, semester) {
   let eventId = 0;
 
   (courses || []).forEach((course, courseIndex) => {
-    const colorIndex = course?.colorIndex || (courseIndex % 7) + 1;
+    const colorIndex = course?.colorIndex || (courseIndex % COURSE_COLOR_COUNT) + 1;
     const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
     const endDate = course.endDate || startDate || "";
     const courseSemester = getSemesterForRange(startDate, endDate);
@@ -269,7 +272,7 @@ function buildScheduleTable(timeFormat) {
 
   headRow.innerHTML = `
     <th class="schedule-time">
-      <button class="schedule-time-toggle wd-hover-tooltip" type="button" aria-label="Time format" data-tooltip="Time format">
+      <button class="schedule-time-toggle wd-hover-tooltip" type="button" data-tooltip="Time format">
         ${timeFormat === "am/pm" ? "AM/PM" : "24H"}
       </button>
     </th>
@@ -410,7 +413,6 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
     if (conflict.codes?.length) {
       const tooltipText = `Classes in conflict:\n[${conflict.codes.join(", ")}]`;
       block.dataset.tooltip = tooltipText;
-      block.setAttribute("aria-label", tooltipText);
       block.tabIndex = 0;
     }
 
@@ -425,7 +427,7 @@ function buildConflictPartnerLookup(conflictBlocks = []) {
     const uniqueCodes = [];
     const seen = new Set();
 
-    (block?.codes || []).forEach((rawCode) => {
+    (block?.baseCodes || block?.codes || []).forEach((rawCode) => {
       const label = String(rawCode || "").trim();
       const normalized = normalizeConflictToken(label);
       if (!normalized || seen.has(normalized)) return;
@@ -455,19 +457,49 @@ function buildConflictPartnerLookup(conflictBlocks = []) {
   return lookup;
 }
 
-function updateFooterConflictMessage(ui, conflictCodes) {
-  const alertEl = ui?.footerAlert || ui?.root?.querySelector("#schedule-conflict-alert");
-  if (!alertEl) return;
+function buildFooterConflictGroups(conflictBlocks = []) {
+  const groups = new Map();
 
-  const codes = Array.isArray(conflictCodes) ? conflictCodes.filter(Boolean) : [];
+  (Array.isArray(conflictBlocks) ? conflictBlocks : []).forEach((block) => {
+    const labels = (Array.isArray(block?.codes) ? block.codes : [])
+      .map((code) => String(code || "").trim())
+      .filter(Boolean);
+
+    if (!labels.length) return;
+
+    const sortedLabels = [...labels].sort((a, b) => normalizeConflictToken(a).localeCompare(normalizeConflictToken(b)));
+    const groupKey = sortedLabels.map(normalizeConflictToken).join("|");
+    if (!groups.has(groupKey)) groups.set(groupKey, sortedLabels);
+  });
+
+  return Array.from(groups.values());
+}
+
+function getFooterNoteController(ui) {
+  if (ui?.footerNotes) return ui.footerNotes;
+
+  const root = ui?.footerAlert || ui?.root?.querySelector("#schedule-footer-notes");
+  if (!root) return null;
+
+  ui.footerNotes = createFooterNoteController(root);
+  return ui.footerNotes;
+}
+
+function updateFooterConflictMessage(ui, conflictBlocks) {
+  const footerNotes = getFooterNoteController(ui);
+  const conflictGroups = buildFooterConflictGroups(conflictBlocks).map((group) => group.join(" & "));
+  const codes = conflictGroups.length ? [conflictGroups.join("), (")] : [];
+
   if (!codes.length) {
-    alertEl.textContent = "";
-    alertEl.classList.add("is-hidden");
+    footerNotes?.removePersistent(CONFLICT_FOOTER_NOTE_ID);
     return;
   }
 
-  alertEl.textContent = `🚩 The following classes are in conflict: [${codes.join(", ")}].`;
-  alertEl.classList.remove("is-hidden");
+  footerNotes?.setPersistent(
+    CONFLICT_FOOTER_NOTE_ID,
+    `🚩 The following classes are in conflict: (${codes.join(", ")})`,
+    { tone: "warn" },
+  );
 }
 function getActiveSemester(courses = []) {
   const counts = {};
@@ -508,7 +540,7 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
   const eventsByDay = buildDayEvents(courses || [], activeSemester);
   const allEventsByDay = buildDayEvents(courses || [], null);
   const { conflictBlocks } = detectScheduleConflicts(eventsByDay);
-  const { conflictBlocks: allConflictBlocks, conflictCodes } = detectScheduleConflicts(allEventsByDay);
+  const { conflictBlocks: allConflictBlocks } = detectScheduleConflicts(allEventsByDay);
   ui.conflictPartnersByCode = buildConflictPartnerLookup(allConflictBlocks);
 
   host.innerHTML = "";
@@ -516,7 +548,7 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
   host.appendChild(tableWrap);
 
   renderOverlayBlocks(tableWrap, eventsByDay, conflictBlocks, timeFormat);
-  updateFooterConflictMessage(ui, conflictCodes);
+  updateFooterConflictMessage(ui, allConflictBlocks);
 
   ui.activeSemester = activeSemester;
 

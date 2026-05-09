@@ -1,9 +1,19 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import {
   buildUbcGradesCourseUrl,
   fetchSectionGradesWithFallbackResult,
-} from "../averageGrades/gradesApiCall.js";
-import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../rateMyProfessor/rmpApi.js";
+} from "../../api/averageGrades/gradesApiCall.js";
+import {
+  fetchProfRating,
+  inferCampusFromCourseCode,
+  normalizeProfessorName,
+} from "../../api/rateMyProfessor/rmpApi.js";
+import {
+  COURSE_COLOR_COUNT,
+  DEFAULT_COURSE_COLOR_ASSIGNMENTS,
+  getCourseGroupRepresentatives,
+  isValidCourseColorIndex,
+} from "../settings/courseColorSettings.js";
 
 const debug = debugFor("renderCourseObjects");
 debugLog({ local: { renderCourseObjects: false } });
@@ -73,6 +83,54 @@ const normalizeConflictToken = (value) =>
     .toUpperCase();
 const isExperientialCourse = (course) =>
   Boolean(course?.isExperiential) || /\bexperiential\b/i.test(String(course?.instructionalFormat || ""));
+const colorSwatchStyle = (colorIndex) =>
+  `background: var(--course-color-${colorIndex}-bg); border-color: var(--course-color-${colorIndex}-border);`;
+
+function getTenantPath(url) {
+  try {
+    return new URL(url).pathname.split("/").filter(Boolean)[0] || "ubc";
+  } catch (error) {
+    return "ubc";
+  }
+}
+
+function normalizeWorkdayPageLink(value) {
+  if (!value) return "";
+
+  try {
+    const parsed = new URL(value);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const instIndex = parts.indexOf("inst");
+    if (instIndex !== -1 && parts[instIndex - 1] !== "d") {
+      parts.splice(instIndex, 0, "d");
+      parsed.pathname = `/${parts.join("/")}`;
+    }
+    return parsed.href;
+  } catch (error) {
+    return "";
+  }
+}
+
+function buildWorkdayPageLinkFromId(courseId) {
+  const id = String(courseId || "").trim();
+  if (!id) return "";
+
+  try {
+    const base = new URL(window.location.href);
+    const tenant = getTenantPath(base.href);
+    return `${base.origin}/${tenant}/d/inst/1$15194/15194$${id}.htmld`;
+  } catch (error) {
+    return "";
+  }
+}
+
+function getCourseWorkdayLink(course) {
+  if (!course || typeof course !== "object") return "";
+
+  const link = normalizeWorkdayPageLink(course.workdayCourseLink) || buildWorkdayPageLinkFromId(course.workdayCourseId);
+  if (link) course.workdayCourseLink = link;
+  return link;
+}
 
 // Normalizes whitespace in multi-line strings. Input: string. Output: cleaned string.
 function cleanLines(text) {
@@ -199,7 +257,6 @@ function applyAverageButtonState(button, state) {
 
   if (hasLink) {
     button.dataset.tooltip = "Visit UBCGrades ↗";
-    button.title = "Open UBCGrades course page";
   } else {
     delete button.dataset.tooltip;
     button.removeAttribute("title");
@@ -238,7 +295,6 @@ function applyRmpButtonState(button, state) {
 
   if (hasProfileLink) {
     button.dataset.tooltip = "Visit RateMyProf ↗";
-    button.title = "Open RateMyProfessors profile";
   } else {
     delete button.dataset.tooltip;
     button.removeAttribute("title");
@@ -417,14 +473,39 @@ async function loadAverageForButton(button, state) {
 export function renderCourseObjects(
   ui,
   courses,
-  { hasLoadedSchedule = Boolean(courses?.length), onRemoveCourse = null } = {},
+  {
+    hasLoadedSchedule = Boolean(courses?.length),
+    onRemoveCourse = null,
+    onChangeCourseColor = null,
+    courseColorPalettes = [],
+    allCourses = courses,
+  } = {},
 ) {
   if (typeof onRemoveCourse === "function") ui.onRemoveCourse = onRemoveCourse;
+  if (typeof onChangeCourseColor === "function") ui.onChangeCourseColor = onChangeCourseColor;
+
+  if (!ui.courseColorPickerCloseBound && ui.root) {
+    ui.root.addEventListener("click", (event) => {
+      if (event.target.closest?.(".course-card__color-picker")) return;
+      ui.tableBody?.querySelectorAll(".course-card__color-picker.is-open").forEach((picker) => {
+        picker.classList.remove("is-open");
+        picker.querySelector(".course-card__color-button")?.setAttribute("aria-expanded", "false");
+      });
+    });
+    ui.courseColorPickerCloseBound = true;
+  }
 
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
   const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
   const removeCourseHandler = typeof onRemoveCourse === "function" ? onRemoveCourse : ui.onRemoveCourse;
+  const changeCourseColorHandler =
+    typeof onChangeCourseColor === "function" ? onChangeCourseColor : ui.onChangeCourseColor;
+  const groupRepresentatives = getCourseGroupRepresentatives(allCourses || courses);
+  const colorOptions =
+    Array.isArray(courseColorPalettes) && courseColorPalettes.length
+      ? courseColorPalettes
+      : DEFAULT_COURSE_COLOR_ASSIGNMENTS.map((id) => ({ id }));
 
   if (!hasLoadedSchedule) {
     const emptyState = document.createElement("div");
@@ -446,7 +527,12 @@ export function renderCourseObjects(
   (courses || []).forEach((course, index) => {
     const formatLabel = String(course.instructionalFormat || "").trim();
     const sectionLabel = String(course.section_number || "").trim();
-    const isLectureCourse = !(course?.isLab || course?.isSeminar || course?.isDiscussion || isExperientialCourse(course));
+    const isLectureCourse = !(
+      course?.isLab ||
+      course?.isSeminar ||
+      course?.isDiscussion ||
+      isExperientialCourse(course)
+    );
 
     const { main: meetingMain, sub: meetingSub } = splitMeeting(course.meeting);
     const codeInfo = splitCourseCode(course.code || "");
@@ -456,13 +542,16 @@ export function renderCourseObjects(
     const instructorName = (course.instructor || "").trim() || "TBA";
     const rmpInfo = buildRmpLookupInfo(course);
     const rmpState = getCourseRmpState(course);
+    const showColorPicker = groupRepresentatives.has(course) && typeof changeCourseColorHandler === "function";
+    const courseWorkdayLink = getCourseWorkdayLink(course);
 
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
-    const colorIndex = course?.colorIndex || (index % 7) + 1;
-    const subClass = course.isLab || course.isSeminar || course.isDiscussion || isExperientialCourse(course)
-      ? " course-card--sub"
-      : "";
+    const colorIndex = course?.colorIndex || (index % COURSE_COLOR_COUNT) + 1;
+    const subClass =
+      course.isLab || course.isSeminar || course.isDiscussion || isExperientialCourse(course)
+        ? " course-card--sub"
+        : "";
     card.className = `course-card course-card--color-${colorIndex}${subClass}`;
     const courseConflictKey = normalizeConflictToken(course.code || course.title || "");
     const conflictPartners = conflictPartnersByCode.get(courseConflictKey) || [];
@@ -474,7 +563,7 @@ export function renderCourseObjects(
         <div class="course-card__code">
           ${
             showConflictIcon
-              ? `<span class="course-code-conflict wd-hover-tooltip" aria-label="Schedule conflict warning" data-tooltip="${escHTML(conflictMessage)}">🚩</span>`
+              ? `<span class="course-code-conflict wd-hover-tooltip" data-tooltip="${escHTML(conflictMessage)}">🚩</span>`
               : ""
           }
           ${
@@ -485,6 +574,59 @@ export function renderCourseObjects(
           }
           ${sectionLabel ? `<span class="course-code-section wd-hover-tooltip" data-tooltip="Section number">${escHTML(sectionLabel)}</span>` : ""}
           ${formatLabel ? `<span class="course-pill">${escHTML(formatLabel)}</span>` : ""}
+          ${
+            showColorPicker
+              ? `<div class="course-card__color-picker">
+                  <button
+                    class="course-card__color-button"
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                  >
+                    <span
+                      class="course-card__color-swatch"
+                      style="${escHTML(colorSwatchStyle(colorIndex))}"
+                      aria-hidden="true"
+                    ></span>
+                  </button>
+                  <div class="course-card__color-menu" role="listbox">
+                    ${colorOptions
+                      .map((palette) => {
+                        const paletteId = Number(palette.id);
+                        if (!isValidCourseColorIndex(paletteId)) return "";
+                        const selected = paletteId === colorIndex;
+                        return `<button
+                          class="course-card__color-option${selected ? " is-selected" : ""}"
+                          type="button"
+                          role="option"
+                          aria-selected="${selected}"
+                          data-color-index="${paletteId}"
+                        >
+                          <span
+                            class="course-card__color-option-swatch"
+                            style="${escHTML(colorSwatchStyle(paletteId))}"
+                            aria-hidden="true"
+                          ></span>
+                        </button>`;
+                      })
+                      .join("")}
+                  </div>
+                </div>`
+              : ""
+          }
+          ${
+            courseWorkdayLink
+              ? `<button
+                  class="course-card__link-button wd-hover-tooltip"
+                  type="button"
+                  aria-label="Open course link"
+                  data-tooltip="Visit section page ↗"
+                  data-course-link="${escHTML(courseWorkdayLink)}"
+                >
+                  <span class="material-symbols-rounded" aria-hidden="true">link</span>
+                </button>`
+              : ""
+          }
         </div>
         <div class="course-card__instructor-wrap">
           ${
@@ -540,11 +682,58 @@ export function renderCourseObjects(
               </div>`
             : ""
         }
-        <button class="course-card__delete-button" type="button" aria-label="Remove course">
+        <button class="course-card__delete-button" type="button">
           <span class="material-symbols-rounded" aria-hidden="true">delete</span>
         </button>
       </div>
     `;
+
+    const colorPicker = card.querySelector(".course-card__color-picker");
+    const colorButton = card.querySelector(".course-card__color-button");
+    const colorMenu = card.querySelector(".course-card__color-menu");
+    if (colorPicker && colorButton && colorMenu && typeof changeCourseColorHandler === "function") {
+      colorButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const isOpen = colorPicker.classList.toggle("is-open");
+        colorButton.setAttribute("aria-expanded", String(isOpen));
+        ui.tableBody?.querySelectorAll(".course-card__color-picker.is-open").forEach((picker) => {
+          if (picker === colorPicker) return;
+          picker.classList.remove("is-open");
+          picker.querySelector(".course-card__color-button")?.setAttribute("aria-expanded", "false");
+        });
+      });
+
+      colorMenu.addEventListener("click", (event) => {
+        const option = event.target.closest(".course-card__color-option");
+        if (!option) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        const selectedColorIndex = Number(option.dataset.colorIndex);
+        if (isValidCourseColorIndex(selectedColorIndex)) changeCourseColorHandler(course, selectedColorIndex);
+      });
+
+      colorPicker.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        colorPicker.classList.remove("is-open");
+        colorButton.setAttribute("aria-expanded", "false");
+        colorButton.focus();
+      });
+    }
+
+    const linkButton = card.querySelector(".course-card__link-button");
+    if (linkButton) {
+      linkButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const link = linkButton.dataset.courseLink || "";
+        if (link) window.open(link, "_blank", "noopener,noreferrer");
+      });
+    }
 
     const deleteButton = card.querySelector(".course-card__delete-button");
     if (deleteButton && typeof removeCourseHandler === "function") {

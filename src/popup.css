@@ -1,8 +1,10 @@
 @import "./css/colors/theme-tokens.css";
 @import "./css/formatting/saved-schedules.css";
 @import "./css/formatting/schedule-view.css";
+@import "./css/formatting/hover-tooltip.css";
 @import "./css/colors/saved-schedules-colors.css";
 @import "./css/colors/schedule-view-colors.css";
+@import "./css/colors/hover-tooltip-colors.css";
 
 :root {
   color-scheme: light;
@@ -31,7 +33,7 @@ body {
 }
 
 body {
-  overflow: hidden;
+  overflow: visible;
   border-radius: 7px;
 }
 
@@ -47,7 +49,8 @@ h3 {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  height: 600px;
+  min-height: 600px;
+  height: auto;
   gap: 16px;
   padding: 76px 0 20px;
   border: 3px solid var(--hex-brand-main-1);
@@ -57,7 +60,7 @@ h3 {
 
 .popup-brand {
   position: fixed;
-  top: 3px;
+  top: 0;
   left: 50%;
   z-index: 20;
 
@@ -272,7 +275,14 @@ h3 {
   font-size: 13px;
 }
 
-.popup-alert {
+.popup-alert.footer-note-stack {
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.popup-alert .footer-note {
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(185, 28, 28, 0.1);
@@ -282,13 +292,13 @@ h3 {
   border: 1px solid rgba(185, 28, 28, 0.2);
 }
 
-.popup-alert[data-tone="info"] {
+.popup-alert .footer-note[data-tone="info"] {
   background: rgba(37, 99, 235, 0.1);
   color: var(--hex-info-1);
   border-color: rgba(37, 99, 235, 0.25);
 }
 
-.popup-alert[data-tone="success"] {
+.popup-alert .footer-note[data-tone="success"] {
   background: rgba(22, 131, 71, 0.1);
   color: var(--hex-success-1);
   border-color: rgba(22, 131, 71, 0.25);

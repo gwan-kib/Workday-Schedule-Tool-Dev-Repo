@@ -1,4 +1,4 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("loadMainPanel");
 debugLog({ local: { loadMainPanel: false } });
@@ -103,10 +103,7 @@ export async function loadMainPanel(shadowRoot) {
     helpButton: shadowRoot.querySelector(".help"),
     settingsButton: shadowRoot.querySelector(".settings"),
 
-    footerAlert: shadowRoot.querySelector("#schedule-conflict-alert"),
-
-    courseColorGrid: shadowRoot.querySelector("#course-color-grid"),
-    courseColorReset: shadowRoot.querySelector("#course-color-reset"),
+    footerAlert: shadowRoot.querySelector("#schedule-footer-notes"),
 
     hoverTipsToggle: shadowRoot.querySelector("#setting-hover-tips"),
     googleSignInButton: shadowRoot.querySelector("#setting-google-sign-in"),

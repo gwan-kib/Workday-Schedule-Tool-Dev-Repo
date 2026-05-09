@@ -1,7 +1,13 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("scheduleCollisions");
 debugLog({ local: { scheduleCollisions: false } });
+
+function formatConflictLabel(event) {
+  const code = event?.code || event?.title || "";
+  const label = event?.label || "";
+  return [code, label].filter(Boolean).join(" ");
+}
 
 // Detects overlapping schedule events by day. Input: eventsByDay map. Output: conflict blocks + codes.
 export function detectScheduleConflicts(eventsByDay) {
@@ -38,6 +44,7 @@ export function detectScheduleConflicts(eventsByDay) {
             rowSpan: overlapEnd - overlapStart,
             startIdx: overlapStart,
             endIdx: overlapEnd,
+            baseCodes: new Set(),
             codes: new Set(),
           };
           blockMap.set(key, block);
@@ -46,13 +53,17 @@ export function detectScheduleConflicts(eventsByDay) {
 
         const codeA = a.code || a.title || "";
         const codeB = b.code || b.title || "";
+        const labelA = formatConflictLabel(a);
+        const labelB = formatConflictLabel(b);
 
         if (codeA) {
-          block.codes.add(codeA);
+          block.baseCodes.add(codeA);
+          block.codes.add(labelA || codeA);
           conflictCodes.add(codeA);
         }
         if (codeB) {
-          block.codes.add(codeB);
+          block.baseCodes.add(codeB);
+          block.codes.add(labelB || codeB);
           conflictCodes.add(codeB);
         }
       }
@@ -61,6 +72,7 @@ export function detectScheduleConflicts(eventsByDay) {
 
   const codes = Array.from(conflictCodes).sort((a, b) => a.localeCompare(b));
   conflictBlocks.forEach((block) => {
+    block.baseCodes = Array.from(block.baseCodes || []).sort((a, b) => a.localeCompare(b));
     block.codes = Array.from(block.codes || []).sort((a, b) => a.localeCompare(b));
   });
 

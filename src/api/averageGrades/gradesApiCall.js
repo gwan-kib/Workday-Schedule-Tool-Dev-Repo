@@ -1,5 +1,5 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
-import { fetchCourseFromWorkdayId } from "../extraction/singleCourseImport.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
+import { fetchCourseFromWorkdayId } from "../../extraction/singleCourseImport.js";
 
 const debug = debugFor("gradesApiCall");
 debugLog({ local: { gradesApiCall: false } });
@@ -32,8 +32,7 @@ const buildGradesUrl = ({ version, campus, yearsession, subject, course, section
 };
 
 // Builds the yearsessions API URL. Input: params object. Output: URL string.
-const buildYearsessionsUrl = ({ version, campus }) =>
-  `${API_BASE}/${version}/yearsessions/${campus}/`;
+const buildYearsessionsUrl = ({ version, campus }) => `${API_BASE}/${version}/yearsessions/${campus}/`;
 
 // Builds the public UBCGrades course page URL. Input: course params. Output: URL string.
 export const buildUbcGradesCourseUrl = ({ campus, yearsession, subject, course, section }) => {
@@ -66,10 +65,7 @@ async function fetchJson(url, { signal } = {}) {
 }
 
 // Fetches yearsessions list. Input: params object and optional options. Output: yearsessions data or null.
-async function fetchYearsessions(
-  { campus, version = DEFAULT_API_VERSION },
-  { signal, useCache = true } = {},
-) {
+async function fetchYearsessions({ campus, version = DEFAULT_API_VERSION }, { signal, useCache = true } = {}) {
   if (!campus) return null;
   const cacheId = cacheKey(version, "yearsessions", campus);
   if (useCache && responseCache.has(cacheId)) return responseCache.get(cacheId);
@@ -109,7 +105,7 @@ function resolveFallbackYearsession(requested, available) {
     })
     .filter((item) => Number.isFinite(item.year));
 
-  parsed.sort((a, b) => (a.year - b.year) || a.season.localeCompare(b.season));
+  parsed.sort((a, b) => a.year - b.year || a.season.localeCompare(b.season));
 
   const sameSeasonPrior = parsed.filter((item) => item.season === reqSeason && item.year <= reqYear);
   if (sameSeasonPrior.length) return sameSeasonPrior[sameSeasonPrior.length - 1].value;
@@ -154,7 +150,7 @@ function buildAvailableYearsessionCandidates(requested, available) {
 
   const remaining = parsed
     .filter((item) => !sameSeason.includes(item.value))
-    .sort((a, b) => (b.year - a.year) || a.season.localeCompare(b.season))
+    .sort((a, b) => b.year - a.year || a.season.localeCompare(b.season))
     .map((item) => item.value);
 
   return [...sameSeason, ...remaining];
@@ -312,11 +308,11 @@ export async function fetchSectionGradesWithFallbackResult(
     seen.add(candidate);
 
     if (candidate !== yearsession) {
-      debug.warn(
-        { id: "fetchSectionGradesWithFallback.yearsessionFallback" },
-        "trying fallback yearsession",
-        { campus, requested: yearsession, candidate },
-      );
+      debug.warn({ id: "fetchSectionGradesWithFallback.yearsessionFallback" }, "trying fallback yearsession", {
+        campus,
+        requested: yearsession,
+        candidate,
+      });
     }
 
     try {

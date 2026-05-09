@@ -1,4 +1,4 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 const debug = debugFor("scheduleStorage");
 debugLog({ local: { scheduleStorage: false } });
 
@@ -16,12 +16,12 @@ const cloneCourses = (courses) => {
 const sanitizeSchedules = (schedules) => {
   if (!Array.isArray(schedules)) return [];
   return schedules
-    .filter((s) => s && Array.isArray(s.courses))
+    .filter((s) => s)
     .map((s) => ({
       id: s.id,
       name: s.name || "Untitled",
       savedAt: s.savedAt || new Date().toISOString(),
-      courses: s.courses,
+      courses: Array.isArray(s.courses) ? s.courses : [],
       colorAssignments: Array.isArray(s.colorAssignments) ? s.colorAssignments : null,
       isFavorite: Boolean(s.isFavorite),
     }));
@@ -163,7 +163,6 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
       card.dataset.id = schedule.id;
       card.tabIndex = 0;
       card.setAttribute("role", "button");
-      card.setAttribute("aria-label", `Load ${schedule.name}`);
 
       const header = document.createElement("div");
       header.className = "schedule-saved-card-header";
@@ -198,10 +197,11 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
 
       const favoriteButton = document.createElement("button");
       favoriteButton.type = "button";
-      favoriteButton.className = `schedule-saved-action star${schedule.isFavorite ? " is-favorite" : ""}`;
+      favoriteButton.className = `schedule-saved-action star wd-hover-tooltip${schedule.isFavorite ? " is-favorite" : ""}`;
       favoriteButton.dataset.action = "favorite";
-      favoriteButton.setAttribute("aria-label", schedule.isFavorite ? "Unstar schedule" : "Star schedule");
-      favoriteButton.setAttribute("title", schedule.isFavorite ? "Unstar schedule" : "Star schedule");
+      const favoriteLabel = schedule.isFavorite ? "Unstar schedule" : "Star schedule";
+      favoriteButton.dataset.tooltip = favoriteLabel;
+      favoriteButton.setAttribute("aria-label", favoriteLabel);
       favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));
 
       const favoriteIcon = document.createElement("span");
@@ -212,10 +212,10 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
 
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
-      deleteButton.className = "schedule-saved-action delete";
+      deleteButton.className = "schedule-saved-action delete wd-hover-tooltip";
       deleteButton.dataset.action = "delete";
+      deleteButton.dataset.tooltip = "Delete schedule";
       deleteButton.setAttribute("aria-label", "Delete schedule");
-      deleteButton.setAttribute("title", "Delete schedule");
 
       const deleteIcon = document.createElement("span");
       deleteIcon.className = "material-symbols-rounded";

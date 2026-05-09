@@ -3,7 +3,7 @@ import { STATE } from "./core/state.js";
 import { ensureMount } from "./utilities/shadowMount.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
 
-import { extractCoursesData } from "./extraction/index.js";
+import { extractCoursesData } from "./extraction/extractCourses.js";
 import {
   extractWorkdayCourseIdFromElement,
   fetchCourseFromWorkdayId,
@@ -11,7 +11,7 @@ import {
   validateWorkdayCourseLink,
   WRONG_COURSE_LINK_ERROR,
 } from "./extraction/singleCourseImport.js";
-import { setupRegistrationAverageButtons } from "./averageGrades/registrationAverageButtons.js";
+import { setupRegistrationAverageButtons } from "./api/averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
 import {
   buildCalendarViewUrl,
@@ -19,15 +19,16 @@ import {
   requestDisconnectCalendar,
   requestSignInCalendar,
   requestSyncCoursesToCalendar,
-} from "./googleCalendar/calendarIntegration.js";
-import { loadMainPanel } from "./mainPanel/loadMainPanel.js";
-import { createCourseColorController } from "./mainPanel/courseColorController.js";
-import { initializeHoverTooltipController } from "./mainPanel/hoverTooltipController.js";
-import { createPanelViewController } from "./mainPanel/panelViewController.js";
-import { createScheduleModalController, createSchedulePickerController } from "./mainPanel/scheduleModals.js";
-import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courseViewSorting.js";
-import { renderCourseObjects } from "./mainPanel/renderCourseObjects.js";
-import { renderSchedule } from "./mainPanel/scheduleView.js";
+} from "./exportLogic/googleCalendar/calendarIntegration.js";
+import { loadMainPanel } from "./mainPanel/shell/loadMainPanel.js";
+import { createFooterNoteController } from "./mainPanel/shell/footerNoteController.js";
+import { createCourseColorController } from "./mainPanel/settings/courseColorController.js";
+import { initializeHoverTooltipController } from "./mainPanel/settings/hoverTooltipController.js";
+import { createPanelViewController } from "./mainPanel/shell/panelViewController.js";
+import { createScheduleModalController } from "./mainPanel/schedules/scheduleModals.js";
+import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courses/courseViewSorting.js";
+import { renderCourseObjects } from "./mainPanel/courses/renderCourseObjects.js";
+import { renderSchedule } from "./mainPanel/schedules/scheduleView.js";
 import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
@@ -36,7 +37,7 @@ import {
   persistSavedSchedules,
   renderSavedSchedules,
   togglePreferredSchedule,
-} from "./mainPanel/scheduleStorage.js";
+} from "./mainPanel/schedules/scheduleStorage.js";
 
 const debug = debugFor("content");
 debugLog({ local: { content: false } });
@@ -50,11 +51,11 @@ debugLog({ local: { content: false } });
     // smaller controllers so this file mostly stays as the top-level coordinator.
     const shadowRoot = ensureMount();
     const ui = await loadMainPanel(shadowRoot);
+    ui.footerNotes = createFooterNoteController(ui.footerAlert);
     const courseColorController = await createCourseColorController(ui);
     await initializeHoverTooltipController(ui, STATE.view);
     const { setActiveView, toggleMainPanel } = createPanelViewController(ui, STATE.view);
     const { openScheduleModal } = createScheduleModalController(ui);
-    const { openSchedulePickerModal } = createSchedulePickerController(ui);
 
     // Rebuild the visual views from shared STATE whenever schedule data or view settings change.
     const updateScheduleView = () => {
@@ -78,6 +79,9 @@ debugLog({ local: { content: false } });
       renderCourseObjects(ui, STATE.filtered, {
         hasLoadedSchedule: STATE.courses.length > 0,
         onRemoveCourse: removeCourseFromSchedule,
+        onChangeCourseColor: changeCourseGroupColor,
+        courseColorPalettes: courseColorController.getPalettes(),
+        allCourses: STATE.courses,
       });
     };
 
@@ -85,14 +89,7 @@ debugLog({ local: { content: false } });
     // and preserve the current UI when requested.
     const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
       debug.log({ id: "loadCoursesFromPage.start" }, "Loading courses from page", { preserveExisting });
-      const extractedCourses = await extractCoursesData({
-        selectSchedule: (options) =>
-          openSchedulePickerModal({
-            title: "Select a schedule",
-            message: "Multiple schedule tables detected. Select the one you would like to load:",
-            options,
-          }),
-      });
+      const extractedCourses = await extractCoursesData();
 
       if (extractedCourses === null) {
         debug.warn({ id: "loadCoursesFromPage.noCourses" }, "No courses were extracted", { preserveExisting });
@@ -171,20 +168,9 @@ debugLog({ local: { content: false } });
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     });
 
-    // Posts a transient status message into the widget footer; auto-clears after a few seconds.
-    let footerAlertTimeout = 0;
-    const showFooterAlert = (text, { tone = "info", durationMs = 6000 } = {}) => {
-      if (!ui.footerAlert) return;
-      clearTimeout(footerAlertTimeout);
-      ui.footerAlert.textContent = text;
-      ui.footerAlert.classList.remove("is-hidden");
-      ui.footerAlert.dataset.tone = tone;
-      if (durationMs > 0) {
-        footerAlertTimeout = setTimeout(() => {
-          ui.footerAlert.classList.add("is-hidden");
-          ui.footerAlert.textContent = "";
-        }, durationMs);
-      }
+    // Posts a transient status message into the widget footer without disturbing persistent notes.
+    const showFooterAlert = (text, { tone = "info", durationMs = 4000 } = {}) => {
+      return ui.footerNotes?.showTemporary(text, { tone, durationMs });
     };
 
     const getCourseIdentityKey = (course) =>
@@ -205,7 +191,7 @@ debugLog({ local: { content: false } });
 
       const courseKey = getCourseIdentityKey(course);
       if (STATE.courses.some((existing) => getCourseIdentityKey(existing) === courseKey)) {
-        showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "warn" });
+        showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "info" });
         return false;
       }
 
@@ -253,6 +239,18 @@ debugLog({ local: { content: false } });
       });
     };
 
+    const changeCourseGroupColor = (course, colorIndex) => {
+      const changed = courseColorController.assignManualCourseGroupColor(STATE.courses, course, colorIndex);
+      if (!changed) return;
+
+      courseColorController.assignCourseColors(STATE.courses);
+      STATE.currentSavedScheduleId = null;
+      STATE.currentScheduleName = null;
+      filterCourses(ui.searchInput.value);
+      renderAll();
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+    };
+
     const getManualCourseImportFailureMessage = (error) => {
       const message = String(error?.message || error || "Unknown error");
       if (message === WRONG_COURSE_LINK_ERROR) return "Could not add course: Wrong course link";
@@ -261,54 +259,45 @@ debugLog({ local: { content: false } });
 
     const importCourseFromRegistrationCard = async ({ row, link }) => {
       const courseId = extractWorkdayCourseIdFromElement(row);
-        if (courseId) {
-          try {
-            const course = await fetchCourseFromWorkdayId(courseId);
-            return addSingleCourseToSchedule(course);
-          } catch (error) {
-            debug.warn(
-              { id: "registrationCourseImport.idFetchFailed" },
-            "Could not fetch course by Workday ID",
-              {
-                courseId,
-                error: String(error?.message || error),
-              },
-            );
-            showFooterAlert("Could not load that course from Workday. Try again after opening the course details.", {
-              tone: "warn",
-            });
-            return false;
-          }
+      if (courseId) {
+        try {
+          const course = await fetchCourseFromWorkdayId(courseId);
+          return addSingleCourseToSchedule(course);
+        } catch (error) {
+          debug.warn({ id: "registrationCourseImport.idFetchFailed" }, "Could not fetch course by Workday ID", {
+            courseId,
+            error: String(error?.message || error),
+          });
+          showFooterAlert("Could not load that course from Workday. Try again after opening the course details.", {
+            tone: "warn",
+          });
+          return false;
         }
+      }
 
-        if (link) {
-          try {
-            const linkedCourse = await fetchCourseFromWorkdayLink(link);
-            return addSingleCourseToSchedule(linkedCourse);
-          } catch (error) {
-            debug.warn(
-              { id: "registrationCourseImport.linkFetchFailed" },
-            "Could not fetch course by Workday link",
-              {
-                error: String(error?.message || error),
-              },
-            );
-            showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
-            return false;
-          }
+      if (link) {
+        try {
+          const linkedCourse = await fetchCourseFromWorkdayLink(link);
+          return addSingleCourseToSchedule(linkedCourse);
+        } catch (error) {
+          debug.warn({ id: "registrationCourseImport.linkFetchFailed" }, "Could not fetch course by Workday link", {
+            error: String(error?.message || error),
+          });
+          showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
+          return false;
         }
+      }
 
-        showFooterAlert("Could not find a Workday course ID for that course card.", {
-          tone: "warn",
-        });
-        return false;
+      showFooterAlert("Could not find a Workday course ID for that course card.", {
+        tone: "warn",
+      });
+      return false;
     };
 
     const importCourseFromManualLink = async () => {
       const link = await openScheduleModal({
         title: "Add A Course",
-        message:
-          "Paste the Workday course section link.\n(for Saved Schedules, it's the link in the section column)",
+        message: "Paste the Workday course section link.\n(for Saved Schedules, it's the link in the section column)",
         confirmLabel: "Add A Course",
         showInput: true,
         showCancel: true,
@@ -328,7 +317,7 @@ debugLog({ local: { content: false } });
       }
 
       if (ui.addCourseButton) ui.addCourseButton.disabled = true;
-      showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
+      const loadingNoteId = showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
       try {
         const course = await fetchCourseFromWorkdayLink(validation.url);
         addSingleCourseToSchedule(course);
@@ -336,6 +325,7 @@ debugLog({ local: { content: false } });
         debug.warn({ id: "manualCourseImport.failed" }, "Manual course import failed", error);
         showFooterAlert(getManualCourseImportFailureMessage(error), { tone: "warn" });
       } finally {
+        ui.footerNotes?.removeTemporary(loadingNoteId);
         if (ui.addCourseButton) ui.addCourseButton.disabled = false;
       }
     };
@@ -398,7 +388,7 @@ debugLog({ local: { content: false } });
           showFooterAlert("No courses to sync.", { tone: "warn" });
           return;
         }
-        showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
+        const syncingNoteId = showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
         try {
           const summary = await requestSyncCoursesToCalendar(STATE.filtered);
           const tone = summary.failed || summary.deleteFailed ? "warn" : "info";
@@ -415,6 +405,8 @@ debugLog({ local: { content: false } });
         } catch (error) {
           debug.error("Calendar sync failed", error);
           showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn" });
+        } finally {
+          ui.footerNotes?.removeTemporary(syncingNoteId);
         }
       }
     };
@@ -516,7 +508,7 @@ debugLog({ local: { content: false } });
 
       if (!name) return;
 
-      const snapshot = createScheduleSnapshot(name, STATE.filtered, courseColorController.getAssignments());
+      const snapshot = createScheduleSnapshot(name, STATE.filtered, null);
       if (!STATE.savedSchedules.length) snapshot.isFavorite = true;
       STATE.savedSchedules = [snapshot, ...STATE.savedSchedules];
       debug.log({ id: "saveSchedule.saved" }, "Saved schedule snapshot", {
@@ -570,10 +562,6 @@ debugLog({ local: { content: false } });
       STATE.currentSavedScheduleId = scheduleId;
       STATE.currentScheduleName = selected.name;
       debug.log({ id: "savedMenu.load" }, "Loading saved schedule", { scheduleId, scheduleName: selected.name });
-      if (selected.colorAssignments) {
-        await courseColorController.applyAndPersistCourseColors(selected.colorAssignments);
-      }
-
       STATE.courses = [...selected.courses];
       courseColorController.assignCourseColors(STATE.courses);
       STATE.filtered = [...STATE.courses];

@@ -1,7 +1,7 @@
-import { $$, on } from "../utilities/dom.js";
-import { STATE } from "../core/state.js";
+import { $$, on } from "../../utilities/dom.js";
+import { STATE } from "../../core/state.js";
 import { reorderCourseObjects } from "./renderCourseObjects.js";
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("mainPanelInteractions");
 debugLog({ local: { mainPanelInteractions: false } });

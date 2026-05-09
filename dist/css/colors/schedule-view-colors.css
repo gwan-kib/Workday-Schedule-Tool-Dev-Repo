@@ -53,7 +53,7 @@
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
 }
 
-/* Schedule entry color cycle (7) */
+/* Schedule entry color cycle */
 .schedule-entry--color-1 {
   --schedule-entry-bg: var(--course-color-1-bg);
   --schedule-entry-border: var(--course-color-1-border);
@@ -101,6 +101,13 @@
   --schedule-entry-border: var(--course-color-7-border);
   --schedule-entry-sub-bg: var(--course-color-7-sub-bg);
   --schedule-entry-sub-border: var(--course-color-7-border);
+}
+
+.schedule-entry--color-8 {
+  --schedule-entry-bg: var(--course-color-8-bg);
+  --schedule-entry-border: var(--course-color-8-border);
+  --schedule-entry-sub-bg: var(--course-color-8-sub-bg);
+  --schedule-entry-sub-border: var(--course-color-8-border);
 }
 
 /* Sub variants override the base palette */

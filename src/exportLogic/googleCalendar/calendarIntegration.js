@@ -1,4 +1,4 @@
-import { debugFor, debugLog } from "../utilities/debugTool.js";
+import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { buildEventsForCourse } from "./eventBuilder.js";
 
 const debug = debugFor("calendarIntegration");
