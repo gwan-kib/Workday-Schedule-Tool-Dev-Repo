@@ -16,12 +16,12 @@ const cloneCourses = (courses) => {
 const sanitizeSchedules = (schedules) => {
   if (!Array.isArray(schedules)) return [];
   return schedules
-    .filter((s) => s && Array.isArray(s.courses))
+    .filter((s) => s)
     .map((s) => ({
       id: s.id,
       name: s.name || "Untitled",
       savedAt: s.savedAt || new Date().toISOString(),
-      courses: s.courses,
+      courses: Array.isArray(s.courses) ? s.courses : [],
       colorAssignments: Array.isArray(s.colorAssignments) ? s.colorAssignments : null,
       isFavorite: Boolean(s.isFavorite),
     }));

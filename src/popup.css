@@ -284,6 +284,8 @@ h3 {
   font-size: 12px;
   font-weight: 700;
   border: 1px solid rgba(185, 28, 28, 0.2);
+}
+
 .popup-alert .footer-note[data-tone="info"] {
   background: rgba(37, 99, 235, 0.1);
   color: var(--hex-info-1);

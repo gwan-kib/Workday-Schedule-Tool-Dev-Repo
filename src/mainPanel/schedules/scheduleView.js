@@ -428,7 +428,7 @@ function buildConflictPartnerLookup(conflictBlocks = []) {
     const uniqueCodes = [];
     const seen = new Set();
 
-    (block?.codes || []).forEach((rawCode) => {
+    (block?.baseCodes || block?.codes || []).forEach((rawCode) => {
       const label = String(rawCode || "").trim();
       const normalized = normalizeConflictToken(label);
       if (!normalized || seen.has(normalized)) return;
@@ -458,6 +458,24 @@ function buildConflictPartnerLookup(conflictBlocks = []) {
   return lookup;
 }
 
+function buildFooterConflictGroups(conflictBlocks = []) {
+  const groups = new Map();
+
+  (Array.isArray(conflictBlocks) ? conflictBlocks : []).forEach((block) => {
+    const labels = (Array.isArray(block?.codes) ? block.codes : [])
+      .map((code) => String(code || "").trim())
+      .filter(Boolean);
+
+    if (!labels.length) return;
+
+    const sortedLabels = [...labels].sort((a, b) => normalizeConflictToken(a).localeCompare(normalizeConflictToken(b)));
+    const groupKey = sortedLabels.map(normalizeConflictToken).join("|");
+    if (!groups.has(groupKey)) groups.set(groupKey, sortedLabels);
+  });
+
+  return Array.from(groups.values());
+}
+
 function getFooterNoteController(ui) {
   if (ui?.footerNotes) return ui.footerNotes;
 
@@ -468,19 +486,21 @@ function getFooterNoteController(ui) {
   return ui.footerNotes;
 }
 
-function updateFooterConflictMessage(ui, conflictCodes) {
+function updateFooterConflictMessage(ui, conflictBlocks) {
   const footerNotes = getFooterNoteController(ui);
-  const codes = Array.isArray(conflictCodes) ? conflictCodes.filter(Boolean) : [];
+  const conflictGroups = buildFooterConflictGroups(conflictBlocks).map((group) => group.join(" & "));
+  const codes = conflictGroups.length ? [conflictGroups.join("), (")] : [];
+
   if (!codes.length) {
     footerNotes?.removePersistent(CONFLICT_FOOTER_NOTE_ID);
     return;
   }
 
   footerNotes?.setPersistent(
-    CONFLICT_FOOTER_NOTE_ID,
-    `🚩 The following classes are in conflict: [${codes.join(", ")}].`,
+    CONFLICT_FOOTER_NOTE_ID, 
+    `🚩 The following classes are in conflict: (${codes.join(", ")})`,
     { tone: "warn" },
-  );
+  ); 
 }
 function getActiveSemester(courses = []) {
   const counts = {};
@@ -521,7 +541,7 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
   const eventsByDay = buildDayEvents(courses || [], activeSemester);
   const allEventsByDay = buildDayEvents(courses || [], null);
   const { conflictBlocks } = detectScheduleConflicts(eventsByDay);
-  const { conflictBlocks: allConflictBlocks, conflictCodes } = detectScheduleConflicts(allEventsByDay);
+  const { conflictBlocks: allConflictBlocks } = detectScheduleConflicts(allEventsByDay);
   ui.conflictPartnersByCode = buildConflictPartnerLookup(allConflictBlocks);
 
   host.innerHTML = "";
@@ -529,7 +549,7 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
   host.appendChild(tableWrap);
 
   renderOverlayBlocks(tableWrap, eventsByDay, conflictBlocks, timeFormat);
-  updateFooterConflictMessage(ui, conflictCodes);
+  updateFooterConflictMessage(ui, allConflictBlocks);
 
   ui.activeSemester = activeSemester;
 
