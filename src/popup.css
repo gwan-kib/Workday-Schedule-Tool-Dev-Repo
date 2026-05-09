@@ -1,8 +1,10 @@
 @import "./css/colors/theme-tokens.css";
 @import "./css/formatting/saved-schedules.css";
 @import "./css/formatting/schedule-view.css";
+@import "./css/formatting/hover-tooltip.css";
 @import "./css/colors/saved-schedules-colors.css";
 @import "./css/colors/schedule-view-colors.css";
+@import "./css/colors/hover-tooltip-colors.css";
 
 :root {
   color-scheme: light;

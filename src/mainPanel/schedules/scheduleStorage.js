@@ -197,9 +197,11 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
 
       const favoriteButton = document.createElement("button");
       favoriteButton.type = "button";
-      favoriteButton.className = `schedule-saved-action star${schedule.isFavorite ? " is-favorite" : ""}`;
+      favoriteButton.className = `schedule-saved-action star wd-hover-tooltip${schedule.isFavorite ? " is-favorite" : ""}`;
       favoriteButton.dataset.action = "favorite";
-      favoriteButton.setAttribute("title", schedule.isFavorite ? "Unstar schedule" : "Star schedule");
+      const favoriteLabel = schedule.isFavorite ? "Unstar schedule" : "Star schedule";
+      favoriteButton.dataset.tooltip = favoriteLabel;
+      favoriteButton.setAttribute("aria-label", favoriteLabel);
       favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));
 
       const favoriteIcon = document.createElement("span");
@@ -210,9 +212,10 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
 
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
-      deleteButton.className = "schedule-saved-action delete";
+      deleteButton.className = "schedule-saved-action delete wd-hover-tooltip";
       deleteButton.dataset.action = "delete";
-      deleteButton.setAttribute("title", "Delete schedule");
+      deleteButton.dataset.tooltip = "Delete schedule";
+      deleteButton.setAttribute("aria-label", "Delete schedule");
 
       const deleteIcon = document.createElement("span");
       deleteIcon.className = "material-symbols-rounded";

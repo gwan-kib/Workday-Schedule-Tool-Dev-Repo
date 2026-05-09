@@ -1,6 +1,13 @@
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
-import { buildUbcGradesCourseUrl, fetchSectionGradesWithFallbackResult } from "../../api/averageGrades/gradesApiCall.js";
-import { fetchProfRating, inferCampusFromCourseCode, normalizeProfessorName } from "../../api/rateMyProfessor/rmpApi.js";
+import {
+  buildUbcGradesCourseUrl,
+  fetchSectionGradesWithFallbackResult,
+} from "../../api/averageGrades/gradesApiCall.js";
+import {
+  fetchProfRating,
+  inferCampusFromCourseCode,
+  normalizeProfessorName,
+} from "../../api/rateMyProfessor/rmpApi.js";
 import {
   COURSE_COLOR_COUNT,
   DEFAULT_COURSE_COLOR_ASSIGNMENTS,
@@ -250,7 +257,6 @@ function applyAverageButtonState(button, state) {
 
   if (hasLink) {
     button.dataset.tooltip = "Visit UBCGrades ↗";
-    button.title = "Open UBCGrades course page";
   } else {
     delete button.dataset.tooltip;
     button.removeAttribute("title");
@@ -289,7 +295,6 @@ function applyRmpButtonState(button, state) {
 
   if (hasProfileLink) {
     button.dataset.tooltip = "Visit RateMyProf ↗";
-    button.title = "Open RateMyProfessors profile";
   } else {
     delete button.dataset.tooltip;
     button.removeAttribute("title");
@@ -497,9 +502,10 @@ export function renderCourseObjects(
   const changeCourseColorHandler =
     typeof onChangeCourseColor === "function" ? onChangeCourseColor : ui.onChangeCourseColor;
   const groupRepresentatives = getCourseGroupRepresentatives(allCourses || courses);
-  const colorOptions = Array.isArray(courseColorPalettes) && courseColorPalettes.length
-    ? courseColorPalettes
-    : DEFAULT_COURSE_COLOR_ASSIGNMENTS.map((id) => ({ id }));
+  const colorOptions =
+    Array.isArray(courseColorPalettes) && courseColorPalettes.length
+      ? courseColorPalettes
+      : DEFAULT_COURSE_COLOR_ASSIGNMENTS.map((id) => ({ id }));
 
   if (!hasLoadedSchedule) {
     const emptyState = document.createElement("div");
@@ -613,8 +619,8 @@ export function renderCourseObjects(
               ? `<button
                   class="course-card__link-button wd-hover-tooltip"
                   type="button"
-                  title="Open course link"
-                  data-tooltip="Open course link"
+                  aria-label="Open course link"
+                  data-tooltip="Visit section page ↗"
                   data-course-link="${escHTML(courseWorkdayLink)}"
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">link</span>

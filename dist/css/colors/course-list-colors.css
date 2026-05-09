@@ -107,7 +107,7 @@
 }
 
 .course-card__color-button {
-  background: var(--hex-neutral-1);
+  background: var(--course-card-border);
   border-color: var(--course-card-border);
 }
 
