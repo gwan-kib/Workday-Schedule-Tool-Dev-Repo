@@ -79,6 +79,52 @@ const isExperientialCourse = (course) =>
 const colorSwatchStyle = (colorIndex) =>
   `background: var(--course-color-${colorIndex}-bg); border-color: var(--course-color-${colorIndex}-border);`;
 
+function getTenantPath(url) {
+  try {
+    return new URL(url).pathname.split("/").filter(Boolean)[0] || "ubc";
+  } catch (error) {
+    return "ubc";
+  }
+}
+
+function normalizeWorkdayPageLink(value) {
+  if (!value) return "";
+
+  try {
+    const parsed = new URL(value);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const instIndex = parts.indexOf("inst");
+    if (instIndex !== -1 && parts[instIndex - 1] !== "d") {
+      parts.splice(instIndex, 0, "d");
+      parsed.pathname = `/${parts.join("/")}`;
+    }
+    return parsed.href;
+  } catch (error) {
+    return "";
+  }
+}
+
+function buildWorkdayPageLinkFromId(courseId) {
+  const id = String(courseId || "").trim();
+  if (!id) return "";
+
+  try {
+    const base = new URL(window.location.href);
+    const tenant = getTenantPath(base.href);
+    return `${base.origin}/${tenant}/d/inst/1$15194/15194$${id}.htmld`;
+  } catch (error) {
+    return "";
+  }
+}
+
+function getCourseWorkdayLink(course) {
+  if (!course || typeof course !== "object") return "";
+
+  const link = normalizeWorkdayPageLink(course.workdayCourseLink) || buildWorkdayPageLinkFromId(course.workdayCourseId);
+  if (link) course.workdayCourseLink = link;
+  return link;
+}
+
 // Normalizes whitespace in multi-line strings. Input: string. Output: cleaned string.
 function cleanLines(text) {
   return String(text || "")
@@ -491,6 +537,7 @@ export function renderCourseObjects(
     const rmpInfo = buildRmpLookupInfo(course);
     const rmpState = getCourseRmpState(course);
     const showColorPicker = groupRepresentatives.has(course) && typeof changeCourseColorHandler === "function";
+    const courseWorkdayLink = getCourseWorkdayLink(course);
 
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
@@ -510,7 +557,7 @@ export function renderCourseObjects(
         <div class="course-card__code">
           ${
             showConflictIcon
-              ? `<span class="course-code-conflict wd-hover-tooltip" aria-label="Schedule conflict warning" data-tooltip="${escHTML(conflictMessage)}">🚩</span>`
+              ? `<span class="course-code-conflict wd-hover-tooltip" data-tooltip="${escHTML(conflictMessage)}">🚩</span>`
               : ""
           }
           ${
@@ -527,7 +574,6 @@ export function renderCourseObjects(
                   <button
                     class="course-card__color-button"
                     type="button"
-                    aria-label="Change course color"
                     aria-haspopup="listbox"
                     aria-expanded="false"
                   >
@@ -537,7 +583,7 @@ export function renderCourseObjects(
                       aria-hidden="true"
                     ></span>
                   </button>
-                  <div class="course-card__color-menu" role="listbox" aria-label="Course colors">
+                  <div class="course-card__color-menu" role="listbox">
                     ${colorOptions
                       .map((palette) => {
                         const paletteId = Number(palette.id);
@@ -547,7 +593,6 @@ export function renderCourseObjects(
                           class="course-card__color-option${selected ? " is-selected" : ""}"
                           type="button"
                           role="option"
-                          aria-label="Select course color ${paletteId}"
                           aria-selected="${selected}"
                           data-color-index="${paletteId}"
                         >
@@ -561,6 +606,18 @@ export function renderCourseObjects(
                       .join("")}
                   </div>
                 </div>`
+              : ""
+          }
+          ${
+            courseWorkdayLink
+              ? `<button
+                  class="course-card__link-button"
+                  type="button"
+                  title="Open course link"
+                  data-course-link="${escHTML(courseWorkdayLink)}"
+                >
+                  <span class="material-symbols-rounded" aria-hidden="true">link</span>
+                </button>`
               : ""
           }
         </div>
@@ -618,7 +675,7 @@ export function renderCourseObjects(
               </div>`
             : ""
         }
-        <button class="course-card__delete-button" type="button" aria-label="Remove course">
+        <button class="course-card__delete-button" type="button">
           <span class="material-symbols-rounded" aria-hidden="true">delete</span>
         </button>
       </div>
@@ -657,6 +714,17 @@ export function renderCourseObjects(
         colorPicker.classList.remove("is-open");
         colorButton.setAttribute("aria-expanded", "false");
         colorButton.focus();
+      });
+    }
+
+    const linkButton = card.querySelector(".course-card__link-button");
+    if (linkButton) {
+      linkButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const link = linkButton.dataset.courseLink || "";
+        if (link) window.open(link, "_blank", "noopener,noreferrer");
       });
     }
 

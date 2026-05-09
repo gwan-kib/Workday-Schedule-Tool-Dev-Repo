@@ -325,6 +325,7 @@
 }
 
 .course-card__color-button,
+.course-card__link-button,
 .course-card__color-option {
   display: inline-flex;
   align-items: center;
@@ -339,6 +340,20 @@
   border: 2px solid;
   border-radius: 100px;
   transition: all 0.2s ease;
+}
+
+.course-card__link-button {
+  width: 23px;
+  height: 23px;
+  border: 0;
+  border-radius: 100px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.course-card__link-button .material-symbols-rounded {
+  font-size: 25px;
+  line-height: 1;
 }
 
 .course-card__color-swatch,

@@ -10,7 +10,6 @@ const readElementLabel = (el) =>
   (
     el?.getAttribute?.("data-automation-label") ||
     el?.getAttribute?.("title") ||
-    el?.getAttribute?.("aria-label") ||
     el?.textContent ||
     ""
   )

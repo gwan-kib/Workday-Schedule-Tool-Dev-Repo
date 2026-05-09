@@ -116,6 +116,15 @@
   background: var(--course-card-chip-bg);
 }
 
+.course-card__link-button {
+  color: var(--course-card-border);
+  background: transparent;
+}
+
+.course-card__link-button:hover {
+  background: transparent;
+}
+
 .course-card__color-menu {
   background: var(--hex-neutral-1);
   border-color: var(--course-card-border);

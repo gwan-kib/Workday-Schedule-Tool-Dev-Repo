@@ -97,7 +97,6 @@ function renderPicker() {
     card.dataset.id = schedule.id;
     card.tabIndex = 0;
     card.setAttribute("role", "button");
-    card.setAttribute("aria-label", `Preview ${schedule.name}`);
 
     const header = document.createElement("div");
     header.className = "schedule-saved-card-header";
@@ -133,7 +132,6 @@ function renderPicker() {
     favoriteButton.type = "button";
     favoriteButton.className = `schedule-saved-action star${schedule.isFavorite ? " is-favorite" : ""}`;
     favoriteButton.dataset.action = "favorite";
-    favoriteButton.setAttribute("aria-label", schedule.isFavorite ? "Unstar schedule" : "Star schedule");
     favoriteButton.setAttribute("title", schedule.isFavorite ? "Unstar schedule" : "Star schedule");
     favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));
 
@@ -147,7 +145,6 @@ function renderPicker() {
     deleteButton.type = "button";
     deleteButton.className = "schedule-saved-action delete";
     deleteButton.dataset.action = "delete";
-    deleteButton.setAttribute("aria-label", "Delete schedule");
     deleteButton.setAttribute("title", "Delete schedule");
 
     const deleteIcon = document.createElement("span");

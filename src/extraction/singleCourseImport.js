@@ -91,6 +91,23 @@ function buildWorkdayJsonUrlFromId(courseId, baseUrl = window.location.href) {
   return `${base.origin}/${tenant}/inst/1$15194/15194$${courseId}.htmld`;
 }
 
+function buildWorkdayPageUrlFromId(courseId, baseUrl = window.location.href) {
+  const base = new URL(baseUrl);
+  const tenant = getTenantPath(base.href);
+  return `${base.origin}/${tenant}/d/inst/1$15194/15194$${courseId}.htmld`;
+}
+
+function buildWorkdayPageUrlFromUrl(url) {
+  const parsed = new URL(url);
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  const instIndex = parts.indexOf("inst");
+  if (instIndex !== -1 && parts[instIndex - 1] !== "d") {
+    parts.splice(instIndex, 0, "d");
+    parsed.pathname = `/${parts.join("/")}`;
+  }
+  return parsed.href;
+}
+
 function parseWorkdaySectionLabel(labelText) {
   const text = normalizeSpaces(labelText).replace(/\s*\n\s*/g, " ");
   if (!text) return null;
@@ -148,6 +165,7 @@ function createCourseObject({
   meetingLines = [],
   isOnline = false,
   workdayCourseId = "",
+  workdayCourseLink = "",
 }) {
   const format = normalizeSpaces(instructionalFormat);
   const isLab = labLike(format);
@@ -170,6 +188,7 @@ function createCourseObject({
     isDiscussion,
     isExperiential,
     workdayCourseId,
+    workdayCourseLink,
   };
 }
 
@@ -201,7 +220,7 @@ function buildMeetingDisplay(meetingLines, isOnline) {
   return normalizeMeetingPatternsText(`${meeting}\n${location}`);
 }
 
-export function extractCourseFromWorkdayJson(data, { sourceUrl = "" } = {}) {
+export function extractCourseFromWorkdayJson(data, { sourceUrl = "", courseLink = "" } = {}) {
   if (!data || typeof data !== "object") throw new Error("Workday did not return course JSON.");
 
   const selectedNodes = collectWorkdayNodesWithLabels(getWorkdayJsonChildren(data));
@@ -217,6 +236,7 @@ export function extractCourseFromWorkdayJson(data, { sourceUrl = "" } = {}) {
   const meetingLines = readNodeInstances(findNode("Meeting Patterns"));
   const deliveryModes = readNodeInstances(findNode("Delivery Mode"));
   const workdayCourseId = getCourseIdFromUrl(sourceUrl);
+  const workdayCourseLink = courseLink || (workdayCourseId ? buildWorkdayPageUrlFromUrl(sourceUrl) : "");
 
   const course = createCourseObject({
     sectionDetails,
@@ -225,6 +245,7 @@ export function extractCourseFromWorkdayJson(data, { sourceUrl = "" } = {}) {
     meetingLines,
     isOnline: deliveryModes.some((mode) => /online learning/i.test(mode)),
     workdayCourseId,
+    workdayCourseLink,
   });
 
   debug.log({ id: "extractCourseFromWorkdayJson.result" }, "Extracted course from Workday JSON", course);
@@ -252,7 +273,7 @@ export function validateWorkdayCourseLink(value) {
     return { ok: false, error: WRONG_COURSE_LINK_ERROR };
   }
 
-  return { ok: true, url: normalizeWorkdayJsonUrl(url.href) };
+  return { ok: true, url: normalizeWorkdayJsonUrl(url.href), pageUrl: buildWorkdayPageUrlFromUrl(url.href) };
 }
 
 // Loads a Workday course link and parses it with the same course shape used by schedule imports.
@@ -271,7 +292,7 @@ export async function fetchCourseFromWorkdayLink(link) {
     throw new Error("Workday did not return course JSON. Use the URL copied from the course title.");
   }
 
-  const course = extractCourseFromWorkdayJson(data, { sourceUrl: validation.url });
+  const course = extractCourseFromWorkdayJson(data, { sourceUrl: validation.url, courseLink: validation.pageUrl });
 
   debug.log({ id: "fetchCourseFromWorkdayLink.done" }, "Parsed course from Workday link", course);
   return course;
@@ -281,5 +302,5 @@ export async function fetchCourseFromWorkdayId(courseId, { baseUrl = window.loca
   const normalizedId = normalizeSpaces(courseId);
   if (!normalizedId) throw new Error("Course ID not found.");
 
-  return fetchCourseFromWorkdayLink(buildWorkdayJsonUrlFromId(normalizedId, baseUrl));
+  return fetchCourseFromWorkdayLink(buildWorkdayPageUrlFromId(normalizedId, baseUrl));
 }

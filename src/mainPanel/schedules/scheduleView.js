@@ -272,7 +272,7 @@ function buildScheduleTable(timeFormat) {
 
   headRow.innerHTML = `
     <th class="schedule-time">
-      <button class="schedule-time-toggle wd-hover-tooltip" type="button" aria-label="Time format" data-tooltip="Time format">
+      <button class="schedule-time-toggle wd-hover-tooltip" type="button" data-tooltip="Time format">
         ${timeFormat === "am/pm" ? "AM/PM" : "24H"}
       </button>
     </th>
@@ -413,7 +413,6 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
     if (conflict.codes?.length) {
       const tooltipText = `Classes in conflict:\n[${conflict.codes.join(", ")}]`;
       block.dataset.tooltip = tooltipText;
-      block.setAttribute("aria-label", tooltipText);
       block.tabIndex = 0;
     }
 

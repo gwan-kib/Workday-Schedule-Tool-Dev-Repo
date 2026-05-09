@@ -28,7 +28,6 @@
         type="button"
         aria-haspopup="menu"
         aria-expanded="false"
-        aria-label="Export"
         data-tooltip="Export"
       >
         <span class="material-symbols-rounded export-icon" aria-hidden="true"> ios_share </span>
@@ -36,17 +35,17 @@
         <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
       </button>
       <div class="export-menu" id="widget-export-menu" role="menu">
-        <button class="export-option" type="button" data-export="ics" aria-label="Download .ics">Download .ics</button>
-        <button class="export-option" type="button" data-export="gcal-sync" aria-label="Sync to Google Calendar">
+        <button class="export-option" type="button" data-export="ics">Download .ics</button>
+        <button class="export-option" type="button" data-export="gcal-sync">
           <span class="material-symbols-rounded" aria-hidden="true">sync</span>
           Sync to Google Calendar
         </button>
       </div>
     </div>
-    <button class="button help" type="button" aria-label="help-panel" data-tooltip="help-panel">
+    <button class="button help" type="button" data-tooltip="help-panel">
       <span class="material-symbols-rounded"> help </span><span class="text">Help</span>
     </button>
-    <button class="button settings symbolOnly" type="button" aria-label="settings-panel" data-tooltip="settings-panel">
+    <button class="button settings symbolOnly" type="button" data-tooltip="settings-panel">
       <span class="material-symbols-rounded">settings</span>
     </button>
   </div>
@@ -58,7 +57,6 @@
       class="tab-button symbolOnly is-active wd-hover-tooltip"
       type="button"
       data-panel="course-list-panel"
-      aria-label="Course list"
       data-tooltip="Course list"
     >
       <span class="text"><span class="material-symbols-rounded">format_list_bulleted</span></span>
@@ -67,7 +65,6 @@
       class="tab-button symbolOnly wd-hover-tooltip"
       type="button"
       data-panel="schedule-panel"
-      aria-label="Schedule view"
       data-tooltip="Schedule view"
     >
       <span class="text"><span class="material-symbols-rounded">calendar_today</span></span>
@@ -88,7 +85,6 @@
       id="widget-save-schedule"
       class="button schedule-save-button symbolOnly wd-hover-tooltip"
       type="button"
-      aria-label="Save schedule"
       data-tooltip="Save schedule"
     >
       <span class="material-symbols-rounded save-icon"> save_as </span>
@@ -97,7 +93,6 @@
       id="widget-refresh"
       class="button symbolOnly wd-hover-tooltip"
       type="button"
-      aria-label="Refresh"
       data-tooltip="Refresh"
     >
       <span class="material-symbols-rounded refresh-icon"> refresh </span>
@@ -106,7 +101,6 @@
       id="widget-clear"
       class="button symbolOnly wd-hover-tooltip"
       type="button"
-      aria-label="Clear"
       data-tooltip="Clear"
     >
       <span class="material-symbols-rounded"> ink_eraser </span>
@@ -203,7 +197,6 @@
                     href="https://github.com/gwan-kib"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Gwantana Kiboigo GitHub"
                   >
                     <svg class="team-social-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
@@ -217,7 +210,6 @@
                     href="https://www.linkedin.com/in/gwantanakiboigo/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Gwantana Kiboigo LinkedIn"
                   >
                     <svg class="team-social-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
@@ -236,7 +228,6 @@
                     href="https://github.com/robie1337"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Mahmoud Rabie GitHub"
                   >
                     <svg class="team-social-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
@@ -250,7 +241,6 @@
                     href="https://www.linkedin.com/in/mahmoud-rabie-2b0287344/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Mahmoud Rabie LinkedIn"
                   >
                     <svg class="team-social-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
@@ -269,7 +259,6 @@
                     href="https://github.com/adamhassan06"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Adam Hassan GitHub"
                   >
                     <svg class="team-social-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
@@ -283,7 +272,6 @@
                     href="https://www.linkedin.com/in/adam-hassan-0b7b773b0/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Adam Hassan LinkedIn"
                   >
                     <svg class="team-social-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
@@ -335,7 +323,7 @@
   <div class="schedule-modal is-hidden" id="schedule-save-modal" aria-hidden="true">
     <div class="schedule-modal-backdrop" data-action="close"></div>
     <div class="dialog-container">
-      <div class="schedule-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+      <div class="schedule-modal-dialog" role="dialog" aria-modal="true">
         <div class="schedule-modal-header">
           <h3 class="schedule-modal-title" id="schedule-modal-title">Save Schedule</h3>
           <button class="schedule-modal-close" type="button" data-action="close">
@@ -366,7 +354,6 @@
         class="schedule-modal-dialog schedule-picker-dialog"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="schedule-picker-title"
       >
         <div class="schedule-modal-header">
           <h3 class="schedule-modal-title" id="schedule-picker-title">Choose a Schedule</h3>
