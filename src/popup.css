@@ -190,7 +190,7 @@ h3 {
   flex-direction: row;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   border: 2px solid transparent;
   cursor: pointer;
 }
@@ -221,7 +221,9 @@ h3 {
   margin-left: auto;
 }
 
-.popup-picker .schedule-saved-action.star {
+.popup-picker .schedule-saved-action.star,
+.popup-picker .schedule-saved-action.rename,
+.popup-picker .schedule-saved-action.delete {
   flex-shrink: 0;
   cursor: pointer;
 }

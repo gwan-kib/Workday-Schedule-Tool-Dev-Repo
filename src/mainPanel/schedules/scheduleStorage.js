@@ -210,6 +210,19 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
       favoriteIcon.textContent = "star";
       favoriteButton.appendChild(favoriteIcon);
 
+      const renameButton = document.createElement("button");
+      renameButton.type = "button";
+      renameButton.className = "schedule-saved-action rename wd-hover-tooltip";
+      renameButton.dataset.action = "rename";
+      renameButton.dataset.tooltip = "Rename schedule";
+      renameButton.setAttribute("aria-label", "Rename schedule");
+
+      const renameIcon = document.createElement("span");
+      renameIcon.className = "material-symbols-rounded";
+      renameIcon.setAttribute("aria-hidden", "true");
+      renameIcon.textContent = "edit";
+      renameButton.appendChild(renameIcon);
+
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
       deleteButton.className = "schedule-saved-action delete wd-hover-tooltip";
@@ -224,6 +237,7 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
       deleteButton.appendChild(deleteIcon);
 
       actions.appendChild(favoriteButton);
+      actions.appendChild(renameButton);
       actions.appendChild(deleteButton);
 
       card.appendChild(header);

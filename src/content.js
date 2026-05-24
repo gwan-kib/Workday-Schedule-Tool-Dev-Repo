@@ -590,6 +590,35 @@ debugLog({ local: { content: false } });
         return;
       }
 
+      if (actionButton?.dataset.action === "rename") {
+        event.stopPropagation();
+        const nextName = await openScheduleModal({
+          title: "Rename schedule",
+          message: `Choose a new name for "${selected.name}".`,
+          confirmLabel: "Rename",
+          showInput: true,
+          showCancel: true,
+          inputLabel: "Schedule name",
+          inputPlaceholder: "e.g. Fall semester plan",
+          inputValue: selected.name,
+        });
+        if (!nextName || nextName === selected.name) {
+          if (ui.savedDropdown) ui.savedDropdown.open = true;
+          return;
+        }
+
+        STATE.savedSchedules = STATE.savedSchedules.map((schedule) =>
+          schedule.id === scheduleId ? { ...schedule, name: nextName } : schedule,
+        );
+        if (STATE.currentSavedScheduleId === scheduleId) STATE.currentScheduleName = nextName;
+
+        await persistSavedSchedules(STATE.savedSchedules);
+        renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+        showFooterAlert(`Renamed schedule to "${nextName}".`, { tone: "success" });
+        if (ui.savedDropdown) ui.savedDropdown.open = true;
+        return;
+      }
+
       if (actionButton?.dataset.action === "delete") {
         event.stopPropagation();
         debug.log({ id: "savedMenu.delete" }, "Deleting saved schedule", { scheduleId, scheduleName: selected.name });
