@@ -85,34 +85,70 @@ debugLog({ local: { content: false } });
       });
     };
 
+    const loadingOverlayStack = [];
+
+    const renderLoadingOverlay = () => {
+      if (!ui.loadingModal) return;
+
+      const active = loadingOverlayStack[loadingOverlayStack.length - 1];
+      if (active) {
+        if (ui.loadingText) ui.loadingText.textContent = active.message;
+        ui.loadingModal.classList.remove("is-hidden");
+        ui.loadingModal.classList.add("is-open");
+        ui.loadingModal.setAttribute("aria-hidden", "false");
+        return;
+      }
+
+      ui.loadingModal.classList.add("is-hidden");
+      ui.loadingModal.classList.remove("is-open");
+      ui.loadingModal.setAttribute("aria-hidden", "true");
+    };
+
+    const showLoadingOverlay = (message = "Loading...") => {
+      const token = Symbol("loading-overlay");
+      loadingOverlayStack.push({ token, message });
+      renderLoadingOverlay();
+
+      return () => {
+        const index = loadingOverlayStack.findIndex((entry) => entry.token === token);
+        if (index >= 0) loadingOverlayStack.splice(index, 1);
+        renderLoadingOverlay();
+      };
+    };
+
     // Extract the current page's schedule data from Workday, normalize it into STATE,
     // and preserve the current UI when requested.
     const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
       debug.log({ id: "loadCoursesFromPage.start" }, "Loading courses from page", { preserveExisting });
-      const extractedCourses = await extractCoursesData();
+      const closeLoadingOverlay = showLoadingOverlay(preserveExisting ? "Refreshing schedule..." : "Loading schedule...");
+      try {
+        const extractedCourses = await extractCoursesData();
 
-      if (extractedCourses === null) {
-        debug.warn({ id: "loadCoursesFromPage.noCourses" }, "No courses were extracted", { preserveExisting });
-        if (!preserveExisting) {
-          STATE.courses = [];
-          STATE.filtered = [];
-          STATE.currentSavedScheduleId = null;
-          STATE.currentScheduleName = null;
-          renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+        if (extractedCourses === null) {
+          debug.warn({ id: "loadCoursesFromPage.noCourses" }, "No courses were extracted", { preserveExisting });
+          if (!preserveExisting) {
+            STATE.courses = [];
+            STATE.filtered = [];
+            STATE.currentSavedScheduleId = null;
+            STATE.currentScheduleName = null;
+            renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+          }
+          return false;
         }
-        return false;
-      }
 
-      STATE.courses = extractedCourses;
-      courseColorController.assignCourseColors(STATE.courses);
-      STATE.currentSavedScheduleId = null;
-      STATE.currentScheduleName = null;
-      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
-      filterCourses(ui.searchInput.value);
-      debug.log({ id: "loadCoursesFromPage.complete" }, "Loaded courses from page", {
-        courseCount: STATE.courses.length,
-      });
-      return true;
+        STATE.courses = extractedCourses;
+        courseColorController.assignCourseColors(STATE.courses);
+        STATE.currentSavedScheduleId = null;
+        STATE.currentScheduleName = null;
+        renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+        filterCourses(ui.searchInput.value);
+        debug.log({ id: "loadCoursesFromPage.complete" }, "Loaded courses from page", {
+          courseCount: STATE.courses.length,
+        });
+        return true;
+      } finally {
+        closeLoadingOverlay();
+      }
     };
 
     // Tab buttons only switch between the already-mounted views; they do not rebuild the UI shell.
@@ -260,6 +296,7 @@ debugLog({ local: { content: false } });
     const importCourseFromRegistrationCard = async ({ row, link }) => {
       const courseId = extractWorkdayCourseIdFromElement(row);
       if (courseId) {
+        const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
         try {
           const course = await fetchCourseFromWorkdayId(courseId);
           return addSingleCourseToSchedule(course);
@@ -272,10 +309,13 @@ debugLog({ local: { content: false } });
             tone: "warn",
           });
           return false;
+        } finally {
+          closeLoadingOverlay();
         }
       }
 
       if (link) {
+        const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
         try {
           const linkedCourse = await fetchCourseFromWorkdayLink(link);
           return addSingleCourseToSchedule(linkedCourse);
@@ -285,6 +325,8 @@ debugLog({ local: { content: false } });
           });
           showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
           return false;
+        } finally {
+          closeLoadingOverlay();
         }
       }
 
@@ -318,6 +360,7 @@ debugLog({ local: { content: false } });
 
       if (ui.addCourseButton) ui.addCourseButton.disabled = true;
       const loadingNoteId = showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
+      const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
       try {
         const course = await fetchCourseFromWorkdayLink(validation.url);
         addSingleCourseToSchedule(course);
@@ -325,6 +368,7 @@ debugLog({ local: { content: false } });
         debug.warn({ id: "manualCourseImport.failed" }, "Manual course import failed", error);
         showFooterAlert(getManualCourseImportFailureMessage(error), { tone: "warn" });
       } finally {
+        closeLoadingOverlay();
         ui.footerNotes?.removeTemporary(loadingNoteId);
         if (ui.addCourseButton) ui.addCourseButton.disabled = false;
       }
@@ -389,6 +433,7 @@ debugLog({ local: { content: false } });
           return;
         }
         const syncingNoteId = showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
+        const closeLoadingOverlay = showLoadingOverlay("Syncing to Google Calendar...");
         try {
           const summary = await requestSyncCoursesToCalendar(STATE.filtered);
           const tone = summary.failed || summary.deleteFailed ? "warn" : "info";
@@ -406,6 +451,7 @@ debugLog({ local: { content: false } });
           debug.error("Calendar sync failed", error);
           showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn" });
         } finally {
+          closeLoadingOverlay();
           ui.footerNotes?.removeTemporary(syncingNoteId);
         }
       }
@@ -416,6 +462,7 @@ debugLog({ local: { content: false } });
     on(ui.googleSignInButton, "click", async () => {
       ui.googleSignInButton.disabled = true;
       ui.googleSignOutButton.disabled = true;
+      const closeLoadingOverlay = showLoadingOverlay("Signing into Google...");
       try {
         const { signedIn } = await requestSignInCalendar();
         googleCalendarSignedIn = signedIn;
@@ -426,6 +473,7 @@ debugLog({ local: { content: false } });
         renderGoogleAccountControls();
         showFooterAlert(`Could not sign into Google: ${error.message}`, { tone: "warn" });
       } finally {
+        closeLoadingOverlay();
         ui.googleSignOutButton.disabled = false;
         if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
       }
@@ -434,6 +482,7 @@ debugLog({ local: { content: false } });
     on(ui.googleSignOutButton, "click", async () => {
       ui.googleSignInButton.disabled = true;
       ui.googleSignOutButton.disabled = true;
+      const closeLoadingOverlay = showLoadingOverlay("Signing out of Google...");
       try {
         await requestDisconnectCalendar();
         googleCalendarSignedIn = false;
@@ -446,6 +495,7 @@ debugLog({ local: { content: false } });
         });
         showFooterAlert(`Could not sign out of Google: ${error.message}`, { tone: "warn" });
       } finally {
+        closeLoadingOverlay();
         ui.googleSignOutButton.disabled = false;
         if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
       }
