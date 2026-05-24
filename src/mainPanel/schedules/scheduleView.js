@@ -496,10 +496,10 @@ function updateFooterConflictMessage(ui, conflictBlocks) {
   }
 
   footerNotes?.setPersistent(
-    CONFLICT_FOOTER_NOTE_ID, 
+    CONFLICT_FOOTER_NOTE_ID,
     `🚩 The following classes are in conflict: (${codes.join(", ")})`,
     { tone: "warn" },
-  ); 
+  );
 }
 function getActiveSemester(courses = []) {
   const counts = {};
