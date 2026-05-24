@@ -143,6 +143,19 @@ function renderPicker() {
     favoriteIcon.textContent = "star";
     favoriteButton.appendChild(favoriteIcon);
 
+    const renameButton = document.createElement("button");
+    renameButton.type = "button";
+    renameButton.className = "schedule-saved-action rename wd-hover-tooltip";
+    renameButton.dataset.action = "rename";
+    renameButton.dataset.tooltip = "Rename schedule";
+    renameButton.setAttribute("aria-label", "Rename schedule");
+
+    const renameIcon = document.createElement("span");
+    renameIcon.className = "material-symbols-rounded";
+    renameIcon.setAttribute("aria-hidden", "true");
+    renameIcon.textContent = "edit";
+    renameButton.appendChild(renameIcon);
+
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "schedule-saved-action delete wd-hover-tooltip";
@@ -157,6 +170,7 @@ function renderPicker() {
     deleteButton.appendChild(deleteIcon);
 
     actions.appendChild(favoriteButton);
+    actions.appendChild(renameButton);
     actions.appendChild(deleteButton);
     card.appendChild(header);
     card.appendChild(actions);
@@ -211,6 +225,38 @@ ui.savedMenu?.addEventListener("click", async (event) => {
     popupState.schedules = togglePreferredSchedule(popupState.schedules, scheduleId);
     await persistSavedSchedules(popupState.schedules);
     renderPicker();
+    if (ui.savedDropdown) ui.savedDropdown.open = true;
+    return;
+  }
+
+  if (actionButton?.dataset.action === "rename") {
+    event.stopPropagation();
+    const selected = popupState.schedules.find((schedule) => schedule.id === scheduleId);
+    if (!selected) return;
+
+    const promptedName = window.prompt("Rename schedule", selected.name);
+    if (promptedName === null) return;
+
+    const nextName = promptedName.trim();
+    if (!nextName) {
+      ui.footerNotes?.showTemporary("Schedule name cannot be empty.", { tone: "warn" });
+      if (ui.savedDropdown) ui.savedDropdown.open = true;
+      return;
+    }
+
+    if (nextName === selected.name) {
+      if (ui.savedDropdown) ui.savedDropdown.open = true;
+      return;
+    }
+
+    popupState.schedules = popupState.schedules.map((schedule) =>
+      schedule.id === scheduleId ? { ...schedule, name: nextName } : schedule,
+    );
+
+    await persistSavedSchedules(popupState.schedules);
+    renderPicker();
+    renderActiveSchedule();
+    ui.footerNotes?.showTemporary(`Renamed schedule to "${nextName}".`, { tone: "success" });
     if (ui.savedDropdown) ui.savedDropdown.open = true;
     return;
   }

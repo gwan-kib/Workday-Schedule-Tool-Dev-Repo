@@ -100,6 +100,9 @@ export async function loadMainPanel(shadowRoot) {
     schedulePickerList: shadowRoot.querySelector("#schedule-picker-list"),
     schedulePickerCancel: shadowRoot.querySelector("#schedule-picker-modal .schedule-modal-cancel"),
 
+    loadingModal: shadowRoot.querySelector("#schedule-loading-modal"),
+    loadingText: shadowRoot.querySelector("#schedule-loading-text"),
+
     helpButton: shadowRoot.querySelector(".help"),
     settingsButton: shadowRoot.querySelector(".settings"),
 

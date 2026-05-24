@@ -30,6 +30,7 @@ export function createScheduleModalController(ui) {
     showCancel = true,
     inputLabel = "Schedule name",
     inputPlaceholder = "e.g. Fall semester plan",
+    inputValue = "",
   }) => {
     if (!ui.saveModal) return Promise.resolve(null);
     debug.log({ id: "createScheduleModalController.open" }, "Opening schedule modal", {
@@ -48,14 +49,18 @@ export function createScheduleModalController(ui) {
     ui.saveModalField.classList.toggle("is-hidden", !showInput);
     ui.saveModalCancel.classList.toggle("is-hidden", !showCancel);
 
-    ui.saveModalInput.value = "";
+    ui.saveModalInput.value = inputValue;
     ui.saveModalInput.classList.remove("is-invalid");
 
     ui.saveModal.classList.remove("is-hidden");
     ui.saveModal.setAttribute("aria-hidden", "false");
 
-    if (showInput) ui.saveModalInput.focus();
-    else ui.saveModalConfirm.focus();
+    if (showInput) {
+      ui.saveModalInput.focus();
+      ui.saveModalInput.select();
+    } else {
+      ui.saveModalConfirm.focus();
+    }
 
     return new Promise((resolve) => {
       resolveScheduleModal = resolve;
