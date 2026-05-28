@@ -9,8 +9,6 @@
   flex-shrink: 0;
   flex-wrap: nowrap;
 
-  gap: 8px;
-
   padding: 8px 12px;
   border-top: 1px solid;
 
@@ -21,14 +19,34 @@
 }
 
 .footer-note-stack {
+  --footer-note-overflow-button-height: 60px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.footer-note-stack.is-hidden {
+  display: none;
+}
+
+.footer-note-stack.has-overflow {
+  min-height: var(--footer-note-overflow-button-height);
+}
+
+.footer-note-stack__visible {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
 
-.footer-note-stack.is-hidden {
-  display: none;
+.footer-note-stack.has-overflow .footer-note-stack__visible {
+  padding-right: 36px;
 }
 
 .footer-note {
@@ -67,6 +85,80 @@
 }
 
 .footer-note__dismiss .material-symbols-rounded {
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
+}
+
+.footer-note-overflow {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+.footer-note-overflow__summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: var(--footer-note-overflow-button-height);
+  border: 0;
+  border-radius: 999px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.footer-note-overflow__summary::-webkit-details-marker {
+  display: none;
+}
+
+.footer-note-overflow__summary .material-symbols-rounded {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.footer-note-overflow__menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 500px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px;
+  border: 2px solid;
+  border-radius: 12px;
+  z-index: 120;
+}
+
+.footer-note-overflow__menu::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+
+.footer-note-overflow__menu::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background-color: var(--scrollbar-track);
+}
+
+.footer-note-overflow__menu::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background-color: var(--scrollbar-thumb);
+}
+
+.footer-note-overflow__menu::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.footer-note-overflow__item {
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }

@@ -497,7 +497,12 @@ export function renderCourseObjects(
 
   ui.tableBody.innerHTML = "";
   const frag = document.createDocumentFragment();
-  const conflictPartnersByCode = ui?.conflictPartnersByCode instanceof Map ? ui.conflictPartnersByCode : new Map();
+  const conflictPartnersByCode =
+    ui?.scheduleConflictState?.partnersByCode instanceof Map
+      ? ui.scheduleConflictState.partnersByCode
+      : ui?.conflictPartnersByCode instanceof Map
+        ? ui.conflictPartnersByCode
+        : new Map();
   const removeCourseHandler = typeof onRemoveCourse === "function" ? onRemoveCourse : ui.onRemoveCourse;
   const changeCourseColorHandler =
     typeof onChangeCourseColor === "function" ? onChangeCourseColor : ui.onChangeCourseColor;

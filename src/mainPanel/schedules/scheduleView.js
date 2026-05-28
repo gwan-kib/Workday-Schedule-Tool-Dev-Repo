@@ -457,6 +457,46 @@ function buildConflictPartnerLookup(conflictBlocks = []) {
   return lookup;
 }
 
+function normalizeConflictBlocks(conflictBlocks = []) {
+  return (Array.isArray(conflictBlocks) ? conflictBlocks : []).map((block) => {
+    const baseCodes = (Array.isArray(block?.baseCodes) ? block.baseCodes : block?.baseCodes ? [block.baseCodes] : [])
+      .map((code) => String(code || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => normalizeConflictToken(a).localeCompare(normalizeConflictToken(b)));
+    const codes = (Array.isArray(block?.codes) ? block.codes : block?.codes ? [block.codes] : [])
+      .map((code) => String(code || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => normalizeConflictToken(a).localeCompare(normalizeConflictToken(b)));
+    const rowStart = Number(block?.rowStart ?? block?.startIdx ?? 0);
+    const rowSpan = Number(block?.rowSpan ?? 0);
+
+    return {
+      id: [block?.day || "", rowStart, block?.endIdx ?? rowStart + rowSpan, ...baseCodes.map(normalizeConflictToken)].join(
+        "|",
+      ),
+      day: block?.day || "",
+      rowStart,
+      rowSpan,
+      startIdx: Number(block?.startIdx ?? rowStart),
+      endIdx: Number(block?.endIdx ?? rowStart + rowSpan),
+      baseCodes,
+      codes,
+    };
+  });
+}
+
+function createConflictCollection(eventsByDay) {
+  const { conflictBlocks, conflictCodes } = detectScheduleConflicts(eventsByDay);
+
+  return {
+    blocks: normalizeConflictBlocks(conflictBlocks),
+    codes: (Array.isArray(conflictCodes) ? conflictCodes : [])
+      .map((code) => String(code || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => normalizeConflictToken(a).localeCompare(normalizeConflictToken(b))),
+  };
+}
+
 function buildFooterConflictGroups(conflictBlocks = []) {
   const groups = new Map();
 
@@ -489,11 +529,58 @@ function getFooterNoteController(ui) {
   return ui.footerNotes;
 }
 
-function updateFooterConflictMessage(ui, conflictBlocks) {
+function createScheduleConflictSummary(courses = []) {
+  const bySemester = new Map();
+
+  Object.keys(TERM_WINDOWS).forEach((semester) => {
+    bySemester.set(semester, createConflictCollection(buildDayEvents(courses || [], semester)));
+  });
+
+  const all = createConflictCollection(buildDayEvents(courses || [], null));
+  const footerGroups = buildFooterConflictGroups(all.blocks);
+
+  return {
+    all,
+    bySemester,
+    partnersByCode: buildConflictPartnerLookup(all.blocks),
+    footerGroups,
+    footerNoteIds: new Set(footerGroups.map(getConflictFooterNoteId)),
+  };
+}
+
+function getCourseConflictCodeSet(courses = []) {
+  const codes = new Set();
+
+  (Array.isArray(courses) ? courses : []).forEach((course) => {
+    const code = normalizeConflictToken(course?.code || course?.title || "");
+    if (code) codes.add(code);
+  });
+
+  return codes;
+}
+
+function getRenderableConflictBlocks(conflictState, semester, courses) {
+  const collection = semester ? conflictState?.bySemester?.get(semester) : conflictState?.all;
+  const blocks = Array.isArray(collection?.blocks) ? collection.blocks : [];
+  const visibleCodes = getCourseConflictCodeSet(courses);
+  if (!visibleCodes.size) return [];
+
+  return blocks.filter((block) => {
+    const blockCodes = (Array.isArray(block?.baseCodes) ? block.baseCodes : block?.codes || [])
+      .map(normalizeConflictToken)
+      .filter(Boolean);
+    const visibleMatchCount = blockCodes.filter((code) => visibleCodes.has(code)).length;
+    return visibleMatchCount >= 2;
+  });
+}
+
+function updateFooterConflictMessage(ui, conflictState) {
   const footerNotes = getFooterNoteController(ui);
-  const conflictGroups = buildFooterConflictGroups(conflictBlocks);
+  const conflictGroups = Array.isArray(conflictState?.footerGroups) ? conflictState.footerGroups : [];
   const previousIds = ui?.conflictFooterNoteIds instanceof Set ? ui.conflictFooterNoteIds : new Set();
-  const nextIds = new Set(conflictGroups.map(getConflictFooterNoteId));
+  const nextIds = conflictState?.footerNoteIds instanceof Set ? conflictState.footerNoteIds : new Set();
+
+  footerNotes?.resetPersistentVisibility?.();
 
   previousIds.forEach((id) => {
     if (!nextIds.has(id)) footerNotes?.removePersistent(id);
@@ -510,6 +597,19 @@ function updateFooterConflictMessage(ui, conflictBlocks) {
     );
   });
 }
+
+export function refreshScheduleConflictState(ui, courses = []) {
+  const conflictState = createScheduleConflictSummary(courses);
+
+  if (ui) {
+    ui.scheduleConflictState = conflictState;
+    ui.conflictPartnersByCode = conflictState.partnersByCode;
+  }
+
+  updateFooterConflictMessage(ui, conflictState);
+  return conflictState;
+}
+
 function getActiveSemester(courses = []) {
   const counts = {};
 
@@ -547,17 +647,13 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
   const activeSemester = semester || getActiveSemester(courses || []);
 
   const eventsByDay = buildDayEvents(courses || [], activeSemester);
-  const allEventsByDay = buildDayEvents(courses || [], null);
-  const { conflictBlocks } = detectScheduleConflicts(eventsByDay);
-  const { conflictBlocks: allConflictBlocks } = detectScheduleConflicts(allEventsByDay);
-  ui.conflictPartnersByCode = buildConflictPartnerLookup(allConflictBlocks);
+  const conflictBlocks = getRenderableConflictBlocks(ui?.scheduleConflictState, activeSemester, courses || []);
 
   host.innerHTML = "";
   const tableWrap = buildScheduleTable(timeFormat);
   host.appendChild(tableWrap);
 
   renderOverlayBlocks(tableWrap, eventsByDay, conflictBlocks, timeFormat);
-  updateFooterConflictMessage(ui, allConflictBlocks);
 
   ui.activeSemester = activeSemester;
 

@@ -3,7 +3,7 @@ import {
   captureCourseColorPalettes,
   normalizeCourseColorAssignments,
 } from "./mainPanel/settings/courseColorSettings.js";
-import { renderSchedule } from "./mainPanel/schedules/scheduleView.js";
+import { refreshScheduleConflictState, renderSchedule } from "./mainPanel/schedules/scheduleView.js";
 import {
   formatScheduleMeta,
   getPreferredSchedule,
@@ -35,6 +35,7 @@ const popupState = {
   activeScheduleId: null,
   basePalettes: [],
   timeFormat: "am/pm",
+  conflictScheduleId: null,
 };
 let scheduledRenderFrame = 0;
 
@@ -53,6 +54,21 @@ function cancelScheduledRender() {
   if (!scheduledRenderFrame) return;
   cancelAnimationFrame(scheduledRenderFrame);
   scheduledRenderFrame = 0;
+}
+
+function refreshActiveScheduleConflictState(schedule) {
+  if (!schedule) {
+    if (popupState.conflictScheduleId !== null || ui.scheduleConflictState) {
+      refreshScheduleConflictState(ui, []);
+    }
+    popupState.conflictScheduleId = null;
+    return;
+  }
+
+  if (popupState.conflictScheduleId === schedule.id) return;
+
+  refreshScheduleConflictState(ui, schedule.courses || []);
+  popupState.conflictScheduleId = schedule.id;
 }
 
 // The schedule renderer depends on live element measurements, so defer until the popup is visible.
@@ -188,6 +204,7 @@ function renderActiveSchedule() {
 
   if (!activeSchedule) {
     cancelScheduledRender();
+    refreshActiveScheduleConflictState(null);
     ui.empty?.classList.remove("is-hidden");
     ui.content?.classList.add("is-hidden");
     return;
@@ -196,6 +213,7 @@ function renderActiveSchedule() {
   popupState.activeScheduleId = activeSchedule.id;
   renderPicker();
   applySavedPalette(activeSchedule);
+  refreshActiveScheduleConflictState(activeSchedule);
 
   ui.empty?.classList.add("is-hidden");
   ui.content?.classList.remove("is-hidden");

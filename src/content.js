@@ -28,7 +28,7 @@ import { createPanelViewController } from "./mainPanel/shell/panelViewController
 import { createScheduleModalController } from "./mainPanel/schedules/scheduleModals.js";
 import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courses/courseViewSorting.js";
 import { renderCourseObjects } from "./mainPanel/courses/renderCourseObjects.js";
-import { renderSchedule } from "./mainPanel/schedules/scheduleView.js";
+import { refreshScheduleConflictState, renderSchedule } from "./mainPanel/schedules/scheduleView.js";
 import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
@@ -56,6 +56,8 @@ debugLog({ local: { content: false } });
     await initializeHoverTooltipController(ui, STATE.view);
     const { setActiveView, toggleMainPanel } = createPanelViewController(ui, STATE.view);
     const { openScheduleModal } = createScheduleModalController(ui);
+
+    const refreshScheduleConflicts = () => refreshScheduleConflictState(ui, STATE.courses);
 
     // Rebuild the visual views from shared STATE whenever schedule data or view settings change.
     const updateScheduleView = () => {
@@ -131,6 +133,7 @@ debugLog({ local: { content: false } });
             STATE.filtered = [];
             STATE.currentSavedScheduleId = null;
             STATE.currentScheduleName = null;
+            refreshScheduleConflicts();
             renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
           }
           return false;
@@ -142,6 +145,7 @@ debugLog({ local: { content: false } });
         STATE.currentScheduleName = null;
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         filterCourses(ui.searchInput.value);
+        refreshScheduleConflicts();
         debug.log({ id: "loadCoursesFromPage.complete" }, "Loaded courses from page", {
           courseCount: STATE.courses.length,
         });
@@ -200,6 +204,7 @@ debugLog({ local: { content: false } });
       STATE.currentSavedScheduleId = null;
       STATE.currentScheduleName = null;
       ui.searchInput.value = "";
+      refreshScheduleConflicts();
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     });
@@ -239,6 +244,7 @@ debugLog({ local: { content: false } });
       STATE.currentScheduleName = null;
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       filterCourses(ui.searchInput.value);
+      refreshScheduleConflicts();
       renderAll();
       showFooterAlert(`${course.code} ${course.section_number} added to the extension.`, { tone: "success" });
       return true;
@@ -268,6 +274,7 @@ debugLog({ local: { content: false } });
       STATE.currentSavedScheduleId = null;
       STATE.currentScheduleName = null;
       filterCourses(ui.searchInput.value);
+      refreshScheduleConflicts();
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       showFooterAlert(`${course.code || "Course"} ${course.section_number || ""} removed from the extension.`, {
@@ -645,6 +652,7 @@ debugLog({ local: { content: false } });
       courseColorController.assignCourseColors(STATE.courses);
       STATE.filtered = [...STATE.courses];
       ui.searchInput.value = "";
+      refreshScheduleConflicts();
 
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);

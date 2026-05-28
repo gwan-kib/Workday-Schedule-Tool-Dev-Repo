@@ -1,5 +1,6 @@
 const DEFAULT_TEMPORARY_DURATION_MS = 3000;
 const DEFAULT_MAX_TEMPORARY_NOTES = 3;
+const DEFAULT_MAX_VISIBLE_PERSISTENT_NOTES = 3;
 
 let nextFooterNoteId = 0;
 
@@ -19,9 +20,16 @@ function clearNoteTimer(note) {
 }
 
 // Maintains independent temporary and persistent footer-note stacks. Input: root element. Output: controller API.
-export function createFooterNoteController(root, { maxTemporaryNotes = DEFAULT_MAX_TEMPORARY_NOTES } = {}) {
+export function createFooterNoteController(
+  root,
+  {
+    maxTemporaryNotes = DEFAULT_MAX_TEMPORARY_NOTES,
+    maxVisiblePersistentNotes = DEFAULT_MAX_VISIBLE_PERSISTENT_NOTES,
+  } = {},
+) {
   const temporaryNotes = [];
   const persistentNotes = [];
+  const hiddenPersistentNoteIds = new Set();
 
   if (root) {
     root.classList.add("footer-note-stack");
@@ -35,7 +43,22 @@ export function createFooterNoteController(root, { maxTemporaryNotes = DEFAULT_M
 
     root.innerHTML = "";
 
-    [...temporaryNotes, ...persistentNotes].forEach((note) => {
+    const visiblePersistentCount = Number.isFinite(maxVisiblePersistentNotes)
+      ? Math.max(0, maxVisiblePersistentNotes)
+      : persistentNotes.length;
+    const visiblePersistentNotes = persistentNotes
+      .filter((note) => !hiddenPersistentNoteIds.has(note.id))
+      .slice(0, visiblePersistentCount);
+    const hiddenPersistentCount = Math.max(0, persistentNotes.length - visiblePersistentNotes.length);
+    const visibleNotes = [...temporaryNotes, ...visiblePersistentNotes];
+
+    const visibleStack = hiddenPersistentCount > 0 ? document.createElement("div") : root;
+    if (hiddenPersistentCount > 0) {
+      visibleStack.className = "footer-note-stack__visible";
+      root.appendChild(visibleStack);
+    }
+
+    visibleNotes.forEach((note) => {
       const item = document.createElement("div");
       item.className = "footer-note";
       item.dataset.kind = note.kind;
@@ -51,7 +74,7 @@ export function createFooterNoteController(root, { maxTemporaryNotes = DEFAULT_M
         dismissButton.className = "footer-note__dismiss";
         dismissButton.type = "button";
         dismissButton.setAttribute("aria-label", "Dismiss footer note");
-        dismissButton.addEventListener("click", () => removePersistent(note.id));
+        dismissButton.addEventListener("click", () => hidePersistent(note.id));
 
         const icon = document.createElement("span");
         icon.className = "material-symbols-rounded";
@@ -62,10 +85,41 @@ export function createFooterNoteController(root, { maxTemporaryNotes = DEFAULT_M
         item.appendChild(dismissButton);
       }
 
-      root.appendChild(item);
+      visibleStack.appendChild(item);
     });
 
+    if (hiddenPersistentCount > 0) {
+      const overflow = document.createElement("details");
+      overflow.className = "footer-note-overflow";
+
+      const summary = document.createElement("summary");
+      summary.className = "footer-note-overflow__summary wd-hover-tooltip";
+      summary.dataset.tooltip = "All footer notes";
+      summary.setAttribute("aria-label", "All footer notes");
+
+      const icon = document.createElement("span");
+      icon.className = "material-symbols-rounded";
+      icon.textContent = "menu";
+      summary.appendChild(icon);
+      overflow.appendChild(summary);
+
+      const menu = document.createElement("div");
+      menu.className = "footer-note-overflow__menu";
+
+      persistentNotes.forEach((note) => {
+        const item = document.createElement("div");
+        item.className = "footer-note-overflow__item";
+        item.dataset.tone = note.tone;
+        item.textContent = note.text;
+        menu.appendChild(item);
+      });
+
+      overflow.appendChild(menu);
+      root.appendChild(overflow);
+    }
+
     root.classList.toggle("is-hidden", temporaryNotes.length + persistentNotes.length === 0);
+    root.classList.toggle("has-overflow", hiddenPersistentCount > 0);
   };
 
   const removeTemporary = (id) => {
@@ -119,6 +173,21 @@ export function createFooterNoteController(root, { maxTemporaryNotes = DEFAULT_M
     if (index === -1) return;
 
     persistentNotes.splice(index, 1);
+    hiddenPersistentNoteIds.delete(id);
+    render();
+  };
+
+  const hidePersistent = (id) => {
+    if (!persistentNotes.some((note) => note.id === id)) return;
+
+    hiddenPersistentNoteIds.add(id);
+    render();
+  };
+
+  const resetPersistentVisibility = () => {
+    if (hiddenPersistentNoteIds.size === 0) return;
+
+    hiddenPersistentNoteIds.clear();
     render();
   };
 
@@ -154,5 +223,6 @@ export function createFooterNoteController(root, { maxTemporaryNotes = DEFAULT_M
     removeTemporary,
     setPersistent,
     removePersistent,
+    resetPersistentVisibility,
   };
 }

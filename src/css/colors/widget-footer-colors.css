@@ -20,3 +20,25 @@
 .footer-note__dismiss:focus-visible {
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
+
+.footer-note-overflow__summary {
+  background: var(--hex-danger-1);
+  color: var(--hex-brand-accent-2);
+  opacity: 0.65;
+  transition: all 0.2s ease;
+}
+
+.footer-note-overflow__summary:hover,
+.footer-note-overflow__summary:focus-visible {
+  opacity: 1;
+}
+
+.footer-note-overflow__menu {
+  background: var(--hex-brand-accent-1);
+  border-color: var(--hex-brand-main-2);
+  box-shadow: 0 12px 24px rgba(var(--hex-brand-main-1), 0.2);
+}
+
+.footer-note-overflow__item {
+  background: var(--hex-brand-accent-4);
+}
