@@ -91,6 +91,9 @@ export async function loadMainPanel(shadowRoot) {
     saveModalMessage: shadowRoot.querySelector("#schedule-modal-message"),
     saveModalField: shadowRoot.querySelector("#schedule-modal-field"),
     saveModalInput: shadowRoot.querySelector("#schedule-modal-input"),
+    saveModalCheckboxField: shadowRoot.querySelector("#schedule-modal-checkbox-field"),
+    saveModalCheckbox: shadowRoot.querySelector("#schedule-modal-checkbox"),
+    saveModalCheckboxLabel: shadowRoot.querySelector("#schedule-modal-checkbox-label"),
     saveModalCancel: shadowRoot.querySelector("#schedule-save-modal .schedule-modal-cancel"),
     saveModalConfirm: shadowRoot.querySelector("#schedule-save-modal .schedule-modal-confirm"),
 

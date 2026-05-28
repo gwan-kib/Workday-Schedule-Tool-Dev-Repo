@@ -186,6 +186,21 @@
   border-style: dashed;
 }
 
+.schedule-modal-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.schedule-modal-checkbox {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
 .schedule-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -207,6 +222,7 @@
 }
 
 .schedule-modal-field.is-hidden,
+.schedule-modal-checkbox-field.is-hidden,
 .schedule-modal-cancel.is-hidden {
   display: none;
 }

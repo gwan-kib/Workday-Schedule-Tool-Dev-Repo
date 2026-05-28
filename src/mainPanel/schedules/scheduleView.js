@@ -127,7 +127,15 @@ function getSemesterForRange(startDate, endDate) {
   return null;
 }
 
+export function getSemesterForCourse(course) {
+  const startDate = course?.startDate || extractStartDate(course?.meetingLines?.[0]) || "";
+  const endDate = course?.endDate || startDate || "";
+  return getSemesterForRange(startDate, endDate);
+}
 
+export function getSemesterLabel(semester) {
+  return TERM_WINDOWS[semester]?.label || "Term Not Found";
+}
 
 // Clamps minutes to grid bounds. Input: minutes number. Output: minutes number.
 function clampToGrid(minutes) {
@@ -161,9 +169,7 @@ function buildDayEvents(courses, semester) {
 
   (courses || []).forEach((course, courseIndex) => {
     const colorIndex = course?.colorIndex || (courseIndex % COURSE_COLOR_COUNT) + 1;
-    const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
-    const endDate = course.endDate || startDate || "";
-    const courseSemester = getSemesterForRange(startDate, endDate);
+    const courseSemester = getSemesterForCourse(course);
     if (semester && courseSemester !== semester) return;
     
 
@@ -610,13 +616,11 @@ export function refreshScheduleConflictState(ui, courses = []) {
   return conflictState;
 }
 
-function getActiveSemester(courses = []) {
+export function getActiveSemester(courses = []) {
   const counts = {};
 
   (courses || []).forEach((course) => {
-    const startDate = course.startDate || extractStartDate(course.meetingLines?.[0]) || "";
-    const endDate = course.endDate || startDate || "";
-    const semester = getSemesterForRange(startDate, endDate);
+    const semester = getSemesterForCourse(course);
 
     if (!semester) return;
     counts[semester] = (counts[semester] || 0) + 1;
@@ -657,7 +661,7 @@ export function renderSchedule(ui, courses, semester, timeFormat = "24h") {
 
   ui.activeSemester = activeSemester;
 
-  const semesterLabel = TERM_WINDOWS[activeSemester]?.label || "Term Not Found";
+  const semesterLabel = getSemesterLabel(activeSemester);
   if (ui?.scheduleTermPill) {
     ui.scheduleTermPill.textContent = semesterLabel;
   }

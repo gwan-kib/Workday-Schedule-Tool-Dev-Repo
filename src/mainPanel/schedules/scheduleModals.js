@@ -8,6 +8,7 @@ debugLog({ local: { scheduleModals: false } });
 export function createScheduleModalController(ui) {
   debug.log({ id: "createScheduleModalController.start" }, "Initializing schedule modal controller");
   let resolveScheduleModal = null;
+  let resolveScheduleModalWithCheckbox = false;
 
   const closeScheduleModal = (value) => {
     if (!ui.saveModal) return;
@@ -19,6 +20,7 @@ export function createScheduleModalController(ui) {
     if (resolveScheduleModal) {
       resolveScheduleModal(value);
       resolveScheduleModal = null;
+      resolveScheduleModalWithCheckbox = false;
     }
   };
 
@@ -31,8 +33,13 @@ export function createScheduleModalController(ui) {
     inputLabel = "Schedule name",
     inputPlaceholder = "e.g. Fall semester plan",
     inputValue = "",
+    showCheckbox = false,
+    checkboxLabel = "Do not show this again.",
+    checkboxChecked = false,
+    resolveCheckbox = false,
   }) => {
     if (!ui.saveModal) return Promise.resolve(null);
+    resolveScheduleModalWithCheckbox = Boolean(resolveCheckbox);
     debug.log({ id: "createScheduleModalController.open" }, "Opening schedule modal", {
       title,
       showInput,
@@ -45,12 +52,15 @@ export function createScheduleModalController(ui) {
     ui.saveModalConfirm.textContent = confirmLabel;
     ui.saveModalField.querySelector(".schedule-modal-label").textContent = inputLabel;
     ui.saveModalInput.placeholder = inputPlaceholder;
+    if (ui.saveModalCheckboxLabel) ui.saveModalCheckboxLabel.textContent = checkboxLabel;
 
     ui.saveModalField.classList.toggle("is-hidden", !showInput);
+    ui.saveModalCheckboxField?.classList.toggle("is-hidden", !showCheckbox);
     ui.saveModalCancel.classList.toggle("is-hidden", !showCancel);
 
     ui.saveModalInput.value = inputValue;
     ui.saveModalInput.classList.remove("is-invalid");
+    if (ui.saveModalCheckbox) ui.saveModalCheckbox.checked = Boolean(checkboxChecked);
 
     ui.saveModal.classList.remove("is-hidden");
     ui.saveModal.setAttribute("aria-hidden", "false");
@@ -79,6 +89,10 @@ export function createScheduleModalController(ui) {
       if (action === "confirm") {
         debug.log({ id: "createScheduleModalController.confirm" }, "Confirm clicked in schedule modal");
         const needsInput = !ui.saveModalField.classList.contains("is-hidden");
+        const checkboxResult = {
+          confirmed: true,
+          checked: Boolean(ui.saveModalCheckbox?.checked),
+        };
         if (needsInput) {
           const value = ui.saveModalInput.value.trim();
           if (!value) {
@@ -87,8 +101,10 @@ export function createScheduleModalController(ui) {
             ui.saveModalInput.focus();
             return;
           }
+          if (resolveScheduleModalWithCheckbox) return closeScheduleModal({ ...checkboxResult, value });
           return closeScheduleModal(value);
         }
+        if (resolveScheduleModalWithCheckbox) return closeScheduleModal(checkboxResult);
         return closeScheduleModal(true);
       }
     });

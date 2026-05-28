@@ -28,7 +28,13 @@ import { createPanelViewController } from "./mainPanel/shell/panelViewController
 import { createScheduleModalController } from "./mainPanel/schedules/scheduleModals.js";
 import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courses/courseViewSorting.js";
 import { renderCourseObjects } from "./mainPanel/courses/renderCourseObjects.js";
-import { refreshScheduleConflictState, renderSchedule } from "./mainPanel/schedules/scheduleView.js";
+import {
+  getActiveSemester,
+  getSemesterForCourse,
+  getSemesterLabel,
+  refreshScheduleConflictState,
+  renderSchedule,
+} from "./mainPanel/schedules/scheduleView.js";
 import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
@@ -41,6 +47,33 @@ import {
 
 const debug = debugFor("content");
 debugLog({ local: { content: false } });
+
+const ADD_COURSE_TERM_WARNING_SUPPRESSED_UNTIL_KEY = "wdAddCourseTermWarningSuppressedUntil";
+const ADD_COURSE_TERM_WARNING_SUPPRESSION_MS = 10 * 60 * 1000;
+
+let addCourseTermWarningSuppressedUntil = 0;
+
+const getAddCourseTermWarningSuppressedUntil = async () => {
+  if (typeof chrome !== "undefined" && chrome.storage?.local) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([ADD_COURSE_TERM_WARNING_SUPPRESSED_UNTIL_KEY], (result) => {
+        resolve(Number(result?.[ADD_COURSE_TERM_WARNING_SUPPRESSED_UNTIL_KEY]) || 0);
+      });
+    });
+  }
+
+  return addCourseTermWarningSuppressedUntil;
+};
+
+const setAddCourseTermWarningSuppressedUntil = async (suppressedUntil) => {
+  addCourseTermWarningSuppressedUntil = suppressedUntil;
+
+  if (typeof chrome !== "undefined" && chrome.storage?.local) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ [ADD_COURSE_TERM_WARNING_SUPPRESSED_UNTIL_KEY]: suppressedUntil }, () => resolve());
+    });
+  }
+};
 
 // Bootstraps the content script UI and event wiring. Input: none. Output: none.
 (() => {
@@ -224,7 +257,41 @@ debugLog({ local: { content: false } });
         )
         .join("|");
 
-    const addSingleCourseToSchedule = (course) => {
+    const confirmAddCourseTermMismatch = async (course) => {
+      const detectedSemester = getActiveSemester(STATE.courses);
+      const courseSemester = getSemesterForCourse(course);
+
+      if (!detectedSemester || !courseSemester || detectedSemester === courseSemester) return true;
+
+      const suppressedUntil = await getAddCourseTermWarningSuppressedUntil();
+      if (Date.now() < suppressedUntil) return true;
+
+      const courseLabel = [course?.code, course?.section_number].filter(Boolean).join(" ") || "This course";
+      const result = await openScheduleModal({
+        title: "Course term mismatch",
+        message: `${courseLabel} appears to be in ${getSemesterLabel(
+          courseSemester,
+        )}\n Your detected schedule term is ${getSemesterLabel(
+          detectedSemester,
+        )}.\nWould you still like to add this course?`,
+        confirmLabel: "Add Course",
+        showInput: false,
+        showCancel: true,
+        showCheckbox: true,
+        checkboxLabel: "Don't show this warning again for 10 minutes.",
+        resolveCheckbox: true,
+      });
+
+      if (!result?.confirmed) return false;
+
+      if (result.checked) {
+        await setAddCourseTermWarningSuppressedUntil(Date.now() + ADD_COURSE_TERM_WARNING_SUPPRESSION_MS);
+      }
+
+      return true;
+    };
+
+    const addSingleCourseToSchedule = async (course) => {
       if (!course?.code || !course?.section_number) {
         showFooterAlert("Could not add the course because its section details were incomplete.", { tone: "warn" });
         return false;
@@ -235,6 +302,9 @@ debugLog({ local: { content: false } });
         showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "info" });
         return false;
       }
+
+      const confirmed = await confirmAddCourseTermMismatch(course);
+      if (!confirmed) return false;
 
       // Add the course through the same state path used by full schedule imports so rendering,
       // colors, conflict detection, search filtering, and exports stay consistent.
@@ -303,10 +373,12 @@ debugLog({ local: { content: false } });
     const importCourseFromRegistrationCard = async ({ row, link }) => {
       const courseId = extractWorkdayCourseIdFromElement(row);
       if (courseId) {
-        const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
+        let closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
         try {
           const course = await fetchCourseFromWorkdayId(courseId);
-          return addSingleCourseToSchedule(course);
+          closeLoadingOverlay();
+          closeLoadingOverlay = null;
+          return await addSingleCourseToSchedule(course);
         } catch (error) {
           debug.warn({ id: "registrationCourseImport.idFetchFailed" }, "Could not fetch course by Workday ID", {
             courseId,
@@ -317,15 +389,17 @@ debugLog({ local: { content: false } });
           });
           return false;
         } finally {
-          closeLoadingOverlay();
+          closeLoadingOverlay?.();
         }
       }
 
       if (link) {
-        const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
+        let closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
         try {
           const linkedCourse = await fetchCourseFromWorkdayLink(link);
-          return addSingleCourseToSchedule(linkedCourse);
+          closeLoadingOverlay();
+          closeLoadingOverlay = null;
+          return await addSingleCourseToSchedule(linkedCourse);
         } catch (error) {
           debug.warn({ id: "registrationCourseImport.linkFetchFailed" }, "Could not fetch course by Workday link", {
             error: String(error?.message || error),
@@ -333,7 +407,7 @@ debugLog({ local: { content: false } });
           showFooterAlert("Could not load that Workday course link.", { tone: "warn" });
           return false;
         } finally {
-          closeLoadingOverlay();
+          closeLoadingOverlay?.();
         }
       }
 
@@ -366,17 +440,21 @@ debugLog({ local: { content: false } });
       }
 
       if (ui.addCourseButton) ui.addCourseButton.disabled = true;
-      const loadingNoteId = showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
-      const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
+      let loadingNoteId = showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
+      let closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
       try {
         const course = await fetchCourseFromWorkdayLink(validation.url);
-        addSingleCourseToSchedule(course);
+        closeLoadingOverlay();
+        closeLoadingOverlay = null;
+        ui.footerNotes?.removeTemporary(loadingNoteId);
+        loadingNoteId = null;
+        await addSingleCourseToSchedule(course);
       } catch (error) {
         debug.warn({ id: "manualCourseImport.failed" }, "Manual course import failed", error);
         showFooterAlert(getManualCourseImportFailureMessage(error), { tone: "warn" });
       } finally {
-        closeLoadingOverlay();
-        ui.footerNotes?.removeTemporary(loadingNoteId);
+        closeLoadingOverlay?.();
+        if (loadingNoteId) ui.footerNotes?.removeTemporary(loadingNoteId);
         if (ui.addCourseButton) ui.addCourseButton.disabled = false;
       }
     };
