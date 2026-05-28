@@ -45,6 +45,26 @@ After making changes to source files, rebuild and then click "Reload" on the ext
 
 ---
 
+## Tech Stack
+
+- Chrome Extension Manifest V3
+- Chrome Extension APIs: `chrome.runtime`, `chrome.storage.local`, `chrome.identity`, and `chrome.runtime.getURL`
+- Node.js
+- npm
+- Vite
+  - Rollup & esbuild (through Vite)
+- `vite-plugin-static-copy`
+- JavaScript
+- HTML / CSS
+- Google Calendar API
+- Google OAuth through the Chrome Identity API
+- UBCGrades API
+- RateMyProfessors API
+- Workday API
+- Git / GitHub
+
+---
+
 ## Project Structure
 
 - `src/` extension source
