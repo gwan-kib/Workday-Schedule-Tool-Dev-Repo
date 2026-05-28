@@ -204,6 +204,10 @@ h3 {
   min-width: 0;
 }
 
+.popup-picker .schedule-saved-meta {
+  text-align: left;
+}
+
 .popup-picker .schedule-saved-card:hover,
 .popup-picker .schedule-saved-card:focus-visible {
   border: 2px dashed var(--hex-brand-main-3);

@@ -592,7 +592,7 @@ function updateFooterConflictMessage(ui, conflictState) {
   [...conflictGroups].reverse().forEach((group) => {
     footerNotes?.setPersistent(
       getConflictFooterNoteId(group),
-      `🚩 The following classes are in conflict: ${group.join(" & ")}`,
+      `🚩 The following classes are in conflict: ${group.join(", ")}`,
       { tone: "warn" },
     );
   });

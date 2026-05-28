@@ -1,4 +1,5 @@
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
+import { getCourseGroupKey } from "../settings/courseColorSettings.js";
 const debug = debugFor("scheduleStorage");
 debugLog({ local: { scheduleStorage: false } });
 
@@ -131,16 +132,30 @@ export function togglePreferredSchedule(schedules, scheduleId) {
   }));
 }
 
+const pluralize = (count, singular, plural = `${singular}s`) => (count === 1 ? singular : plural);
+
+export function formatScheduleCourseSummary(courses) {
+  const validCourses = Array.isArray(courses) ? courses.filter(Boolean) : [];
+  const courseGroups = new Set(validCourses.map((course, index) => getCourseGroupKey(course, index)));
+  const courseCount = courseGroups.size;
+  const otherSectionCount = Math.max(0, validCourses.length - courseCount);
+  const courseLabel = `${courseCount} ${pluralize(courseCount, "course")}`;
+
+  if (!otherSectionCount) return courseLabel;
+
+  return `${courseLabel} + ${otherSectionCount} ${pluralize(otherSectionCount, "subsection")}`;
+}
+
 // Formats display text for a schedule meta line. Input: schedule object. Output: string.
 export function formatScheduleMeta(schedule) {
-  const count = schedule.courses?.length || 0;
+  const courseSummary = formatScheduleCourseSummary(schedule?.courses);
   const savedDate = new Date(schedule.savedAt);
 
   const dateLabel = Number.isNaN(savedDate.getTime())
     ? schedule.savedAt
     : savedDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
-  return `${count} courses | Saved ${dateLabel}`;
+  return `${courseSummary}\nSaved ${dateLabel}`;
 }
 
 // Renders saved schedule cards into the UI. Input: ui object, schedules array, and optional active schedule id. Output: none.

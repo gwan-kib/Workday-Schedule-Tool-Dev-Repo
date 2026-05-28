@@ -104,6 +104,7 @@
 .schedule-saved-meta {
   font-size: 12px;
   opacity: 0.8;
+  white-space: pre-line;
 }
 
 .schedule-saved-actions {
