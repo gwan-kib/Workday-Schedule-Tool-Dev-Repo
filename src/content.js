@@ -40,6 +40,7 @@ import {
   createScheduleSnapshot,
   getMaxScheduleCount,
   loadSavedSchedules,
+  formatScheduleCourseSummary,
   persistSavedSchedules,
   renderSavedSchedules,
   togglePreferredSchedule,
@@ -155,7 +156,7 @@ const setAddCourseTermWarningSuppressedUntil = async (suppressedUntil) => {
     // and preserve the current UI when requested.
     const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
       debug.log({ id: "loadCoursesFromPage.start" }, "Loading courses from page", { preserveExisting });
-      const closeLoadingOverlay = showLoadingOverlay(preserveExisting ? "Refreshing schedule..." : "Loading schedule...");
+      let closeLoadingOverlay = showLoadingOverlay(preserveExisting ? "Refreshing schedule..." : "Loading schedule...");
       try {
         const extractedCourses = await extractCoursesData();
 
@@ -172,7 +173,15 @@ const setAddCourseTermWarningSuppressedUntil = async (suppressedUntil) => {
           return false;
         }
 
-        STATE.courses = extractedCourses;
+        let coursesToLoad = extractedCourses;
+        if (preserveExisting) {
+          closeLoadingOverlay();
+          closeLoadingOverlay = null;
+          coursesToLoad = await chooseLoadedSemesters(extractedCourses);
+          if (!coursesToLoad) return false;
+        }
+
+        STATE.courses = coursesToLoad;
         courseColorController.assignCourseColors(STATE.courses);
         STATE.currentSavedScheduleId = null;
         STATE.currentScheduleName = null;
@@ -181,10 +190,11 @@ const setAddCourseTermWarningSuppressedUntil = async (suppressedUntil) => {
         refreshScheduleConflicts();
         debug.log({ id: "loadCoursesFromPage.complete" }, "Loaded courses from page", {
           courseCount: STATE.courses.length,
+          skippedCourseCount: extractedCourses.length - coursesToLoad.length,
         });
         return true;
       } finally {
-        closeLoadingOverlay();
+        closeLoadingOverlay?.();
       }
     };
 
@@ -247,6 +257,54 @@ const setAddCourseTermWarningSuppressedUntil = async (suppressedUntil) => {
       return ui.footerNotes?.showTemporary(text, { tone, durationMs });
     };
 
+    const chooseLoadedSemesters = async (courses) => {
+      const semesters = new Map();
+
+      courses.forEach((course) => {
+        const semester = getSemesterForCourse(course);
+        if (!semester) return;
+
+        if (!semesters.has(semester)) {
+          semesters.set(semester, { semester, courses: [] });
+        }
+        semesters.get(semester).courses.push(course);
+      });
+
+      if (semesters.size <= 1) return courses;
+
+      const result = await openScheduleModal({
+        title: "Multiple semesters detected",
+        message: "Choose which semesters you want to load.",
+        confirmLabel: "Load Selected Semesters",
+        showInput: false,
+        showCancel: true,
+        checkboxOptions: Array.from(semesters.values()).map(({ semester, courses: semesterCourses }) => ({
+          value: semester,
+          label: `${getSemesterLabel(semester)} (${formatScheduleCourseSummary(semesterCourses)})`,
+          checked: false,
+        })),
+        resolveCheckbox: true,
+      });
+
+      if (!result?.confirmed) return null;
+
+      const selectedSemesters = new Set(result.selectedValues || []);
+      if (!selectedSemesters.size) {
+        showFooterAlert("No semesters selected. Refresh cancelled.", { tone: "warn" });
+        return null;
+      }
+
+      const selectedCourses = courses.filter((course) => selectedSemesters.has(getSemesterForCourse(course)));
+      const skippedCount = courses.length - selectedCourses.length;
+      if (skippedCount > 0) {
+        showFooterAlert(`${skippedCount} course${skippedCount === 1 ? "" : "s"} skipped from unselected semesters.`, {
+          tone: "info",
+        });
+      }
+
+      return selectedCourses;
+    };
+
     const getCourseIdentityKey = (course) =>
       (course?.workdayCourseId ? [`id:${course.workdayCourseId}`] : [course?.code, course?.section_number])
         .map((part) =>
@@ -271,7 +329,7 @@ const setAddCourseTermWarningSuppressedUntil = async (suppressedUntil) => {
         title: "Course term mismatch",
         message: `${courseLabel} appears to be in ${getSemesterLabel(
           courseSemester,
-        )}\n Your detected schedule term is ${getSemesterLabel(
+        )}.\nYour detected schedule term is ${getSemesterLabel(
           detectedSemester,
         )}.\nWould you still like to add this course?`,
         confirmLabel: "Add Course",

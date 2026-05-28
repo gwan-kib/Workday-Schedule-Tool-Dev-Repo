@@ -36,6 +36,7 @@ export function createScheduleModalController(ui) {
     showCheckbox = false,
     checkboxLabel = "Do not show this again.",
     checkboxChecked = false,
+    checkboxOptions = [],
     resolveCheckbox = false,
   }) => {
     if (!ui.saveModal) return Promise.resolve(null);
@@ -53,9 +54,30 @@ export function createScheduleModalController(ui) {
     ui.saveModalField.querySelector(".schedule-modal-label").textContent = inputLabel;
     ui.saveModalInput.placeholder = inputPlaceholder;
     if (ui.saveModalCheckboxLabel) ui.saveModalCheckboxLabel.textContent = checkboxLabel;
+    if (ui.saveModalCheckboxList) {
+      ui.saveModalCheckboxList.innerHTML = "";
+      checkboxOptions.forEach((option) => {
+        const label = document.createElement("label");
+        label.className = "schedule-modal-checkbox-field";
+
+        const input = document.createElement("input");
+        input.className = "schedule-modal-checkbox";
+        input.type = "checkbox";
+        input.value = option.value;
+        input.checked = option.checked !== false;
+
+        const text = document.createElement("span");
+        text.textContent = option.label;
+
+        label.appendChild(input);
+        label.appendChild(text);
+        ui.saveModalCheckboxList.appendChild(label);
+      });
+    }
 
     ui.saveModalField.classList.toggle("is-hidden", !showInput);
     ui.saveModalCheckboxField?.classList.toggle("is-hidden", !showCheckbox);
+    ui.saveModalCheckboxList?.classList.toggle("is-hidden", !checkboxOptions.length);
     ui.saveModalCancel.classList.toggle("is-hidden", !showCancel);
 
     ui.saveModalInput.value = inputValue;
@@ -92,6 +114,9 @@ export function createScheduleModalController(ui) {
         const checkboxResult = {
           confirmed: true,
           checked: Boolean(ui.saveModalCheckbox?.checked),
+          selectedValues: Array.from(ui.saveModalCheckboxList?.querySelectorAll("input:checked") || []).map(
+            (input) => input.value,
+          ),
         };
         if (needsInput) {
           const value = ui.saveModalInput.value.trim();
