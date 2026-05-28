@@ -15,3 +15,8 @@
 .footer-note[data-tone="success"] {
   color: var(--hex-success-1);
 }
+
+.footer-note__dismiss:hover,
+.footer-note__dismiss:focus-visible {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}

@@ -285,6 +285,7 @@ h3 {
 }
 
 .popup-alert .footer-note {
+  position: relative;
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(185, 28, 28, 0.1);
@@ -292,6 +293,43 @@ h3 {
   font-size: 12px;
   font-weight: 700;
   border: 1px solid rgba(185, 28, 28, 0.2);
+}
+
+.popup-alert .footer-note[data-kind="persistent"] {
+  min-height: 18px;
+  padding-right: 34px;
+}
+
+.popup-alert .footer-note__text {
+  display: block;
+}
+
+.popup-alert .footer-note__dismiss {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.popup-alert .footer-note__dismiss:hover,
+.popup-alert .footer-note__dismiss:focus-visible {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.popup-alert .footer-note__dismiss .material-symbols-rounded {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .popup-alert .footer-note[data-tone="info"] {

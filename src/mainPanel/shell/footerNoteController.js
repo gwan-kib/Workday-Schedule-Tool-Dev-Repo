@@ -40,7 +40,28 @@ export function createFooterNoteController(root, { maxTemporaryNotes = DEFAULT_M
       item.className = "footer-note";
       item.dataset.kind = note.kind;
       item.dataset.tone = note.tone;
-      item.textContent = note.text;
+
+      const text = document.createElement("span");
+      text.className = "footer-note__text";
+      text.textContent = note.text;
+      item.appendChild(text);
+
+      if (note.kind === "persistent") {
+        const dismissButton = document.createElement("button");
+        dismissButton.className = "footer-note__dismiss";
+        dismissButton.type = "button";
+        dismissButton.setAttribute("aria-label", "Dismiss footer note");
+        dismissButton.addEventListener("click", () => removePersistent(note.id));
+
+        const icon = document.createElement("span");
+        icon.className = "material-symbols-rounded";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = "close";
+
+        dismissButton.appendChild(icon);
+        item.appendChild(dismissButton);
+      }
+
       root.appendChild(item);
     });
 

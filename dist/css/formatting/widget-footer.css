@@ -32,8 +32,41 @@
 }
 
 .footer-note {
+  position: relative;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
   overflow-wrap: anywhere;
+}
+
+.footer-note[data-kind="persistent"] {
+  min-height: 18px;
+  padding-right: 22px;
+}
+
+.footer-note__text {
+  display: block;
+}
+
+.footer-note__dismiss {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.footer-note__dismiss .material-symbols-rounded {
+  font-size: 16px;
+  line-height: 1;
 }

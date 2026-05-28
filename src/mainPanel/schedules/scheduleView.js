@@ -475,6 +475,10 @@ function buildFooterConflictGroups(conflictBlocks = []) {
   return Array.from(groups.values());
 }
 
+function getConflictFooterNoteId(group = []) {
+  return `${CONFLICT_FOOTER_NOTE_ID}:${group.map(normalizeConflictToken).join("|")}`;
+}
+
 function getFooterNoteController(ui) {
   if (ui?.footerNotes) return ui.footerNotes;
 
@@ -487,19 +491,24 @@ function getFooterNoteController(ui) {
 
 function updateFooterConflictMessage(ui, conflictBlocks) {
   const footerNotes = getFooterNoteController(ui);
-  const conflictGroups = buildFooterConflictGroups(conflictBlocks).map((group) => group.join(" & "));
-  const codes = conflictGroups.length ? [conflictGroups.join("), (")] : [];
+  const conflictGroups = buildFooterConflictGroups(conflictBlocks);
+  const previousIds = ui?.conflictFooterNoteIds instanceof Set ? ui.conflictFooterNoteIds : new Set();
+  const nextIds = new Set(conflictGroups.map(getConflictFooterNoteId));
 
-  if (!codes.length) {
-    footerNotes?.removePersistent(CONFLICT_FOOTER_NOTE_ID);
-    return;
-  }
+  previousIds.forEach((id) => {
+    if (!nextIds.has(id)) footerNotes?.removePersistent(id);
+  });
+  footerNotes?.removePersistent(CONFLICT_FOOTER_NOTE_ID);
 
-  footerNotes?.setPersistent(
-    CONFLICT_FOOTER_NOTE_ID,
-    `🚩 The following classes are in conflict: (${codes.join(", ")})`,
-    { tone: "warn" },
-  );
+  if (ui) ui.conflictFooterNoteIds = nextIds;
+
+  [...conflictGroups].reverse().forEach((group) => {
+    footerNotes?.setPersistent(
+      getConflictFooterNoteId(group),
+      `🚩 The following classes are in conflict: ${group.join(" & ")}`,
+      { tone: "warn" },
+    );
+  });
 }
 function getActiveSemester(courses = []) {
   const counts = {};
