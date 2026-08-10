@@ -130,11 +130,6 @@ export async function loadMainPanel(shadowRoot) {
         event.stopPropagation();
         event.stopImmediatePropagation();
 
-        if (control === ui.googleSyncButton) {
-          ui.exportDropdown?.classList.remove("is-open");
-          ui.exportButton?.setAttribute("aria-expanded", "false");
-        }
-
         ui.footerNotes?.showTemporary(FIREFOX_GOOGLE_UNAVAILABLE_MESSAGE, {
           tone: "warn",
           durationMs: 5000,
@@ -148,4 +143,3 @@ export async function loadMainPanel(shadowRoot) {
 
   return ui;
 }
-
