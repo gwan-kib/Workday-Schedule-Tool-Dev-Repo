@@ -36,6 +36,24 @@ Each packaged directory contains:
 
 The packaged `build/` directory is generated output and is ignored by Git.
 
+## Loading a local build
+
+### Chrome
+
+1. Run `npm run build:chrome`.
+2. Open `chrome://extensions`.
+3. Enable Developer mode.
+4. Choose **Load unpacked** and select `build/chrome/`.
+
+### Firefox
+
+1. Run `npm run build:firefox`.
+2. Open `about:debugging` and choose **This Firefox**.
+3. Choose **Load Temporary Add-on**.
+4. Select `build/firefox/manifest.json` (or another file in `build/firefox/`).
+
+Firefox temporary add-ons are development-only and must be loaded again after Firefox restarts.
+
 ## Generated root manifest
 
 Chrome builds also run `scripts/sync-default-manifest.js`, which copies `manifest.chrome.json` to the repository-root `manifest.json`.
