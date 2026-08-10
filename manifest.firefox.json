@@ -4,6 +4,12 @@
   "version": "3.0.0",
   "description": "A tool to make planning for your semester easier.",
 
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ubc-workday-schedule-tool@gwan-kib.github.io"
+    }
+  },
+
   "permissions": ["storage", "identity"],
 
   "host_permissions": [
