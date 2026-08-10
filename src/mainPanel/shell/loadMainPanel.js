@@ -3,6 +3,9 @@ import { debugFor, debugLog } from "../../utilities/debugTool.js";
 const debug = debugFor("loadMainPanel");
 debugLog({ local: { loadMainPanel: false } });
 
+const FIREFOX_GOOGLE_UNAVAILABLE_MESSAGE =
+  "Google sync is currently unavailable in Firefox. Install the Chrome version to use Google sync.";
+
 // Loads panel HTML and CSS into the shadow root and returns UI references. Input: ShadowRoot. Output: ui object.
 export async function loadMainPanel(shadowRoot) {
   const htmlUrl = chrome.runtime.getURL("dist/panel.html");
@@ -76,13 +79,14 @@ export async function loadMainPanel(shadowRoot) {
     exportDropdown: shadowRoot.querySelector("#widget-export"),
     exportButton: shadowRoot.querySelector("#widget-export-button"),
     exportMenu: shadowRoot.querySelector("#widget-export-menu"),
+    googleSyncButton: shadowRoot.querySelector('[data-export="gcal-sync"]'),
 
     viewTabs: shadowRoot.querySelectorAll(".tab-button"),
     views: shadowRoot.querySelectorAll(".widget-panel"),
 
     scheduleGrid: shadowRoot.querySelector("#schedule-grid"),
     scheduleTermPill: shadowRoot.querySelector("#schedule-term-pill"),
-    
+
     savedDropdown: shadowRoot.querySelector("#schedule-saved-dropdown"),
     savedMenu: shadowRoot.querySelector("#schedule-saved-menu"),
 
@@ -113,9 +117,35 @@ export async function loadMainPanel(shadowRoot) {
     googleSignOutButton: shadowRoot.querySelector("#setting-google-sign-out"),
   };
 
+  const googleUnavailableControls = [ui.googleSyncButton, ui.googleSignInButton, ui.googleSignOutButton].filter(Boolean);
+  googleUnavailableControls.forEach((control) => {
+    control.classList.add("google-unavailable-control");
+    control.setAttribute("aria-disabled", "true");
+    control.setAttribute("title", FIREFOX_GOOGLE_UNAVAILABLE_MESSAGE);
+
+    control.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        if (control === ui.googleSyncButton) {
+          ui.exportDropdown?.classList.remove("is-open");
+          ui.exportButton?.setAttribute("aria-expanded", "false");
+        }
+
+        ui.footerNotes?.showTemporary(FIREFOX_GOOGLE_UNAVAILABLE_MESSAGE, {
+          tone: "warn",
+          durationMs: 5000,
+        });
+      },
+      true,
+    );
+  });
+
   debug.log({ id: "loadMainPanel.ui" }, "Loaded mainPanel UI refs", ui);
 
   return ui;
 }
-
 
