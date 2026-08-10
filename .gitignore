@@ -25,6 +25,7 @@ coverage/
 
 # Generated extension files
 manifest.json
+build/
 
 # Temporary files
 *.tmp
