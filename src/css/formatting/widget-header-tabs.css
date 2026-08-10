@@ -145,6 +145,11 @@
   line-height: 1;
 }
 
+.google-unavailable-control {
+  cursor: default !important;
+  opacity: 0.5 !important;
+}
+
 /* Help button */
 .help.button {
   height: 34px;
