@@ -32,9 +32,9 @@ If you use Workday for registration, this helps you:
 4. Open the extension using the button on the rightside of your screen
 5. View your course and schedule layout
 6. Save schedules in the extension
-7. Export to `.ics` or sign into Google from Settings to sync directly to Google Calendar
+7. Export to `.ics` or sign into Google from Settings to sync directly to Google Calendar where supported
 
-Optional: open the extension from the Chrome toolbar popup to preview your starred/default saved schedule outside the Workday page.
+Optional: open the extension from the browser toolbar popup to preview your starred/default saved schedule outside the Workday page.
 
 - still stuck? [Check out the Tutorial Doc](https://docs.google.com/document/d/1D0YqHct_d3rR8WtlkHF9Dybqb3mFB7Wka0ZWsFZOda8/edit?tab=t.0)
 
@@ -89,7 +89,7 @@ Export to a standard `.ics` file that works with:
 - Outlook
 - Most calendar apps
 
-You can also sign into Google from Settings and sync the current schedule directly to Google Calendar. Synced events are refreshed on each sync so old imports from this tool do not pile up.
+You can also sign into Google from Settings and sync the current schedule directly to Google Calendar on supported browser builds. Synced events are refreshed on each sync so old imports from this tool do not pile up.
 
 Both export paths include recurring class meetings with the correct schedule structure.
 
@@ -107,10 +107,10 @@ Want to request a feature? Let me know at gwantanak.3@gmail.com
 
 ## Privacy and Security
 
-Your schedule data stays on your device in Chrome storage.
+Your schedule data stays on your device in extension storage.
 
 - The extension panel runs on `*.myworkday.com`
-- Saved schedule data is stored locally using Chrome storage
+- Saved schedule data is stored locally using extension storage
 - Google sign-in state is stored locally and is used only for Calendar sync
 - Uses ubcgrades.com for class averages
 - Uses ratemyprofessors.com for professor ratings
@@ -124,12 +124,15 @@ Your schedule data stays on your device in Chrome storage.
 ## Development / Contributing
 
 - See `DevREADME.md`
+- Browser build/loading details are in `docs/browser-manifests.md`
+- Shared WebExtension API compatibility notes are in `docs/webextension-api-compatibility.md`
 
 ---
 
 ## Browser Compatibility
 
-- Chrome (Manifest V3 compatible)
+- Chrome: supported
+- Firefox: port in progress; shared non-authentication WebExtension APIs have been audited, while Firefox Google OAuth remains separate migration work
 
 ---
 
