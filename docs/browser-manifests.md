@@ -19,6 +19,18 @@ Both browser manifests use the same built background bundle: `dist/background.js
 
 Do not duplicate `src/background.js` or create a Firefox-specific background implementation unless a later compatibility issue requires it.
 
+## Firefox extension identity
+
+The Firefox manifest has a stable Gecko extension ID:
+
+`ubc-workday-schedule-tool@gwan-kib.github.io`
+
+This ID belongs only in `manifest.firefox.json` under `browser_specific_settings.gecko.id`. The Chrome manifest keeps its existing Chrome-specific identity configuration unchanged.
+
+Treat the Gecko ID as permanent once Firefox builds are distributed. Changing it later can cause Firefox to treat the build as a different extension and can break update continuity. It also changes the identity used to derive Firefox OAuth redirect handling.
+
+When configuring the Firefox Google OAuth client and redirect URI in issue #22, build/load the Firefox package with this ID and use the redirect returned by `identity.getRedirectURL()`. Do not configure OAuth against a temporary-install ID or a different Gecko ID.
+
 ## Browser builds
 
 The source code is compiled once through the shared Vite pipeline and then packaged with the manifest for the selected browser.
@@ -52,7 +64,7 @@ The packaged `build/` directory is generated output and is ignored by Git.
 3. Choose **Load Temporary Add-on**.
 4. Select `build/firefox/manifest.json` (or another file in `build/firefox/`).
 
-Firefox temporary add-ons are development-only and must be loaded again after Firefox restarts.
+Firefox temporary add-ons are development-only and must be loaded again after Firefox restarts. Because the Gecko ID is declared in the source manifest, rebuilding or temporarily reinstalling the package does not change the configured extension identity.
 
 ## Generated root manifest
 
@@ -62,9 +74,10 @@ The root `manifest.json` is generated output and is ignored by Git. This preserv
 
 ## Firefox migration boundaries
 
-The Firefox source manifest intentionally does not include unfinished Firefox-specific configuration yet:
+The Firefox source manifest now includes the stable Gecko extension ID required by issue #23.
 
-- A stable Gecko extension ID is handled by issue #23.
+Firefox-specific configuration that is intentionally still unfinished:
+
 - Mozilla Add-ons data-collection declarations are handled by issue #24.
 
 Chrome-only fields such as the extension `key` and Chrome `oauth2` block must remain out of `manifest.firefox.json`.
