@@ -13,8 +13,7 @@ const WST_PRIVATE_KEY = "wstSource";
 const WST_PRIVATE_VALUE = "workday-import";
 
 // Public message types used to bridge between popup/content scripts and the background worker.
-// chrome.identity is unavailable in content scripts, so they must call request* helpers
-// instead of the underlying functions directly.
+// Identity APIs are used only from the background context; popup/content scripts call request* helpers.
 export const CALENDAR_MESSAGE_TYPE = {
   SYNC: "SYNC_GCAL",
   AUTH_STATE: "AUTH_STATE_GCAL",
@@ -24,15 +23,43 @@ export const CALENDAR_MESSAGE_TYPE = {
 
 const GCAL_SIGNED_IN_STORAGE_KEY = "wstGoogleCalendarSignedIn";
 
-// Wraps chrome.identity.getAuthToken in a Promise. Input: { interactive }. Output: token string.
+// Identifies the current extension runtime from its browser-specific URL scheme.
+// This stays local to the OAuth layer because shared WebExtension APIs work through chrome.* in Firefox.
+const getExtensionBrowser = () => {
+  if (typeof chrome === "undefined" || !chrome.runtime?.getURL) return "unknown";
+
+  try {
+    const extensionUrl = chrome.runtime.getURL("");
+    if (extensionUrl.startsWith("moz-extension://")) return "firefox";
+    if (extensionUrl.startsWith("chrome-extension://")) return "chromium";
+  } catch (error) {
+    debug.warn({ id: "getExtensionBrowser.failed" }, "Could not identify extension browser", {
+      error: String(error),
+    });
+  }
+
+  return "unknown";
+};
+
+const getIdentityUnavailableMessage = () => {
+  const browser = getExtensionBrowser();
+
+  if (browser === "firefox") {
+    return "Google Calendar sign-in is not available in this Firefox build yet.";
+  }
+
+  if (browser === "chromium") {
+    return "Google Identity API is unavailable. Reload the extension from chrome://extensions and make sure the identity permission is enabled.";
+  }
+
+  return "Google Calendar sign-in is unavailable in this browser build.";
+};
+
+// Wraps Chrome's identity.getAuthToken in a Promise. Firefox OAuth is handled separately by the Firefox OAuth issue.
 const fetchAuthToken = ({ interactive = true } = {}) =>
   new Promise((resolve, reject) => {
-    if (!chrome?.identity?.getAuthToken) {
-      reject(
-        new Error(
-          "Chrome Identity API is unavailable. Reload the extension from chrome://extensions in Google Chrome and make sure the identity permission is enabled.",
-        ),
-      );
+    if (typeof chrome === "undefined" || !chrome.identity?.getAuthToken) {
+      reject(new Error(getIdentityUnavailableMessage()));
       return;
     }
 
@@ -40,7 +67,7 @@ const fetchAuthToken = ({ interactive = true } = {}) =>
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message || "Auth failed"));
       } else if (!token) {
-        reject(new Error("No auth token returned by Chrome Identity API"));
+        reject(new Error("No auth token returned by the browser identity API"));
       } else {
         resolve(token);
       }
@@ -295,7 +322,7 @@ const sendMessage = (type, payload) =>
   });
 
 // Asks the background worker to wipe previous imports and re-import the schedule.
-// Use from contexts without chrome.identity (popup/content).
+// Use from contexts without identity API access (popup/content).
 //   Input: courses array, optional { calendarId, timeZone }.
 //   Output: { removed, deleteFailed, added, failed, skipped, errors } (errors is an array of strings).
 export async function requestSyncCoursesToCalendar(courses, options = {}) {
