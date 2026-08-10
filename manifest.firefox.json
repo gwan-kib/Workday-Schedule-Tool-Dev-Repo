@@ -6,7 +6,11 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "ubc-workday-schedule-tool@gwan-kib.github.io"
+      "id": "ubc-workday-schedule-tool@gwan-kib.github.io",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["websiteContent"]
+      }
     }
   },
 
