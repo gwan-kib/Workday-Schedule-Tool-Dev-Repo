@@ -4,7 +4,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "vite build -c vite.background.config.js && vite build -c vite.content.config.js && vite build -c vite.popup.config.js",
+    "build": "npm run build:chrome",
+    "build:shared": "vite build -c vite.background.config.js && vite build -c vite.content.config.js && vite build -c vite.popup.config.js",
+    "package:chrome": "node scripts/package-extension.js chrome",
+    "package:firefox": "node scripts/package-extension.js firefox",
+    "build:chrome": "npm run build:shared && npm run package:chrome && node scripts/sync-default-manifest.js",
+    "build:firefox": "npm run build:shared && npm run package:firefox",
+    "build:browsers": "npm run build:shared && npm run package:chrome && npm run package:firefox && node scripts/sync-default-manifest.js",
     "dev": "vite build --watch"
   },
   "repository": {

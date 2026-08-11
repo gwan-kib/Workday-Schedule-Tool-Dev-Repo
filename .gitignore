@@ -23,6 +23,10 @@ Thumbs.db
 # Coverage reports
 coverage/
 
+# Generated extension files
+manifest.json
+build/
+
 # Temporary files
 *.tmp
 *.temp
