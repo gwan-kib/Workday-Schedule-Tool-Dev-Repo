@@ -5,6 +5,7 @@ import {
   getCalendarAuthState,
   signInCalendar,
   syncCoursesToCalendar,
+  previewCoursesToCalendar,
 } from "./exportLogic/googleCalendar/calendarIntegration.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
 
@@ -33,29 +34,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Handles Google Calendar sync + disconnect requests from popup/content scripts.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type === CALENDAR_MESSAGE_TYPE.SYNC) {
+  if (message?.type === CALENDAR_MESSAGE_TYPE.PREVIEW || message?.type === CALENDAR_MESSAGE_TYPE.SYNC) {
     void (async () => {
       try {
-        const { courses, options } = message.payload || {};
+        const { courses, options, previewId } = message.payload || {};
         const authState = await getCalendarAuthState();
         if (!authState.signedIn) {
           sendResponse({ ok: false, error: "Go to Settings and sign into Google first." });
           return;
         }
 
-        const summary = await syncCoursesToCalendar(courses, options);
-        // Errors are Error objects which don't survive structured cloning intact — flatten to strings.
-        sendResponse({
-          ok: true,
-          summary: {
-            removed: summary.removed,
-            deleteFailed: summary.deleteFailed,
-            added: summary.added,
-            failed: summary.failed,
-            skipped: summary.skipped,
-            errors: summary.errors.map((err) => err?.message || String(err)),
-          },
-        });
+        if (message.type === CALENDAR_MESSAGE_TYPE.PREVIEW)
+          sendResponse({ ok: true, preview: await previewCoursesToCalendar(courses, options) });
+        else sendResponse({ ok: true, summary: await syncCoursesToCalendar(previewId) });
       } catch (error) {
         debug.error("Calendar sync failed", {
           sender: sender?.tab?.id || "unknown",

@@ -510,3 +510,16 @@
   display: block;
   text-align: center;
 }
+
+/* Keep weekend/extended-hour grids reachable in the panel and narrow popup. */
+.schedule-grid {
+  overflow: auto;
+  max-width: 100%;
+}
+.schedule-unknown {
+  text-align: left;
+  padding: 8px;
+}
+.schedule-unknown p {
+  margin: 4px 0;
+}

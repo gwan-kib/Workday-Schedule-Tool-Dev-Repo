@@ -1,3 +1,4 @@
+import { meetingsOverlap } from "../../core/meetings.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("scheduleCollisions");
@@ -33,7 +34,7 @@ export function detectScheduleConflicts(eventsByDay) {
 
         const overlapStart = Math.max(a.startIdx, b.startIdx);
         const overlapEnd = Math.min(a.endIdx, b.endIdx);
-        if (overlapEnd <= overlapStart) continue;
+        if (overlapEnd <= overlapStart || !meetingsOverlap(a, b)) continue;
 
         const key = `${day}|${overlapStart}|${overlapEnd}`;
         let block = blockMap.get(key);

@@ -1,3 +1,4 @@
+import { storageGet, storageSet } from "../../utilities/storage.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 const debug = debugFor("scheduleStorage");
 debugLog({ local: { scheduleStorage: false } });
@@ -14,7 +15,22 @@ const cloneCourses = (courses) => {
 
 // Sanitizes schedule objects for storage. Input: array of schedules. Output: sanitized array.
 const sanitizeSchedules = (schedules) => {
-  if (!Array.isArray(schedules)) return [];
+  if (
+    !Array.isArray(schedules) ||
+    schedules.some(
+      (s) =>
+        !s ||
+        typeof s.id !== "string" ||
+        !s.id ||
+        typeof s.name !== "string" ||
+        !Array.isArray(s.courses) ||
+        s.courses.some((c) => !c || typeof c !== "object" || typeof c.code !== "string"),
+    )
+  ) {
+    throw new Error(
+      "Saved schedule data is damaged or unsupported. Existing data was preserved; restore a backup or report this error before saving again.",
+    );
+  }
   return schedules
     .filter((s) => s)
     .map((s) => ({
@@ -49,47 +65,35 @@ const useChromeStorage = typeof chrome !== "undefined" && chrome.storage && chro
 
 // Loads saved schedules from storage. Input: none. Output: array of schedules.
 export async function loadSavedSchedules() {
-  if (useChromeStorage) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get([STORAGE_KEY, PREFERRED_SCHEDULE_KEY], (result) => {
-        resolve(normalizeSchedules(result?.[STORAGE_KEY] || [], result?.[PREFERRED_SCHEDULE_KEY] || null));
-      });
-    });
-  }
-
-  try {
+  let result;
+  if (useChromeStorage) result = await storageGet([STORAGE_KEY, PREFERRED_SCHEDULE_KEY, "wdScheduleSchemaVersion"]);
+  else {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return normalizeSchedules(JSON.parse(raw), localStorage.getItem(PREFERRED_SCHEDULE_KEY) || null);
-  } catch (error) {
-    debug.error("Failed to load schedules", error);
-    return [];
+    result = {
+      [STORAGE_KEY]: raw ? JSON.parse(raw) : [],
+      [PREFERRED_SCHEDULE_KEY]: localStorage.getItem(PREFERRED_SCHEDULE_KEY),
+    };
   }
+  if (result.wdScheduleSchemaVersion != null && result.wdScheduleSchemaVersion !== 1)
+    throw new Error("Unsupported saved schedule version. Update the extension before editing saved data.");
+  // Legacy arrays are version 0. Migration adds metadata on the next successful
+  // write; reading never rewrites or discards the original data.
+  return normalizeSchedules(result[STORAGE_KEY] ?? [], result[PREFERRED_SCHEDULE_KEY] || null);
 }
 
-// Persists schedules to storage. Input: array of schedules. Output: none.
 export async function persistSavedSchedules(schedules) {
   const sanitized = normalizeSchedules(schedules);
   const preferredScheduleId = sanitized.find((schedule) => schedule.isFavorite)?.id || null;
-
   if (useChromeStorage) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set(
-        {
-          [STORAGE_KEY]: sanitized,
-          [PREFERRED_SCHEDULE_KEY]: preferredScheduleId,
-        },
-        () => resolve(),
-      );
+    await storageSet({
+      [STORAGE_KEY]: sanitized,
+      [PREFERRED_SCHEDULE_KEY]: preferredScheduleId,
+      wdScheduleSchemaVersion: 1,
     });
-  }
-
-  try {
+  } else {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
     if (preferredScheduleId) localStorage.setItem(PREFERRED_SCHEDULE_KEY, preferredScheduleId);
     else localStorage.removeItem(PREFERRED_SCHEDULE_KEY);
-  } catch (error) {
-    debug.error("Failed to save schedules", error);
   }
 }
 
@@ -158,93 +162,93 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
   }
 
   normalizeSchedules(schedules).forEach((schedule) => {
-      const card = document.createElement("div");
-      card.className = `schedule-saved-card${schedule.id === activeScheduleId ? " is-active" : ""}`;
-      card.dataset.id = schedule.id;
-      card.tabIndex = 0;
-      card.setAttribute("role", "button");
+    const card = document.createElement("div");
+    card.className = `schedule-saved-card${schedule.id === activeScheduleId ? " is-active" : ""}`;
+    card.dataset.id = schedule.id;
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
 
-      const header = document.createElement("div");
-      header.className = "schedule-saved-card-header";
+    const header = document.createElement("div");
+    header.className = "schedule-saved-card-header";
 
-      const info = document.createElement("div");
+    const info = document.createElement("div");
 
-      const title = document.createElement("div");
-      title.className = "schedule-saved-title";
-      title.textContent = schedule.name;
+    const title = document.createElement("div");
+    title.className = "schedule-saved-title";
+    title.textContent = schedule.name;
 
-      const titleRow = document.createElement("div");
-      titleRow.className = "schedule-saved-title-row";
-      titleRow.appendChild(title);
+    const titleRow = document.createElement("div");
+    titleRow.className = "schedule-saved-title-row";
+    titleRow.appendChild(title);
 
-      if (schedule.isFavorite) {
-        const badge = document.createElement("span");
-        badge.className = "schedule-saved-badge";
-        badge.textContent = "Favorite";
-        titleRow.appendChild(badge);
-      }
+    if (schedule.isFavorite) {
+      const badge = document.createElement("span");
+      badge.className = "schedule-saved-badge";
+      badge.textContent = "Favorite";
+      titleRow.appendChild(badge);
+    }
 
-      const meta = document.createElement("div");
-      meta.className = "schedule-saved-meta";
-      meta.textContent = formatScheduleMeta(schedule);
+    const meta = document.createElement("div");
+    meta.className = "schedule-saved-meta";
+    meta.textContent = formatScheduleMeta(schedule);
 
-      info.appendChild(titleRow);
-      info.appendChild(meta);
-      header.appendChild(info);
+    info.appendChild(titleRow);
+    info.appendChild(meta);
+    header.appendChild(info);
 
-      const actions = document.createElement("div");
-      actions.className = "schedule-saved-actions";
+    const actions = document.createElement("div");
+    actions.className = "schedule-saved-actions";
 
-      const favoriteButton = document.createElement("button");
-      favoriteButton.type = "button";
-      favoriteButton.className = `schedule-saved-action star wd-hover-tooltip${schedule.isFavorite ? " is-favorite" : ""}`;
-      favoriteButton.dataset.action = "favorite";
-      const favoriteLabel = schedule.isFavorite ? "Unstar schedule" : "Star schedule";
-      favoriteButton.dataset.tooltip = favoriteLabel;
-      favoriteButton.setAttribute("aria-label", favoriteLabel);
-      favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));
+    const favoriteButton = document.createElement("button");
+    favoriteButton.type = "button";
+    favoriteButton.className = `schedule-saved-action star wd-hover-tooltip${schedule.isFavorite ? " is-favorite" : ""}`;
+    favoriteButton.dataset.action = "favorite";
+    const favoriteLabel = schedule.isFavorite ? "Unstar schedule" : "Star schedule";
+    favoriteButton.dataset.tooltip = favoriteLabel;
+    favoriteButton.setAttribute("aria-label", favoriteLabel);
+    favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));
 
-      const favoriteIcon = document.createElement("span");
-      favoriteIcon.className = "material-symbols-rounded";
-      favoriteIcon.setAttribute("aria-hidden", "true");
-      favoriteIcon.textContent = "star";
-      favoriteButton.appendChild(favoriteIcon);
+    const favoriteIcon = document.createElement("span");
+    favoriteIcon.className = "material-symbols-rounded";
+    favoriteIcon.setAttribute("aria-hidden", "true");
+    favoriteIcon.textContent = "star";
+    favoriteButton.appendChild(favoriteIcon);
 
-      const renameButton = document.createElement("button");
-      renameButton.type = "button";
-      renameButton.className = "schedule-saved-action rename wd-hover-tooltip";
-      renameButton.dataset.action = "rename";
-      renameButton.dataset.tooltip = "Rename schedule";
-      renameButton.setAttribute("aria-label", "Rename schedule");
+    const renameButton = document.createElement("button");
+    renameButton.type = "button";
+    renameButton.className = "schedule-saved-action rename wd-hover-tooltip";
+    renameButton.dataset.action = "rename";
+    renameButton.dataset.tooltip = "Rename schedule";
+    renameButton.setAttribute("aria-label", "Rename schedule");
 
-      const renameIcon = document.createElement("span");
-      renameIcon.className = "material-symbols-rounded";
-      renameIcon.setAttribute("aria-hidden", "true");
-      renameIcon.textContent = "edit";
-      renameButton.appendChild(renameIcon);
+    const renameIcon = document.createElement("span");
+    renameIcon.className = "material-symbols-rounded";
+    renameIcon.setAttribute("aria-hidden", "true");
+    renameIcon.textContent = "edit";
+    renameButton.appendChild(renameIcon);
 
-      const deleteButton = document.createElement("button");
-      deleteButton.type = "button";
-      deleteButton.className = "schedule-saved-action delete wd-hover-tooltip";
-      deleteButton.dataset.action = "delete";
-      deleteButton.dataset.tooltip = "Delete schedule";
-      deleteButton.setAttribute("aria-label", "Delete schedule");
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "schedule-saved-action delete wd-hover-tooltip";
+    deleteButton.dataset.action = "delete";
+    deleteButton.dataset.tooltip = "Delete schedule";
+    deleteButton.setAttribute("aria-label", "Delete schedule");
 
-      const deleteIcon = document.createElement("span");
-      deleteIcon.className = "material-symbols-rounded";
-      deleteIcon.setAttribute("aria-hidden", "true");
-      deleteIcon.textContent = "delete";
-      deleteButton.appendChild(deleteIcon);
+    const deleteIcon = document.createElement("span");
+    deleteIcon.className = "material-symbols-rounded";
+    deleteIcon.setAttribute("aria-hidden", "true");
+    deleteIcon.textContent = "delete";
+    deleteButton.appendChild(deleteIcon);
 
-      actions.appendChild(favoriteButton);
-      actions.appendChild(renameButton);
-      actions.appendChild(deleteButton);
+    actions.appendChild(favoriteButton);
+    actions.appendChild(renameButton);
+    actions.appendChild(deleteButton);
 
-      card.appendChild(header);
-      card.appendChild(actions);
+    card.appendChild(header);
+    card.appendChild(actions);
 
-      ui.savedMenu.appendChild(card);
-    });
+    ui.savedMenu.appendChild(card);
+  });
 
   debug.log({ id: "renderSavedSchedules.done" }, "Rendered saved schedules", schedules);
 }

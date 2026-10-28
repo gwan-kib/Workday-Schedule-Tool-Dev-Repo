@@ -8,6 +8,7 @@ debugLog({ local: { scheduleModals: false } });
 export function createScheduleModalController(ui) {
   debug.log({ id: "createScheduleModalController.start" }, "Initializing schedule modal controller");
   let resolveScheduleModal = null;
+  let choiceSelect = null;
 
   const closeScheduleModal = (value) => {
     if (!ui.saveModal) return;
@@ -31,8 +32,23 @@ export function createScheduleModalController(ui) {
     inputLabel = "Schedule name",
     inputPlaceholder = "e.g. Fall semester plan",
     inputValue = "",
+    choices = null,
   }) => {
     if (!ui.saveModal) return Promise.resolve(null);
+    if (resolveScheduleModal) closeScheduleModal(null);
+    choiceSelect?.remove();
+    choiceSelect = null;
+    if (choices?.length) {
+      choiceSelect = document.createElement("select");
+      choiceSelect.setAttribute("aria-label", "Calendar plan handling");
+      choices.forEach(({ value, label }) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        choiceSelect.appendChild(option);
+      });
+      ui.saveModalMessage.after(choiceSelect);
+    }
     debug.log({ id: "createScheduleModalController.open" }, "Opening schedule modal", {
       title,
       showInput,
@@ -89,7 +105,7 @@ export function createScheduleModalController(ui) {
           }
           return closeScheduleModal(value);
         }
-        return closeScheduleModal(true);
+        return closeScheduleModal(choiceSelect ? choiceSelect.value : true);
       }
     });
 

@@ -117,7 +117,9 @@ export async function loadMainPanel(shadowRoot) {
     googleSignOutButton: shadowRoot.querySelector("#setting-google-sign-out"),
   };
 
-  const googleUnavailableControls = [ui.googleSyncButton, ui.googleSignInButton, ui.googleSignOutButton].filter(Boolean);
+  const googleUnavailableControls = chrome.runtime.getURL("").startsWith("moz-extension://")
+    ? [ui.googleSyncButton, ui.googleSignInButton, ui.googleSignOutButton].filter(Boolean)
+    : [];
   googleUnavailableControls.forEach((control) => {
     control.classList.add("google-unavailable-control");
     control.setAttribute("aria-disabled", "true");

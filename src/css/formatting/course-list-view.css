@@ -434,3 +434,18 @@
   user-select: text;
   color: var(--hex-neutral-3);
 }
+
+/* Both course-level statistics remain legible; coverage/source is visible below. */
+.course-card__avg-button {
+  width: 180px;
+  height: auto;
+  min-height: 44px;
+  padding: 6px 10px;
+  white-space: pre-line;
+}
+.grade-result-details {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}

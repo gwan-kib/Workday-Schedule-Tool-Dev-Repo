@@ -1,9 +1,8 @@
+import { fetchReliable } from "../utilities/network.js";
+import { WORKDAY_SELECTORS, sectionId } from "./workdaySelectors.js";
+import { courseDateRange } from "../core/meetings.js";
 import { debugFor, debugLog } from "../utilities/debugTool.js";
-import {
-  extractStartDate,
-  formatMeetingLineForPanel,
-  normalizeMeetingPatternsText,
-} from "./meetingPatternsInfo.js";
+import { extractStartDate, formatMeetingLineForPanel, normalizeMeetingPatternsText } from "./meetingPatternsInfo.js";
 
 const debug = debugFor("singleCourseImport");
 debugLog({ local: { singleCourseImport: false } });
@@ -36,7 +35,9 @@ function readInstanceText(instance) {
 }
 
 function readNodeInstances(node) {
-  return Array.isArray(node?.instances) ? node.instances.map(readInstanceText).filter(Boolean) : [];
+  return Array.isArray(node?.instances)
+    ? node.instances.map(readInstanceText).filter(Boolean)
+    : [readInstanceText(node)].filter(Boolean);
 }
 
 function collectWorkdayNodesWithLabels(root) {
@@ -57,7 +58,7 @@ function collectWorkdayNodesWithLabels(root) {
 function getWorkdayJsonChildren(data) {
   const bodyChildren = data?.body?.children;
   if (!Array.isArray(bodyChildren)) return [];
-  return bodyChildren[0]?.children || bodyChildren;
+  return bodyChildren;
 }
 
 function readWorkdayJsonTitle(data) {
@@ -181,7 +182,7 @@ function createCourseObject({
     instructor: instructors.length ? instructors.join(", ") : "N/A",
     meeting: buildMeetingDisplay(uniqueMeetingLines, isOnline),
     instructionalFormat: format,
-    startDate: extractStartDate(uniqueMeetingLines[0]) || "",
+    ...courseDateRange({ meetingLines: uniqueMeetingLines }),
     meetingLines: uniqueMeetingLines,
     isLab,
     isSeminar,
@@ -193,14 +194,13 @@ function createCourseObject({
 }
 
 export function parseWorkdayCourseIdFromAutomationId(automationId) {
-  const match = String(automationId || "").match(/^selectedItem_15194\$(\d+)$/);
-  return match?.[1] || "";
+  return sectionId(automationId);
 }
 
 export function extractWorkdayCourseIdFromElement(root) {
-  const selectedCourseEl = root?.matches?.('[data-automation-id^="selectedItem_15194$"]')
+  const selectedCourseEl = root?.matches?.(WORKDAY_SELECTORS.selectedCourse)
     ? root
-    : root?.querySelector?.('[data-automation-id^="selectedItem_15194$"]');
+    : root?.querySelector?.(WORKDAY_SELECTORS.selectedCourse);
   const automationId = selectedCourseEl?.getAttribute?.("data-automation-id") || "";
   const courseId = parseWorkdayCourseIdFromAutomationId(automationId);
 
@@ -282,7 +282,7 @@ export async function fetchCourseFromWorkdayLink(link) {
   if (!validation.ok) throw new Error(validation.error);
 
   debug.log({ id: "fetchCourseFromWorkdayLink.start" }, "Fetching Workday course JSON link", { url: validation.url });
-  const response = await fetch(validation.url, { credentials: "include" });
+  const response = await fetchReliable(validation.url, { credentials: "include" });
   if (!response.ok) throw new Error(`Workday returned ${response.status} for that course link.`);
 
   let data;

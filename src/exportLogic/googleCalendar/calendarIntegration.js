@@ -1,3 +1,7 @@
+import { normalizeSchedule, stableId } from "../../core/meetings.js";
+import { fetchReliable, createLimiter } from "../../utilities/network.js";
+import { storageGet, storageSet } from "../../utilities/storage.js";
+import { computeSyncPlan, tagPlanEvent, remoteSnapshot, eventFingerprint } from "./syncPlan.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { buildEventsForCourse } from "./eventBuilder.js";
 
@@ -5,17 +9,12 @@ const debug = debugFor("calendarIntegration");
 debugLog({ local: { calendarIntegration: false } });
 
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
-const DEFAULT_TIMEZONE = "America/Vancouver";
-
-// Marker stamped onto every imported event so we can find + delete previous imports
-// without polluting Google's event IDs and without disturbing the user's other events.
-const WST_PRIVATE_KEY = "wstSource";
-const WST_PRIVATE_VALUE = "workday-import";
 
 // Public message types used to bridge between popup/content scripts and the background worker.
 // Identity APIs are used only from the background context; popup/content scripts call request* helpers.
 export const CALENDAR_MESSAGE_TYPE = {
   SYNC: "SYNC_GCAL",
+  PREVIEW: "PREVIEW_GCAL",
   AUTH_STATE: "AUTH_STATE_GCAL",
   SIGN_IN: "SIGN_IN_GCAL",
   DISCONNECT: "DISCONNECT_GCAL",
@@ -55,7 +54,7 @@ const getIdentityUnavailableMessage = () => {
   return "Google Calendar sign-in is unavailable in this browser build.";
 };
 
-// Wraps Chrome's identity.getAuthToken in a Promise. Firefox OAuth is handled separately by the Firefox OAuth issue.
+// Chrome authentication; Firefox remains ICS-only.
 const fetchAuthToken = ({ interactive = true } = {}) =>
   new Promise((resolve, reject) => {
     if (typeof chrome === "undefined" || !chrome.identity?.getAuthToken) {
@@ -83,178 +82,222 @@ const invalidateAuthToken = (token) =>
   });
 
 // Reads the extension-level Google sign-in state. Input: none. Output: boolean.
-const loadStoredSignedInState = () =>
-  new Promise((resolve) => {
-    if (!chrome?.storage?.local) {
-      resolve(false);
-      return;
-    }
+const loadStoredSignedInState = async () =>
+  Boolean((await storageGet([GCAL_SIGNED_IN_STORAGE_KEY]))[GCAL_SIGNED_IN_STORAGE_KEY]);
+const persistSignedInState = (signedIn) => storageSet({ [GCAL_SIGNED_IN_STORAGE_KEY]: Boolean(signedIn) });
 
-    chrome.storage.local.get({ [GCAL_SIGNED_IN_STORAGE_KEY]: false }, (result) => {
-      resolve(Boolean(result?.[GCAL_SIGNED_IN_STORAGE_KEY]));
-    });
-  });
+const PREVIEW_KEY = "wstCalendarPreview";
+const LAST_PLAN_KEY = "wstLastCalendarPlan";
+let applying = false;
 
-// Persists the extension-level Google sign-in state. Input: boolean. Output: none.
-const persistSignedInState = (signedIn) =>
-  new Promise((resolve) => {
-    if (!chrome?.storage?.local) {
-      resolve();
-      return;
-    }
-
-    chrome.storage.local.set({ [GCAL_SIGNED_IN_STORAGE_KEY]: Boolean(signedIn) }, () => resolve());
-  });
-
-// Stamps the WST marker onto an event so list/delete can find it later. Input: event. Output: tagged event.
-const tagEvent = (event) => ({
-  ...event,
-  extendedProperties: {
-    ...(event.extendedProperties || {}),
-    private: {
-      ...(event.extendedProperties?.private || {}),
-      [WST_PRIVATE_KEY]: WST_PRIVATE_VALUE,
+async function calendarRequest(token, path = "", { method = "GET", event, etag } = {}) {
+  const response = await fetchReliable(
+    `${CALENDAR_API}/calendars/primary/events${path}`,
+    {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(event ? { "Content-Type": "application/json" } : {}),
+        ...(etag ? { "If-Match": etag } : {}),
+      },
+      ...(event ? { body: JSON.stringify(event) } : {}),
     },
-  },
-});
-
-// POSTs one event to a calendar. Input: token, calendarId, event. Output: response body or throws Error with .status.
-const insertEvent = async (token, calendarId, event) => {
-  const url = `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(event),
-  });
-
-  if (response.ok) return response.json();
-
-  const body = await response.text().catch(() => "");
-  const error = new Error(`Calendar API error ${response.status}: ${body || response.statusText}`);
-  error.status = response.status;
-  throw error;
-};
-
-// Lists every event we previously imported, paging through results.
-//   Input: token, calendarId. Output: array of { id }.
-const listImportedEvents = async (token, calendarId) => {
+    { retries: 2 },
+  );
+  return response.status === 204 ? null : response.json();
+}
+async function listImportedEvents(token) {
   const events = [];
+  const pages = new Set();
   let pageToken;
   do {
+    if (pages.has(pageToken) || pages.size >= 20)
+      throw new Error("Calendar pagination could not be completed safely. No changes made.");
+    pages.add(pageToken);
     const params = new URLSearchParams({
-      privateExtendedProperty: `${WST_PRIVATE_KEY}=${WST_PRIVATE_VALUE}`,
+      privateExtendedProperty: "wstSource=workday-import",
       maxResults: "2500",
       showDeleted: "false",
-      fields: "items(id),nextPageToken",
     });
     if (pageToken) params.set("pageToken", pageToken);
-
-    const url = `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`;
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      const error = new Error(`Calendar list error ${response.status}: ${body || response.statusText}`);
-      error.status = response.status;
-      throw error;
-    }
-
-    const data = await response.json();
-    if (Array.isArray(data.items)) events.push(...data.items);
+    const data = await calendarRequest(token, `?${params}`);
+    if (!Array.isArray(data.items) && data.items != null)
+      throw new Error("Google Calendar returned an unsupported response. No changes made.");
+    events.push(...(data.items || []));
     pageToken = data.nextPageToken;
   } while (pageToken);
-
   return events;
-};
-
-// Deletes one event. 410 Gone is treated as success since the event is already absent.
-const deleteEvent = async (token, calendarId, eventId) => {
-  const url = `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
-  const response = await fetch(url, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (response.ok || response.status === 410) return;
-
-  const body = await response.text().catch(() => "");
-  const error = new Error(`Calendar delete error ${response.status}: ${body || response.statusText}`);
-  error.status = response.status;
-  throw error;
-};
-
-// Syncs the user's Workday schedule into Google Calendar: wipes every event we previously imported
-// (matched by the WST private marker), then re-imports the current schedule from scratch.
-// Always safe to call — on the first run there's nothing to wipe and it behaves like a plain import.
-//   Input: courses array (shape from extractCoursesData), optional { calendarId, timeZone }.
-//   Output: { removed, deleteFailed, added, failed, skipped, errors } summary.
-export async function syncCoursesToCalendar(courses, options = {}) {
-  const calendarId = options.calendarId || "primary";
-  const timeZone = options.timeZone || DEFAULT_TIMEZONE;
-
-  if (!Array.isArray(courses) || !courses.length) {
-    debug.warn("No courses provided");
-    return { removed: 0, deleteFailed: 0, added: 0, failed: 0, skipped: 0, errors: [] };
+}
+async function calendarToken() {
+  if (getExtensionBrowser() === "firefox")
+    throw new Error("Firefox supports .ics export only. Use Chrome for Google Calendar sync.");
+  if (!(await getCalendarAuthState()).signedIn) throw new Error("Go to Settings and sign into Google first.");
+  return fetchAuthToken({ interactive: false });
+}
+async function readCalendar(token) {
+  try {
+    return { token, events: await listImportedEvents(token) };
+  } catch (error) {
+    if (error.status !== 401) throw error;
+    await invalidateAuthToken(token);
+    token = await fetchAuthToken({ interactive: false });
+    return { token, events: await listImportedEvents(token) };
   }
+}
 
-  const events = courses.flatMap((course) => buildEventsForCourse(course, { timeZone })).map(tagEvent);
-  const meetingLineCount = courses.reduce(
-    (total, course) => total + (Array.isArray(course?.meetingLines) ? course.meetingLines.length : 0),
-    0,
-  );
-  const skipped = Math.max(0, meetingLineCount - events.length);
-
-  debug.log(
-    { id: "syncCoursesToCalendar.events" },
-    `Built ${events.length} event(s) from ${courses.length} course(s); skipped ${skipped} unparseable line(s)`,
-  );
-
-  let token = await fetchAuthToken({ interactive: true });
-
-  // Refresh token + retry once on 401 — covers stale cached tokens.
-  const withRetry = async (operation) => {
-    try {
-      return await operation(token);
-    } catch (error) {
-      if (error.status !== 401) throw error;
-      debug.warn({ id: "withRetry.refresh" }, "Token rejected, refreshing once");
-      await invalidateAuthToken(token);
-      token = await fetchAuthToken({ interactive: true });
-      return operation(token);
-    }
+export async function previewCoursesToCalendar(courses, options = {}) {
+  const { planId, planName = "Working schedule", replacePlanId = null } = options;
+  if (!planId || !Array.isArray(courses) || !courses.length) throw new Error("Load a schedule before syncing.");
+  const normalized = normalizeSchedule(courses);
+  const desired = [
+    ...new Map(
+      courses
+        .flatMap((c) => buildEventsForCourse(c))
+        .map((e) => {
+          const tagged = tagPlanEvent(e, planId);
+          return [tagged.id, tagged];
+        }),
+    ).values(),
+  ];
+  if (!desired.length) throw new Error("No validated timed meetings to sync. See Meeting Times Unknown.");
+  const { token, events } = await readCalendar(await calendarToken());
+  const state = await storageGet([LAST_PLAN_KEY]);
+  const previous = state[LAST_PLAN_KEY];
+  const previousPlan =
+    previous?.id !== planId && events.some((e) => e.extendedProperties?.private?.wstPlan === previous?.id)
+      ? previous
+      : null;
+  if (replacePlanId && replacePlanId !== previousPlan?.id) throw new Error("The previous plan changed. Preview again.");
+  const diff = computeSyncPlan(desired, events, { planId, replacePlanId, skipped: normalized.diagnostics.length });
+  const previewId = crypto.randomUUID();
+  const preview = {
+    previewId,
+    planId,
+    planName,
+    replacePlanId,
+    desired,
+    diff,
+    snapshot: remoteSnapshot(events),
+    authFingerprint: stableId(token),
+    expiresAt: Date.now() + 10 * 60 * 1000,
+    skipped: normalized.diagnostics.length,
   };
-
-  // Step 1: list and delete prior imports.
-  const existing = await withRetry((tok) => listImportedEvents(tok, calendarId));
-  debug.log({ id: "syncCoursesToCalendar.existing" }, `Found ${existing.length} previously imported event(s)`);
-
-  const deleteResults = existing.length
-    ? await Promise.allSettled(existing.map((event) => withRetry((tok) => deleteEvent(tok, calendarId, event.id))))
-    : [];
-
-  const removed = deleteResults.filter((r) => r.status === "fulfilled").length;
-  const deleteFailed = deleteResults.filter((r) => r.status === "rejected").length;
-  const deleteErrors = deleteResults.filter((r) => r.status === "rejected").map((r) => r.reason);
-
-  // Step 2: insert fresh events in parallel.
-  const insertResults = events.length
-    ? await Promise.allSettled(events.map((event) => withRetry((tok) => insertEvent(tok, calendarId, event))))
-    : [];
-
-  const summary = {
-    removed,
-    deleteFailed,
-    added: insertResults.filter((r) => r.status === "fulfilled").length,
-    failed: insertResults.filter((r) => r.status === "rejected").length,
-    skipped,
-    errors: [...deleteErrors, ...insertResults.filter((r) => r.status === "rejected").map((r) => r.reason)],
+  // Persist the validated plan without tokens so MV3 suspension cannot silently
+  // replace the user's confirmed preview with a newly computed operation.
+  await storageSet({ [PREVIEW_KEY]: preview });
+  return {
+    previewId,
+    planId,
+    planName,
+    previousPlan,
+    calendar: "primary",
+    additions: diff.additions.length,
+    updates: diff.updates.length,
+    removals: diff.removals.length,
+    unchanged: diff.unchanged.length,
+    skipped: preview.skipped,
+    deferredRemovals: diff.deferredRemovals,
+    legacy: diff.legacy,
+    windows: [...new Set(normalized.meetings.map((m) => `${m.startDate} – ${m.endDate}`))],
+    otherPlans: [
+      ...new Set(events.map((e) => e.extendedProperties?.private?.wstPlan).filter((id) => id && id !== planId)),
+    ].length,
   };
+}
 
-  debug.log({ id: "syncCoursesToCalendar.summary" }, summary);
-  return summary;
+// A one-use preview token is required; passing courses or a boolean cannot write.
+export async function syncCoursesToCalendar(previewId) {
+  if (applying) throw new Error("A sync is already in progress. Wait, then preview again.");
+  applying = true;
+  try {
+    const stored = await storageGet([PREVIEW_KEY]);
+    const preview = stored[PREVIEW_KEY];
+    if (!previewId || preview?.previewId !== previewId || preview.expiresAt < Date.now())
+      throw new Error("The calendar preview expired or changed. Preview again.");
+    const { token, events } = await readCalendar(await calendarToken());
+    if (stableId(token) !== preview.authFingerprint)
+      throw new Error("Google sign-in changed. Preview again before syncing.");
+    if (remoteSnapshot(events) !== preview.snapshot)
+      throw new Error("Google Calendar changed since the preview. Preview again before confirming.");
+    await storageSet({ [PREVIEW_KEY]: null });
+    const summary = {
+      added: 0,
+      updated: 0,
+      removed: 0,
+      failed: 0,
+      deleteFailed: 0,
+      unchanged: preview.diff.unchanged.length,
+      skipped: preview.skipped,
+      errors: [],
+    };
+    const limit = createLimiter(3);
+    const writes = [
+      ...preview.diff.additions.map((event) => ({ event, kind: "added" })),
+      ...preview.diff.updates.map(({ old, event }) => ({ old, event, kind: "updated" })),
+    ];
+    await Promise.all(
+      writes.map((operation) =>
+        limit(async () => {
+          try {
+            if (operation.old) {
+              const { id, ...event } = operation.event;
+              // PUT intentionally restores extension-owned content after manual edits.
+              await calendarRequest(token, `/${encodeURIComponent(operation.old.id)}`, {
+                method: "PUT",
+                event,
+                etag: operation.old.etag,
+              });
+            } else {
+              try {
+                await calendarRequest(token, "", { method: "POST", event: operation.event });
+              } catch (error) {
+                // Deterministic IDs recover safely when a prior POST succeeded but
+                // its response was lost. Never overwrite an unowned ID collision.
+                if (error.status !== 409) throw error;
+                const old = await calendarRequest(token, `/${operation.event.id}`);
+                if (
+                  old.extendedProperties?.private?.wstPlan !== preview.planId ||
+                  old.extendedProperties?.private?.wstEvent !== operation.event.extendedProperties.private.wstEvent
+                )
+                  throw error;
+                if (eventFingerprint(old) !== eventFingerprint(operation.event)) {
+                  const { id, ...event } = operation.event;
+                  await calendarRequest(token, `/${old.id}`, { method: "PUT", event, etag: old.etag });
+                }
+              }
+            }
+            summary[operation.kind]++;
+          } catch (error) {
+            summary.failed++;
+            summary.errors.push(error.message);
+          }
+        }),
+      ),
+    );
+    // Deletion is a second stage and is suppressed after ANY failed upsert.
+    if (!summary.failed)
+      await Promise.all(
+        preview.diff.removals.map((old) =>
+          limit(async () => {
+            try {
+              await calendarRequest(token, `/${encodeURIComponent(old.id)}`, { method: "DELETE", etag: old.etag });
+              summary.removed++;
+            } catch (error) {
+              if (error.status === 404 || error.status === 410) summary.removed++;
+              else {
+                summary.deleteFailed++;
+                summary.errors.push(error.message);
+              }
+            }
+          }),
+        ),
+      );
+    if (!summary.failed && !summary.deleteFailed)
+      await storageSet({ [LAST_PLAN_KEY]: { id: preview.planId, name: preview.planName } });
+    return summary;
+  } finally {
+    applying = false;
+  }
 }
 
 // Reports whether the user has signed into Google from this extension.
@@ -266,6 +309,8 @@ export async function getCalendarAuthState() {
 // Starts the interactive Google sign-in flow and records that this extension may sync.
 //   Input: none. Output: { signedIn: boolean }.
 export async function signInCalendar() {
+  if (getExtensionBrowser() === "firefox")
+    throw new Error("Firefox supports .ics export only. Use Chrome for Google Calendar sync.");
   await fetchAuthToken({ interactive: true });
   await persistSignedInState(true);
   return { signedIn: true };
@@ -276,6 +321,7 @@ export async function signInCalendar() {
 //   Input: none. Output: { cleared: boolean }.
 export async function disconnectCalendar() {
   await persistSignedInState(false);
+  await storageSet({ [PREVIEW_KEY]: null });
 
   try {
     const token = await fetchAuthToken({ interactive: false });
@@ -321,12 +367,16 @@ const sendMessage = (type, payload) =>
     });
   });
 
-// Asks the background worker to wipe previous imports and re-import the schedule.
+// Applies the previously validated and explicitly confirmed preview.
 // Use from contexts without identity API access (popup/content).
 //   Input: courses array, optional { calendarId, timeZone }.
 //   Output: { removed, deleteFailed, added, failed, skipped, errors } (errors is an array of strings).
-export async function requestSyncCoursesToCalendar(courses, options = {}) {
-  const response = await sendMessage(CALENDAR_MESSAGE_TYPE.SYNC, { courses, options });
+export async function requestPreviewCoursesToCalendar(courses, options = {}) {
+  const response = await sendMessage(CALENDAR_MESSAGE_TYPE.PREVIEW, { courses, options });
+  return response.preview;
+}
+export async function requestSyncCoursesToCalendar(previewId) {
+  const response = await sendMessage(CALENDAR_MESSAGE_TYPE.SYNC, { previewId });
   return response.summary;
 }
 

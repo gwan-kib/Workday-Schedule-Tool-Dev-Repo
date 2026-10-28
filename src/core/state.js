@@ -1,6 +1,12 @@
 export const STATE = {
   courses: [],
 
+  query: "",
+
+  syncPlanId: null,
+
+  syncPlanName: null,
+
   filtered: [],
 
   savedSchedules: [],

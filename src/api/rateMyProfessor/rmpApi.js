@@ -1,3 +1,4 @@
+import { fetchReliable, TtlCache } from "../../utilities/network.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 
 const debug = debugFor("rmpApi");
@@ -14,7 +15,7 @@ const UBCO_SCHOOL_ID = "U2Nob29sLTU0MzY=";
 const HONORIFIC_RE = /^(dr|prof|professor|mr|mrs|ms)\.?\s+/i;
 const MULTI_INSTRUCTOR_RE = /\s(?:and|&)\s|\/|;|\|/i;
 
-const responseCache = new Map();
+const responseCache = new TtlCache(60 * 60 * 1000);
 
 // Collapses repeated whitespace in a string. Input: string. Output: normalized string.
 function normalizeWhitespace(value) {
@@ -136,39 +137,39 @@ export async function queryProfRating({ profName, campus } = {}) {
   const schoolID = getSchoolId(resolvedCampus);
   const cacheId = `${resolvedCampus}|${normalizedName.fullName.toUpperCase()}`;
 
-  if (responseCache.has(cacheId)) return responseCache.get(cacheId);
+  return responseCache.get(cacheId, async () => {
+    debug.log({ id: "queryProfRating.request" }, "Fetching professor rating", {
+      profName: normalizedName.fullName,
+      campus: resolvedCampus,
+    });
 
-  debug.log({ id: "queryProfRating.request" }, "Fetching professor rating", {
-    profName: normalizedName.fullName,
-    campus: resolvedCampus,
+    const resp = await fetchReliable(RMP_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${BASIC_AUTH_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(buildRMPQueryBody(normalizedName.fullName, schoolID)),
+    });
+
+    if (!resp.ok) {
+      const error = new Error(`RateMyProfessors request failed (${resp.status})`);
+      error.status = resp.status;
+      throw error;
+    }
+
+    const responseJson = await resp.json();
+    if (responseJson?.errors?.length) throw new Error("RateMyProfessors is temporarily unavailable. Retry later.");
+    const result = extractTeacherMatch(responseJson, normalizedName);
+
+    debug.log({ id: "queryProfRating.response" }, "Resolved professor rating", {
+      profName: normalizedName.fullName,
+      campus: resolvedCampus,
+      result,
+    });
+
+    return result;
   });
-
-  const resp = await fetch(RMP_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${BASIC_AUTH_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(buildRMPQueryBody(normalizedName.fullName, schoolID)),
-  });
-
-  if (!resp.ok) {
-    const error = new Error(`RateMyProfessors request failed (${resp.status})`);
-    error.status = resp.status;
-    throw error;
-  }
-
-  const responseJson = await resp.json();
-  const result = extractTeacherMatch(responseJson, normalizedName);
-  responseCache.set(cacheId, result);
-
-  debug.log({ id: "queryProfRating.response" }, "Resolved professor rating", {
-    profName: normalizedName.fullName,
-    campus: resolvedCampus,
-    result,
-  });
-
-  return result;
 }
 
 // Fetches professor rating from the content script through the background worker. Input: profName/campus object. Output: rating data or null.

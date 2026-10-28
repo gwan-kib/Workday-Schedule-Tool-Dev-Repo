@@ -67,7 +67,8 @@ All snapshots stay on your device.
 
 ### Class Averages
 
-- See 5-year class averages right in Workday
+- See the latest available course-year average and a sample-weighted five-year window in Workday
+- Inspect covered/missing years, sample sizes and a UBCGrades source link; insufficient data is labeled unavailable
 - View averages in the course list and on supported Workday registration cards
 - Open supported results on UBCGrades
 
@@ -89,9 +90,9 @@ Export to a standard `.ics` file that works with:
 - Outlook
 - Most calendar apps
 
-You can also sign into Google from Settings and sync the current schedule directly to Google Calendar on supported browser builds. Synced events are refreshed on each sync so old imports from this tool do not pile up.
+Chrome supports Google sign-in and direct synchronization to the primary calendar. Every synchronization previews additions, updates, removals and skipped meetings, and requires confirmation. Switching plans offers Keep Both or Replace Previous for separately tracked plan event sets. Firefox supports `.ics` export only.
 
-Both export paths include recurring class meetings with the correct schedule structure.
+Both export paths use the same validated meeting dates and exact times as the timetable. Unknown or uncertain meetings remain visible under Meeting Times Unknown and are skipped during export. Holidays/reading breaks are excluded only when verified dates are supplied by Workday; they are never guessed.
 
 ---
 

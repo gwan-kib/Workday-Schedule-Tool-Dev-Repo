@@ -1,3 +1,4 @@
+import { fetchReliable, TtlCache } from "../../utilities/network.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { fetchCourseFromWorkdayId } from "../../extraction/singleCourseImport.js";
 
@@ -11,7 +12,7 @@ const TERM_CAMPUS_RE = /(\d{4})(?:-\d{2})?\s+(Winter|Summer)\s+(?:Term\s+\d+|Ses
 
 const SUBJECT_COURSE_RE = /^\s*([A-Z][A-Z0-9_]{1,8})\s*(\d{3}[A-Z]?)\s*$/;
 
-const responseCache = new Map();
+const responseCache = new TtlCache(60 * 60 * 1000);
 
 // Normalizes a subject code by removing campus suffix. Input: string. Output: string.
 const normalizeSubject = (raw) => String(raw || "").replace(/_[VO]$/i, "");
@@ -53,7 +54,7 @@ const cacheKey = (version, campus, yearsession, subject, course, section) =>
 
 // Fetches JSON from a URL. Input: URL string and optional options. Output: parsed JSON object.
 async function fetchJson(url, { signal } = {}) {
-  const resp = await fetch(url, { signal });
+  const resp = await fetchReliable(url, { signal });
   if (!resp.ok) {
     const message = `UBCGrades request failed (${resp.status})`;
     const error = new Error(message);
@@ -68,15 +69,15 @@ async function fetchJson(url, { signal } = {}) {
 async function fetchYearsessions({ campus, version = DEFAULT_API_VERSION }, { signal, useCache = true } = {}) {
   if (!campus) return null;
   const cacheId = cacheKey(version, "yearsessions", campus);
-  if (useCache && responseCache.has(cacheId)) return responseCache.get(cacheId);
 
   const url = buildYearsessionsUrl({ version, campus });
   debug.log({ id: "fetchYearsessions.request" }, "UBCGrades yearsessions request:", { campus }, url);
 
-  const data = await fetchJson(url, { signal });
+  const data = useCache
+    ? await responseCache.get(cacheId, () => fetchJson(url, { signal }))
+    : await fetchJson(url, { signal });
   debug.log({ id: "fetchYearsessions.response" }, "UBCGrades yearsessions response:", { campus }, data);
 
-  if (useCache) responseCache.set(cacheId, data);
   return data;
 }
 
@@ -240,7 +241,6 @@ async function fetchCourseGrades(
   if (!campus || !yearsession || !subject || !course) return null;
 
   const cacheId = cacheKey(version, campus, yearsession, subject, course);
-  if (useCache && responseCache.has(cacheId)) return responseCache.get(cacheId);
 
   const url = buildGradesUrl({
     version,
@@ -257,14 +257,15 @@ async function fetchCourseGrades(
     url,
   );
 
-  const data = await fetchJson(url, { signal });
+  const data = useCache
+    ? await responseCache.get(cacheId, () => fetchJson(url, { signal }))
+    : await fetchJson(url, { signal });
   debug.log(
     { id: "fetchCourseGrades.response" },
     "UBCGrades response:",
     { version, campus, yearsession, subject, course },
     data,
   );
-  if (useCache) responseCache.set(cacheId, data);
   return data;
 }
 
@@ -303,7 +304,7 @@ export async function fetchSectionGradesWithFallbackResult(
   }
 
   const seen = new Set();
-  for (const candidate of yearsessionCandidates) {
+  for (const candidate of yearsessionCandidates.slice(0, 10)) {
     if (!candidate || seen.has(candidate)) continue;
     seen.add(candidate);
 

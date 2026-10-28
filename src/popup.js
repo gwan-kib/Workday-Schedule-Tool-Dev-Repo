@@ -68,16 +68,10 @@ function queueVisibleScheduleRender(schedule) {
   });
 }
 
-function wireTimeFormatToggle(schedule) {
-  const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
-  if (!toggleButton) return;
-
-  toggleButton.textContent = popupState.timeFormat === "am/pm" ? "AM/PM" : "24H";
-  toggleButton.setAttribute("aria-pressed", String(popupState.timeFormat === "am/pm"));
-  toggleButton.addEventListener("click", () => {
-    popupState.timeFormat = popupState.timeFormat === "am/pm" ? "24h" : "am/pm";
-    queueVisibleScheduleRender(schedule);
-  });
+function wireTimeFormatToggle() {
+  ui.onTimeFormatChange = (next) => {
+    popupState.timeFormat = next;
+  };
 }
 
 // The popup reuses the main extension's saved-schedules dropdown pattern so the picker feels consistent.
@@ -215,76 +209,84 @@ async function boot() {
 }
 
 ui.savedMenu?.addEventListener("click", async (event) => {
-  const actionButton = event.target.closest("[data-action]");
-  const card = event.target.closest(".schedule-saved-card");
-  const scheduleId = card?.dataset.id;
-  if (!scheduleId) return;
+  try {
+    const actionButton = event.target.closest("[data-action]");
+    const card = event.target.closest(".schedule-saved-card");
+    const scheduleId = card?.dataset.id;
+    if (!scheduleId) return;
 
-  if (actionButton?.dataset.action === "favorite") {
-    event.stopPropagation();
-    popupState.schedules = togglePreferredSchedule(popupState.schedules, scheduleId);
-    await persistSavedSchedules(popupState.schedules);
-    renderPicker();
-    if (ui.savedDropdown) ui.savedDropdown.open = true;
-    return;
-  }
-
-  if (actionButton?.dataset.action === "rename") {
-    event.stopPropagation();
-    const selected = popupState.schedules.find((schedule) => schedule.id === scheduleId);
-    if (!selected) return;
-
-    const promptedName = window.prompt("Rename schedule", selected.name);
-    if (promptedName === null) return;
-
-    const nextName = promptedName.trim();
-    if (!nextName) {
-      ui.footerNotes?.showTemporary("Schedule name cannot be empty.", { tone: "warn" });
+    if (actionButton?.dataset.action === "favorite") {
+      event.stopPropagation();
+      const next = togglePreferredSchedule(popupState.schedules, scheduleId);
+      await persistSavedSchedules(next);
+      popupState.schedules = next;
+      renderPicker();
       if (ui.savedDropdown) ui.savedDropdown.open = true;
       return;
     }
 
-    if (nextName === selected.name) {
+    if (actionButton?.dataset.action === "rename") {
+      event.stopPropagation();
+      const selected = popupState.schedules.find((schedule) => schedule.id === scheduleId);
+      if (!selected) return;
+
+      const promptedName = window.prompt("Rename schedule", selected.name);
+      if (promptedName === null) return;
+
+      const nextName = promptedName.trim();
+      if (!nextName) {
+        ui.footerNotes?.showTemporary("Schedule name cannot be empty.", { tone: "warn" });
+        if (ui.savedDropdown) ui.savedDropdown.open = true;
+        return;
+      }
+
+      if (nextName === selected.name) {
+        if (ui.savedDropdown) ui.savedDropdown.open = true;
+        return;
+      }
+
+      const next = popupState.schedules.map((schedule) =>
+        schedule.id === scheduleId ? { ...schedule, name: nextName } : schedule,
+      );
+
+      await persistSavedSchedules(next);
+      popupState.schedules = next;
+      renderPicker();
+      renderActiveSchedule();
+      ui.footerNotes?.showTemporary(`Renamed schedule to "${nextName}".`, { tone: "success" });
       if (ui.savedDropdown) ui.savedDropdown.open = true;
       return;
     }
 
-    popupState.schedules = popupState.schedules.map((schedule) =>
-      schedule.id === scheduleId ? { ...schedule, name: nextName } : schedule,
-    );
+    if (actionButton?.dataset.action === "delete") {
+      event.stopPropagation();
+      const selected = popupState.schedules.find((schedule) => schedule.id === scheduleId);
+      if (!selected) return;
 
-    await persistSavedSchedules(popupState.schedules);
-    renderPicker();
-    renderActiveSchedule();
-    ui.footerNotes?.showTemporary(`Renamed schedule to "${nextName}".`, { tone: "success" });
-    if (ui.savedDropdown) ui.savedDropdown.open = true;
-    return;
-  }
+      const confirmed = window.confirm(`Delete "${selected.name}"? This cannot be undone.`);
+      if (!confirmed) return;
 
-  if (actionButton?.dataset.action === "delete") {
-    event.stopPropagation();
-    const selected = popupState.schedules.find((schedule) => schedule.id === scheduleId);
-    if (!selected) return;
+      const next = popupState.schedules.filter((schedule) => schedule.id !== scheduleId);
 
-    const confirmed = window.confirm(`Delete "${selected.name}"? This cannot be undone.`);
-    if (!confirmed) return;
-
-    popupState.schedules = popupState.schedules.filter((schedule) => schedule.id !== scheduleId);
-
-    if (popupState.activeScheduleId === scheduleId) {
-      popupState.activeScheduleId = getPreferredSchedule(popupState.schedules)?.id || null;
+      await persistSavedSchedules(next);
+      popupState.schedules = next;
+      if (popupState.activeScheduleId === scheduleId)
+        popupState.activeScheduleId = getPreferredSchedule(next)?.id || null;
+      renderPicker();
+      renderActiveSchedule();
+      if (ui.savedDropdown && popupState.schedules.length > 1) ui.savedDropdown.open = true;
+      return;
     }
 
-    await persistSavedSchedules(popupState.schedules);
-    renderPicker();
+    popupState.activeScheduleId = scheduleId;
+    if (ui.savedDropdown) ui.savedDropdown.open = false;
     renderActiveSchedule();
-    if (ui.savedDropdown && popupState.schedules.length > 1) ui.savedDropdown.open = true;
-    return;
+  } catch (error) {
+    ui.footerNotes.showTemporary(`${error.message} Retry the action after resolving the error.`, {
+      tone: "warn",
+      durationMs: 10000,
+    });
   }
-
-  popupState.activeScheduleId = scheduleId;
-  if (ui.savedDropdown) ui.savedDropdown.open = false;
-  renderActiveSchedule();
 });
 
 ui.savedMenu?.addEventListener("keydown", (event) => {
@@ -311,4 +313,6 @@ window.addEventListener("resize", () => {
   renderActiveSchedule();
 });
 
-void boot();
+void boot().catch((error) => {
+  ui.footerNotes.setPersistent("storage-error", `${error.message} Reload the popup to retry.`, { tone: "warn" });
+});
