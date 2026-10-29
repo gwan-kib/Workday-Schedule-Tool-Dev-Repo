@@ -1,3 +1,5 @@
+import { mountPlanner } from "./mainPanel/schedules/plannerController.js";
+import { storageGet, storageSet } from "./utilities/storage.js";
 import { getScheduleSaveState } from "./core/scheduleSaveState.js";
 import { renderScheduleHeading } from "./mainPanel/schedules/scheduleHeading.js";
 import { syncPreviewText } from "./exportLogic/googleCalendar/syncPreviewText.js";
@@ -108,6 +110,7 @@ debugLog({ local: { content: false } });
       renderSchedule(ui, STATE.courses, STATE.view.semester, STATE.view.timeFormat);
       ui.onTimeFormatChange = (next) => {
         STATE.view.timeFormat = next;
+        void storageSet({ wdTimeFormat: next }).catch(showActionError);
       };
     };
     // Render all main data-driven UI surfaces together so list/schedule views stay in sync.
@@ -770,6 +773,43 @@ debugLog({ local: { content: false } });
         renderAll();
       }, 100),
     );
+    mountPlanner(ui, {
+      getState: () => STATE,
+      replaceCourses: (courses) => {
+        store.load(courses);
+        courseColorController.assignCourseColors(STATE.courses);
+        filterCourses(ui.searchInput.value);
+        renderAll();
+      },
+      saveSchedules: async (next) => {
+        await updateSavedSchedules(next);
+        renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+        renderSaveState();
+      },
+      onRestored: async (next, settings) => {
+        STATE.savedSchedules = next;
+        storageReady = true;
+        if (!next.some(s => s.id === STATE.currentSavedScheduleId)) {
+          STATE.currentSavedScheduleId = null;
+          STATE.currentScheduleName = null;
+        }
+        STATE.view.timeFormat = settings.wdTimeFormat || STATE.view.timeFormat;
+        renderSavedSchedules(ui, next, STATE.currentSavedScheduleId);
+        renderAll();
+      },
+      onRevealCourse: (course) => {
+        ui.searchInput.value = "";
+        filterCourses("");
+        renderAll();
+        setActiveView("course-list-panel");
+        const card = [...ui.tableBody.querySelectorAll(".course-card")].find(c => c.dataset.courseId === courseIdentity(course));
+        if (card) { card.tabIndex = -1; card.focus(); card.scrollIntoView?.({ block: "nearest" }); }
+      },
+    });
+    try {
+      const preferences = await storageGet(["wdTimeFormat"]);
+      if (["24h", "am/pm"].includes(preferences.wdTimeFormat)) STATE.view.timeFormat = preferences.wdTimeFormat;
+    } catch (error) { showActionError(error); }
     // Initial startup restores saved state, loads the current page's schedule, and then
     // enables the extra page-level average buttons that live outside the panel UI.
     await refreshGoogleAccountState().catch((error) => {

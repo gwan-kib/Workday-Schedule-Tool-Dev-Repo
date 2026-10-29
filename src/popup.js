@@ -1,3 +1,5 @@
+import { exportTimetable } from "./exportLogic/exportTimetable.js";
+import { storageGet, storageSet } from "./utilities/storage.js";
 import {
   applyCourseColorAssignments,
   captureCourseColorPalettes,
@@ -74,6 +76,7 @@ function queueVisibleScheduleRender(schedule) {
 function wireTimeFormatToggle() {
   ui.onTimeFormatChange = (next) => {
     popupState.timeFormat = next;
+    void storageSet({ wdTimeFormat: next }).catch(error => ui.footerNotes.showTemporary(error.message, { tone: "warn" }));
   };
 }
 
@@ -205,8 +208,32 @@ function renderActiveSchedule() {
 async function boot() {
   popupState.basePalettes = captureCourseColorPalettes(document.documentElement);
   popupState.schedules = await loadSavedSchedules();
+  const preferences = await storageGet(["wdTimeFormat"]);
+  if (["24h", "am/pm"].includes(preferences.wdTimeFormat)) popupState.timeFormat = preferences.wdTimeFormat;
   popupState.activeScheduleId = getPreferredSchedule(popupState.schedules)?.id || null;
 
+  const tools = document.createElement("div");
+  tools.className = "planner-toolbar";
+  const orientation = document.createElement("select");
+  orientation.setAttribute("aria-label", "Export orientation");
+  for (const value of ["landscape", "portrait"]) {
+    const option = document.createElement("option"); option.value = value; option.textContent = value;
+    orientation.appendChild(option);
+  }
+  tools.appendChild(orientation);
+  for (const format of ["png", "pdf"]) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = `Download ${format.toUpperCase()}`;
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        const schedule = popupState.schedules.find(s => s.id === popupState.activeScheduleId);
+        await exportTimetable(schedule?.courses || [], format, { name: schedule?.name, orientation: orientation.value });
+      } catch (error) { ui.footerNotes.showTemporary(error.message, { tone: "warn" }); }
+      finally { button.disabled = false; }
+    });
+    tools.appendChild(button);
+  }
+  ui.scheduleGrid.before(tools);
   renderPicker();
   renderActiveSchedule();
 }

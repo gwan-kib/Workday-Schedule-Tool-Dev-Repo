@@ -55,11 +55,15 @@ export async function fetchReliable(url, options = {}, { retries = 2, timeoutMs 
           (async () => {
             const raw = await fetch(url, { ...options, signal: controller.signal });
             const body = await raw.arrayBuffer();
-            return new Response(raw.status === 204 || raw.status === 205 || raw.status === 304 ? null : body, {
+            const buffered = new Response(raw.status === 204 || raw.status === 205 || raw.status === 304 ? null : body, {
               status: raw.status,
               statusText: raw.statusText,
               headers: raw.headers,
             });
+            // Keep redirect metadata so callers can detect login/tenant redirects.
+            Object.defineProperty(buffered, 'url', { value: raw.url });
+            Object.defineProperty(buffered, 'redirected', { value: raw.redirected });
+            return buffered;
           })(),
         ]);
         if (response.ok) return response;

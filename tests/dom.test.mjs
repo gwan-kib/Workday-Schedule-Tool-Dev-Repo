@@ -160,7 +160,7 @@ test("packaged content preserves saved sources, confirms overwrites and reports 
     (_, i) => `<div data-automation-id="selectedItem_15194$${100 + i}"></div>`,
   ).join("");
   const dom = new JSDOM(`<html><head></head><body>${body}</body></html>`, {
-    url: "https://example.myworkday.com/ubc/home.htmld",
+    url: "https://wd10.myworkday.com/ubc/home.htmld",
     runScripts: "outside-only",
     pretendToBeVisual: true,
   });
