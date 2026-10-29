@@ -5,6 +5,7 @@
 @import "./css/colors/saved-schedules-colors.css";
 @import "./css/colors/schedule-view-colors.css";
 @import "./css/colors/hover-tooltip-colors.css";
+@import "./css/formatting/planner.css";
 
 :root {
   color-scheme: light;
@@ -140,6 +141,8 @@ h3 {
   font-weight: 700;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .popup-picker-label {
@@ -158,10 +161,15 @@ h3 {
   padding: 0 14px;
   gap: 10px;
   opacity: 1;
+  max-width: min(310px, calc(100vw - 90px));
+  min-height: 36px;
 }
 
 .popup-picker .schedule-saved-summary .text {
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .popup-picker .schedule-saved-summary:focus-visible {
@@ -187,8 +195,8 @@ h3 {
 }
 
 .popup-picker .schedule-saved-card {
-  flex-direction: row;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: space-between;
   gap: 10px;
   border: 2px solid transparent;
@@ -217,8 +225,8 @@ h3 {
 .popup-picker .schedule-saved-actions {
   flex-direction: row;
   align-items: flex-end;
-  justify-content: flex-end;
-  margin-left: auto;
+  justify-content: flex-start;
+  margin-left: 0;
 }
 
 .popup-picker .schedule-saved-action.star,
@@ -336,3 +344,8 @@ h3 {
 .is-hidden {
   display: none !important;
 }
+.popup-content > .planner-overview { width: 100%; margin: 10px 0; }
+.popup-content > .planner-overview-host .planner-overview { margin: 10px 0; }
+.popup-content > .planner-toolbar { margin: 10px 0; width: 100%; justify-content: center; }
+.popup-content > .planner-toolbar .planner-field { flex: 1 1 100%; text-align: left; }
+.popup-content > .planner-toolbar .planner-field select { width: 100%; }

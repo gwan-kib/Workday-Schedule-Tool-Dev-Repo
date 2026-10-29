@@ -96,14 +96,16 @@ function renderPicker() {
     const card = document.createElement("div");
     card.className = `schedule-saved-card${schedule.id === popupState.activeScheduleId ? " is-active" : ""}`;
     card.dataset.id = schedule.id;
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
+    card.setAttribute("role", "group");
+    card.setAttribute("aria-label", schedule.name);
 
     const header = document.createElement("div");
     header.className = "schedule-saved-card-header";
 
     const info = document.createElement("div");
-    const title = document.createElement("div");
+    const title = document.createElement("button");
+    title.type = "button";
+    title.setAttribute("aria-label", `Load ${schedule.name}`);
     title.className = "schedule-saved-title";
     title.textContent = schedule.name;
 
@@ -114,7 +116,7 @@ function renderPicker() {
     if (schedule.isFavorite) {
       const badge = document.createElement("span");
       badge.className = "schedule-saved-badge";
-      badge.textContent = "Favorite";
+      badge.textContent = "Preferred";
       titleRow.appendChild(badge);
     }
 
@@ -133,7 +135,7 @@ function renderPicker() {
     favoriteButton.type = "button";
     favoriteButton.className = `schedule-saved-action star wd-hover-tooltip${schedule.isFavorite ? " is-favorite" : ""}`;
     favoriteButton.dataset.action = "favorite";
-    const favoriteLabel = schedule.isFavorite ? "Unstar schedule" : "Star schedule";
+    const favoriteLabel = schedule.isFavorite ? "Remove preferred status" : "Set as preferred schedule";
     favoriteButton.dataset.tooltip = favoriteLabel;
     favoriteButton.setAttribute("aria-label", favoriteLabel);
     favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));
@@ -216,22 +218,30 @@ async function boot() {
 
   const tools = document.createElement("div");
   tools.className = "planner-toolbar";
+  const orientationLabel = document.createElement("label");
+  orientationLabel.className = "planner-field";
+  const orientationText = document.createElement("span");
+  orientationText.className = "planner-field-label";
+  orientationText.textContent = "Download layout";
   const orientation = document.createElement("select");
   orientation.setAttribute("aria-label", "Export orientation");
   for (const value of ["landscape", "portrait"]) {
-    const option = document.createElement("option"); option.value = value; option.textContent = value;
+    const option = document.createElement("option"); option.value = value; option.textContent = value === "landscape" ? "Landscape" : "Portrait";
     orientation.appendChild(option);
   }
-  tools.appendChild(orientation);
+  orientationLabel.append(orientationText, orientation);
+  tools.appendChild(orientationLabel);
   for (const format of ["png", "pdf"]) {
     const button = document.createElement("button"); button.type = "button"; button.textContent = `Download ${format.toUpperCase()}`;
     button.addEventListener("click", async () => {
       button.disabled = true;
+      button.setAttribute("aria-busy", "true");
       try {
         const schedule = popupState.schedules.find(s => s.id === popupState.activeScheduleId);
         await exportTimetable(schedule?.courses || [], format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
+        ui.footerNotes.showTemporary(`${format.toUpperCase()} download ready.`, { tone: "success" });
       } catch (error) { ui.footerNotes.showTemporary(error.message, { tone: "warn" }); }
-      finally { button.disabled = false; }
+      finally { button.disabled = false; button.removeAttribute("aria-busy"); }
     });
     tools.appendChild(button);
   }
@@ -345,6 +355,12 @@ ui.savedMenu?.addEventListener("keydown", (event) => {
 
   event.preventDefault();
   card.click();
+});
+ui.savedDropdown?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault(); ui.savedDropdown.open = false;
+    ui.savedDropdown.querySelector("summary")?.focus();
+  }
 });
 
 document.addEventListener("click", (event) => {

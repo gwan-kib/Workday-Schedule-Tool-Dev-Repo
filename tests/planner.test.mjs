@@ -260,10 +260,18 @@ test("comparison stays read-only until an explicit preference action", async () 
   assert.ok(document.querySelector(".planner-comparison"));
   assert.equal(JSON.stringify(state), before);
   assert.equal(writes, 0);
+  const fields = [...document.querySelectorAll("dialog select")];
+  assert.equal(fields[0].querySelector('option[value="b"]').disabled, true);
+  assert.equal(fields[1].querySelector('option[value="a"]').disabled, true);
+  find("Swap sides").click();
+  assert.deepEqual(fields.map((field) => field.value), ["b", "a"]);
+  assert.equal(writes, 0);
+  find("Swap sides").click();
   find("Set as Preferred").click();
   await new Promise((r) => setTimeout(r, 10));
   assert.equal(writes, 1);
   assert.equal(state.savedSchedules[0].isFavorite, true);
+  assert.equal(document.querySelector('[aria-pressed="true"].planner-preferred-button').textContent, "Preferred schedule");
   find("Close").click();
   assert.equal(document.querySelector("dialog"), null);
   dom.window.close();

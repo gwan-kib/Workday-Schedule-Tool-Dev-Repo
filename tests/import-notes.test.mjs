@@ -169,6 +169,7 @@ test("notes open read-only, render HTML literally, support cancel/save and round
     },
   );
   assert.equal(document.querySelector("textarea"), null);
+  assert.equal(document.activeElement.textContent, "Close");
   assert.equal(document.querySelector("img"), null);
   assert.match(
     document.querySelector(".schedule-notes-text").textContent,
@@ -227,6 +228,7 @@ test("note save failures keep the editor and existing note, while stale or delet
   assert.equal(schedules[0].notes, "Remember the lab");
   assert.equal(document.querySelector("textarea").value, "Unsaved draft");
   assert.match(document.querySelector("[role=status]").textContent, /quota/);
+  assert.equal(document.querySelector("[role=status]").dataset.tone, "error");
   schedules = [{ ...plan(), notes: "Changed in another tab" }];
   button("Save note").click();
   await tick();
@@ -240,5 +242,30 @@ test("note save failures keep the editor and existing note, while stale or delet
   await tick();
   assert.equal(writes, 1);
   assert.match(document.querySelector("[role=status]").textContent, /deleted/);
+  dom.window.close();
+});
+
+test("saving a note prevents repeated submissions and restores the reading action after completion", async () => {
+  const dom = domSetup();
+  let schedules = [plan()], writes = 0, finish;
+  const pending = new Promise((resolve) => { finish = resolve; });
+  const dialog = openScheduleNotes({ root: document.body }, {
+    scheduleId: "source", getSchedules: () => schedules,
+    saveSchedules: async (next) => { writes++; await pending; schedules = next; },
+  });
+  const find = (text) => [...document.querySelectorAll("dialog button")].find((b) => b.textContent === text);
+  find("Edit note").click();
+  document.querySelector("textarea").value = "Only save once";
+  const save = find("Save note");
+  save.click(); save.click();
+  assert.equal(writes, 1);
+  assert.equal(save.getAttribute("aria-busy"), "true");
+  assert.equal(find("Cancel").disabled, true);
+  finish(); await tick();
+  assert.equal(schedules[0].notes, "Only save once");
+  assert.equal(document.activeElement, find("Edit note"));
+  assert.equal(document.querySelector("[role=status]").dataset.tone, "success");
+  dialog.close();
+  assert.equal(document.activeElement.id, "opener");
   dom.window.close();
 });

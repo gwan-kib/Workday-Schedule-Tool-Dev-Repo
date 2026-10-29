@@ -29,6 +29,7 @@
         id="widget-export-button"
         type="button"
         aria-haspopup="menu"
+        aria-controls="widget-export-menu"
         aria-expanded="false"
         data-tooltip="Import / Export"
         aria-label="Import / Export"
@@ -38,20 +39,22 @@
         <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
       </button>
       <div class="export-menu" id="widget-export-menu" role="menu">
-        <button class="export-option" type="button" data-planner-action="backup"><span class="material-symbols-rounded" aria-hidden="true">download</span>Back up schedules (.json)</button>
-        <button class="export-option" type="button" data-planner-action="import"><span class="material-symbols-rounded" aria-hidden="true">upload</span>Import WST schedule</button>
-        <button class="export-option" type="button" data-export="ics"><span class="material-symbols-rounded" aria-hidden="true">download</span>Download .ics file</button>
-        <button class="export-option" type="button" data-export="gcal-sync">
+        <span class="export-menu-label" role="presentation">Schedule files</span>
+        <button class="export-option" role="menuitem" type="button" data-planner-action="backup"><span class="material-symbols-rounded" aria-hidden="true">download</span>Back up schedules (.json)</button>
+        <button class="export-option" role="menuitem" type="button" data-planner-action="import"><span class="material-symbols-rounded" aria-hidden="true">upload</span>Import WST schedule</button>
+        <span class="export-menu-label export-menu-label--divider" role="presentation">Calendars</span>
+        <button class="export-option" role="menuitem" type="button" data-export="ics"><span class="material-symbols-rounded" aria-hidden="true">download</span>Download .ics file</button>
+        <button class="export-option" role="menuitem" type="button" data-export="gcal-sync">
           <span class="material-symbols-rounded" aria-hidden="true">sync</span>
           Sync to Google Calendar
         </button>
       </div>
     </div>
-    <button class="button help symbolOnly" type="button" data-tooltip="help-panel" aria-label="Help" title="Help">
+    <button class="button help symbolOnly wd-hover-tooltip wd-hover-tooltip--below" type="button" data-tooltip="Help" aria-label="Help">
       <span class="material-symbols-rounded" aria-hidden="true"> help </span>
     </button>
-    <button class="button settings symbolOnly" type="button" data-tooltip="settings-panel">
-      <span class="material-symbols-rounded">settings</span>
+    <button class="button settings symbolOnly" type="button" data-tooltip="settings-panel" aria-label="Settings">
+      <span class="material-symbols-rounded" aria-hidden="true">settings</span>
     </button>
   </div>
   <!-- ========================= -->
@@ -63,6 +66,7 @@
       type="button"
       data-panel="course-list-panel"
       data-tooltip="Course list"
+      aria-label="Course list"
     >
       <span class="text"><span class="material-symbols-rounded">format_list_bulleted</span></span>
     </button>
@@ -71,12 +75,13 @@
       type="button"
       data-panel="schedule-panel"
       data-tooltip="Schedule view"
+      aria-label="Schedule view"
     >
       <span class="text"><span class="material-symbols-rounded">calendar_today</span></span>
     </button>
     <div class="widget-search-wrap">
       <span class="material-symbols-rounded search-icon" aria-hidden="true"> search </span>
-      <input id="widget-search" placeholder="Course / Week Day / Instructor..." />
+      <input id="widget-search" aria-label="Filter courses" placeholder="Course / Week Day / Instructor..." />
     </div>
     <span class="spacer"></span>
     <details class="schedule-saved-dropdown" id="schedule-saved-dropdown">
@@ -100,6 +105,7 @@
       class="button symbolOnly wd-hover-tooltip"
       type="button"
       data-tooltip="Clear"
+      aria-label="Clear courses"
     >
       <span class="material-symbols-rounded"> ink_eraser </span>
     </button>

@@ -1,4 +1,4 @@
-# Phase 3 implementation — build 3.0.2
+# Phase 3 implementation â€” build 3.0.2
 
 The current UI follows the requested simplified planning workflow. Section-alternative discovery, swap previews/Apply/Undo and the separate conflicts/transitions disclosure have been removed.
 
@@ -10,7 +10,7 @@ The overview contains only Scheduled hours/week and Busiest day. It has no date,
 
 ## Saved plans, notes and import
 
-`plannerController.js` retains read-only, main-panel saved-plan comparison and explicit Set as Preferred. Back up schedules and Import WST schedule are distinct entries under Import / Export. The header uses swap_vert; export entries have download icons and import has upload, matching Google Calendar's sync icon style. The page-course reader uses the search icon and Search page tooltip.
+`plannerController.js` retains read-only, main-panel saved-plan comparison and explicit Set as Preferred. Back up schedules and Import WST schedule are distinct entries under Import / Export. The header uses swap_vert; export entries have download icons and import has upload, matching Google Calendar's sync icon style. The page-course reader uses the pageview icon and Search page tooltip.
 
 Import accepts one version-1 WST JSON file containing exactly one saved schedule. It adds a new record with a fresh ID, retaining the original name or appending the first free (1), (2), etc. Existing snapshots, the working draft, preferred schedule and display/account settings are not replaced. Re-importing the same file adds another named copy. The existing 10-plan limit and file validation remain. Export a single selected plan to produce a compatible .wst.json file; an all-plan backup remains a separate export and is not accepted by this single-plan import.
 
@@ -24,10 +24,17 @@ The display combines matching records of one section/day/time across date ranges
 
 `exportTimetable.js` uses the same 30-minute rows, weekday columns, lane layout, section labels, time format and color tokens as the extension. Export follows the selected teaching week. PNG contains only this full timetable; it does not include the overview, detail appendix, reference numbers or a branding footer.
 
-PDF contains exactly two pages in the chosen orientation: the timetable and course details. Details include section/type, title, instructor, building/floor/room, full weekday names and meeting times. Equivalent patterns split across teaching date ranges are consolidated. Oversized detail lists use a taller second page to preserve readable content while retaining two pages. Normal nine-course portrait and landscape examples fit A4.
+PDF contains exactly two pages in the chosen orientation: the timetable and course details. Details include section/type, title, instructor, building/floor/room, full weekday names and meeting times. Equivalent patterns split across teaching date ranges are consolidated. Oversized detail lists use a taller second page to preserve readable content while retaining two pages. The timetable page remains A4; the details page grows when necessary.
 
 Files are generated locally as SVG/canvas PNG and high-resolution image-PDF, with no upload or external rendering service. Workday URLs and internal account/section IDs are excluded from the printed display fields.
 
 ## Validation
 
 See phase-3-testing.md for evidence and manual acceptance. The private saved-course fixture used locally for visual checks is not committed. No actual Workday registration or Google Calendar write was performed. The pull request remains a draft until manual acceptance and merge.
+
+
+## UI polish (3.0.3)
+
+A shared planner stylesheet uses the existing indigo theme tokens, pale surfaces, rounded controls and typography in both the shadow-root main panel and popup. Dialogs use a compact default width and a wide comparison variant, a consistent header, reading area, action footer and status messages. New controls have visible keyboard focus, disabled and busy states; saved schedule names are native load buttons alongside independently accessible actions.
+
+Overview metrics sit above the scrolling timetable, with separate Week 1/2 chips only when values differ. Comparison uses responsive columns, independent timetable scrolling, count chips, expandable differences and immediate preferred-state feedback. Import/Export has grouped menu entries with arrow/Home/End/Tab/Escape navigation. Notes separate reading from editing, preserve Cancel behavior, expose a character count and return focus after saves or dialog closure. Import feedback includes capacity, validation guidance and collision renaming. PDF detail cards use clearer code/title hierarchy, more spacing and course-color accents; the PNG remains timetable-only.

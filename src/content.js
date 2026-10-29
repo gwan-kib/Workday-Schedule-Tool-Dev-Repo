@@ -247,6 +247,34 @@ debugLog({ local: { content: false } });
       const isOpen = ui.exportDropdown.classList.contains("is-open");
       setExportOpen(!isOpen);
     });
+    const exportItems = () => [...ui.exportMenu.querySelectorAll('[role="menuitem"]')].filter((item) => !item.disabled && item.getAttribute("aria-disabled") !== "true");
+    on(ui.exportButton, "keydown", (event) => {
+      if (event.key === "Escape") { setExportOpen(false); return; }
+      if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+      event.preventDefault();
+      setExportOpen(true);
+      const items = exportItems();
+      (event.key === "ArrowDown" ? items[0] : items.at(-1))?.focus();
+    });
+    on(ui.exportMenu, "keydown", (event) => {
+      const items = exportItems(), index = items.indexOf(event.target.closest('[role="menuitem"]'));
+      if (event.key === "Escape") {
+        event.preventDefault(); setExportOpen(false); ui.exportButton.focus();
+      } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+        items[next]?.focus();
+      } else if (event.key === "Tab") {
+        event.preventDefault(); setExportOpen(false);
+        (event.shiftKey ? ui.exportButton : ui.helpButton)?.focus();
+      }
+    });
+    on(ui.savedDropdown, "keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault(); ui.savedDropdown.open = false;
+        ui.savedDropdown.querySelector("summary")?.focus();
+      }
+    });
     on(document, "click", (event) => {
       const path = event.composedPath ? event.composedPath() : [];
       if (ui.exportDropdown?.classList.contains("is-open") && !path.includes(ui.exportDropdown)) {

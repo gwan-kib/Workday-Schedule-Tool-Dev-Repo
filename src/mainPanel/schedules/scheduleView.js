@@ -245,10 +245,18 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
   controls?.querySelector(".schedule-week-controls")?.remove();
   const weekNote = document.createElement("p");
   weekNote.className = "schedule-week-note";
-  weekNote.textContent = "(Incase course sections are biweekly)";
+  weekNote.textContent = "Switch weeks for alternating classes.";
   weekControls.append(weekToggle, weekNote);
   (controls || host).appendChild(weekControls);
-  renderPlannerOverview(host, courses);
+  if (!ui.scheduleOverviewHost || ui.scheduleOverviewHost.parentNode !== host.parentNode) {
+    ui.scheduleOverviewHost = document.createElement("div");
+    ui.scheduleOverviewHost.className = "planner-overview-host";
+    host.before(ui.scheduleOverviewHost);
+  }
+  const wasOpen = ui.scheduleOverviewHost.querySelector("details")?.open || false;
+  ui.scheduleOverviewHost.replaceChildren();
+  renderPlannerOverview(ui.scheduleOverviewHost, courses);
+  ui.scheduleOverviewHost.querySelector("details").open = wasOpen;
   const tableWrap = buildScheduleTable(timeFormat, layout);
   const maxConcurrent = Math.max(1, ...[...layout.eventsByDay.values()].flatMap(events => [...eventLanes(events).values()].map(l => l.count)));
   const tableWidth = `${Math.max(660, 64 + layout.days.length * 100 * maxConcurrent)}px`;

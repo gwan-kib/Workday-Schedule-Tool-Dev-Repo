@@ -33,38 +33,57 @@ export function openScheduleNotes(
   );
   if (!original) throw new Error("This saved schedule is no longer available.");
   const dialog = plannerDialog(ui, `Notes — ${original.name}`);
+  let focusEdit = false;
   const show = () => {
     const latest = getSchedules().find(
       (schedule) => schedule.id === scheduleId,
     );
     dialog.content.replaceChildren();
+    dialog.actions.replaceChildren();
     if (!latest) {
       dialog.status.textContent = "This schedule was deleted. Close this note.";
       return;
     }
     const value = scheduleNotesText(latest);
-    dialog.content.append(
-      node("p", value || "No notes yet.", "schedule-notes-text"),
-    );
+    const note = node("div", null, `schedule-notes-view${value ? "" : " is-empty"}`);
+    note.append(node("p", value || "No notes yet.", "schedule-notes-text"));
+    if (!value) note.append(node("p", "Keep reminders, questions, or planning details with this schedule.", "planner-hint"));
+    dialog.content.append(note);
     const edit = node("button", "Edit note");
     edit.type = "button";
+    edit.className = "planner-primary";
     edit.addEventListener("click", () => startEdit(value));
-    dialog.content.append(edit);
+    dialog.actions.append(edit);
+    if (focusEdit) edit.focus();
   };
   const startEdit = (previous) => {
+    focusEdit = true;
     dialog.status.textContent = "";
     dialog.content.replaceChildren();
-    const label = node("label", "Schedule notes"),
+    dialog.actions.replaceChildren();
+    const label = node("label", null, "planner-field"),
       input = node("textarea");
+    label.append(node("span", "Schedule notes", "planner-field-label"));
     input.value = previous;
     input.rows = 8;
     input.maxLength = MAX_SCHEDULE_NOTES_LENGTH;
     input.className = "schedule-notes-input";
     input.setAttribute("aria-label", "Schedule notes");
+    input.id = "schedule-notes-editor";
+    input.setAttribute("aria-describedby", "schedule-notes-help");
+    const helper = node("div", null, "schedule-notes-helper"),
+      hint = node("span", "Saved with this schedule.", "planner-hint"),
+      count = node("span", null, "planner-hint");
+    hint.id = "schedule-notes-help";
+    const updateCount = () => { count.textContent = `${input.value.length.toLocaleString()} / ${MAX_SCHEDULE_NOTES_LENGTH.toLocaleString()}`; };
+    input.addEventListener("input", updateCount);
+    updateCount();
+    helper.append(hint, count);
     label.append(input);
     const save = node("button", "Save note"),
       cancel = node("button", "Cancel");
     save.type = cancel.type = "button";
+    save.className = "planner-primary";
     cancel.addEventListener("click", () => {
       dialog.status.textContent = "";
       show();
@@ -72,7 +91,6 @@ export function openScheduleNotes(
     save.addEventListener(
       "click",
       dialog.run(async () => {
-        if (save.disabled) return;
         const schedules = getSchedules(),
           latest = schedules.find((schedule) => schedule.id === scheduleId);
         if (!latest)
@@ -90,13 +108,14 @@ export function openScheduleNotes(
             ),
           );
           show();
-          dialog.status.textContent = "Note saved.";
+          dialog.setStatus("Note saved.");
         } finally {
           save.disabled = cancel.disabled = input.disabled = false;
         }
       }),
     );
-    dialog.content.append(label, save, cancel);
+    dialog.content.append(label, helper);
+    dialog.actions.append(cancel, save);
     input.focus();
   };
   show();

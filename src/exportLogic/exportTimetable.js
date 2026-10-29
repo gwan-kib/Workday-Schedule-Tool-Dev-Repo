@@ -298,30 +298,30 @@ export function timetablePages(courses, options = {}) {
   const schedulePage = svg(
     width,
     height,
-    svgText(24, 30, name, 18, 700, `fill="${esc(theme.main)}"`) +
+    svgText(24, 30, name, Math.min(18, (width - 48) / Math.max(1, textWidth(name, 1))), 700, `fill="${esc(theme.main)}"`) +
       `<g transform="translate(${(width - gridWidth * scale) / 2} 55) scale(${scale})">${grid}</g>`,
   );
   const columns = courses.length > 1 ? 2 : 1,
     gap = 18,
     margin = 24,
     columnWidth = (width - 2 * margin - gap * (columns - 1)) / columns;
-  const fontSize = 11,
-    lineHeight = 15,
-    positions = Array(columns).fill(64),
+  const positions = Array(columns).fill(84),
     cards = [];
   courses.forEach((course, index) => {
     const col = index % columns,
       x = margin + col * (columnWidth + gap),
       lines = courseDetailLines(course).flatMap((line, i) =>
-        wrapText(line, columnWidth - 20, fontSize).map((text) => ({
+        wrapText(line, columnWidth - 32, i < 2 ? 12 : 11).map((text) => ({
           text,
-          bold: i === 0,
+          size: i < 2 ? 12 : 11,
+          weight: i === 0 ? 700 : i === 1 ? 600 : 400,
+          color: i < 2 ? theme.main : "#303757",
         })),
       ),
-      cardHeight = lines.length * lineHeight + 18,
+      cardHeight = lines.length * 17 + 26,
       y = positions[col];
-    cards.push({ x, y, lines, height: cardHeight });
-    positions[col] += cardHeight + 10;
+    cards.push({ x, y, lines, height: cardHeight, color: borderPalette[((course.colorIndex || index + 1) - 1) % borderPalette.length] });
+    positions[col] += cardHeight + 12;
   });
   // Keep exactly two PDF pages. Unusually large plans use a taller details page
   // instead of discarding classes or reducing their details to unreadable text.
@@ -334,15 +334,18 @@ export function timetablePages(courses, options = {}) {
     700,
     `fill="${esc(theme.main)}"`,
   );
+  const subtitle = `${name} · ${courses.length} ${courses.length === 1 ? "class" : "classes"}`;
+  details += svgText(margin, 53, subtitle, Math.min(11, (width - 48) / Math.max(1, textWidth(subtitle, 1))), 400, `fill="${esc(theme.main)}"`);
   cards.forEach((card) => {
-    details += `<rect x="${card.x}" y="${card.y}" width="${columnWidth}" height="${card.height}" rx="6" fill="${esc(theme.background)}" stroke="${esc(theme.main)}" stroke-width="0.7"/>`;
+    details += `<rect x="${card.x}" y="${card.y}" width="${columnWidth}" height="${card.height}" rx="10" fill="${esc(theme.background)}" stroke="#e1e5fb" stroke-width="1"/><rect x="${card.x}" y="${card.y + 12}" width="4" height="${card.height - 24}" rx="2" fill="${esc(card.color)}"/>`;
     card.lines.forEach((line, i) => {
       details += svgText(
-        card.x + 10,
-        card.y + 16 + i * lineHeight,
+        card.x + 16,
+        card.y + 23 + i * 17,
         line.text,
-        fontSize,
-        line.bold ? 700 : 400,
+        line.size,
+        line.weight,
+        `fill="${esc(line.color)}"`,
       );
     });
   });
