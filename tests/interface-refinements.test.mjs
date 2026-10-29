@@ -131,7 +131,7 @@ test("Import/Export has distinct backup and single-schedule import actions, with
     "Import / Export",
   );
   assert.equal(root.querySelector("#widget-refresh").dataset.tooltip, "Search page");
-  assert.equal(root.querySelector("#widget-refresh .material-symbols-rounded").textContent.trim(), "search");
+  assert.equal(root.querySelector("#widget-refresh .material-symbols-rounded").textContent.trim(), "pageview");
   assert.equal(root.querySelector(".help .text"), null);
   assert.equal(root.querySelector(".help").getAttribute("aria-label"), "Help");
   const courses = [course()],
