@@ -74,7 +74,9 @@ export async function loadMainPanel(shadowRoot) {
     searchInput: shadowRoot.querySelector("#widget-search"),
     addCourseButton: shadowRoot.querySelector("#widget-add-course"),
     refreshButton: shadowRoot.querySelector("#widget-refresh"),
-    saveScheduleButton: shadowRoot.querySelector("#widget-save-schedule"),
+    quickSaveButton: shadowRoot.querySelector("#widget-quick-save"),
+    saveAsNewButton: shadowRoot.querySelector("#widget-save-as-new"),
+    scheduleStatusChips: shadowRoot.querySelectorAll(".schedule-status-chip"),
     clearButton: shadowRoot.querySelector("#widget-clear"),
 
     exportDropdown: shadowRoot.querySelector("#widget-export"),

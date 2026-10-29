@@ -474,13 +474,36 @@
     "opsz" 24;
 }
 
+.course-schedule-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.course-schedule-header > .schedule-status-chip { justify-self: start; }
+.course-schedule-actions {
+  display: flex;
+  gap: 6px;
+  justify-self: end;
+}
+.course-schedule-actions .button {
+  border: 2px solid var(--hex-brand-main-2);
+  border-radius: 10px;
+  opacity: 1;
+}
+.course-schedule-actions .button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.course-schedule-actions .button:disabled:hover { background: var(--hex-brand-main-1); }
 .course-schedule-heading {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 4px;
-  margin: 0 0 18px;
+  margin: 0;
   padding: 0;
   border: none;
   border-radius: 0;

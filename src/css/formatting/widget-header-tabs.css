@@ -260,11 +260,3 @@
     transform: rotate(360deg);
   }
 }
-
-#widget-save-schedule {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  width: 36px;
-}

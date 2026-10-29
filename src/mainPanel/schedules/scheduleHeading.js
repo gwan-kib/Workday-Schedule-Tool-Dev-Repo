@@ -40,7 +40,7 @@ export function renderScheduleHeading(host, scheduleName, courses) {
   if (!host) return;
   const name = document.createElement("span");
   name.className = "schedule-heading-name";
-  name.textContent = scheduleName || "Working Schedule (no name yet)";
+  name.textContent = scheduleName || "Working Schedule";
   const term = document.createElement("span");
   term.className = "schedule-heading-term";
   term.textContent = scheduleTermLabel(courses);

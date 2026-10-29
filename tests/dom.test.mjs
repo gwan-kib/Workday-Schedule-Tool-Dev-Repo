@@ -144,7 +144,7 @@ const waitFor = async (check) => {
   }
   assert.fail("UI did not reach expected state");
 };
-test("packaged content saves all five courses after search and reports failed writes", async (t) => {
+test("packaged content preserves saved sources, confirms overwrites and reports persistence status", async (t) => {
   const body = Array.from(
     { length: 5 },
     (_, i) => `<div data-automation-id="selectedItem_15194$${100 + i}"></div>`,
@@ -160,7 +160,10 @@ test("packaged content saves all five courses after search and reports failed wr
     failure = false,
     lastError = null,
     failCourse = false,
-    signedIn = false;
+    signedIn = false,
+    delayWrites = false,
+    pendingWrite = null;
+  const storageListeners = new Set();
   const calendarMessages = [];
   w.structuredClone = structuredClone;
   w.Response = Response;
@@ -198,15 +201,23 @@ test("packaged content saves all five courses after search and reports failed wr
       },
     },
     storage: {
+      onChanged: {
+        addListener: (listener) => storageListeners.add(listener),
+        removeListener: (listener) => storageListeners.delete(listener),
+      },
       local: {
         get(keys, callback) {
           callback(structuredClone(data));
         },
         set(values, callback) {
-          lastError = failure ? { message: "QUOTA_BYTES exceeded" } : null;
-          if (!failure) data = { ...data, ...structuredClone(values) };
-          callback();
-          lastError = null;
+          const finish = () => {
+            lastError = failure ? { message: "QUOTA_BYTES exceeded" } : null;
+            if (!failure) data = { ...data, ...structuredClone(values) };
+            callback();
+            lastError = null;
+          };
+          if (delayWrites) pendingWrite = finish;
+          else finish();
         },
       },
     },
@@ -227,29 +238,45 @@ test("packaged content saves all five courses after search and reports failed wr
   await waitFor(() => shadow()?.querySelectorAll(".course-card").length === 5);
   const s = shadow(),
     search = s.querySelector("#widget-search");
-  assert.equal(s.querySelector("#course-schedule-heading").firstElementChild.textContent, "Working Schedule (no name yet)");
-  assert.equal(s.querySelector("#schedule-term-pill").firstElementChild.textContent, "Working Schedule (no name yet)");
+  assert.equal(s.querySelector("#course-schedule-heading").firstElementChild.textContent, "Working Schedule");
+  assert.equal(s.querySelector("#schedule-term-pill").firstElementChild.textContent, "Working Schedule");
   assert.equal(s.querySelector("#course-schedule-heading").lastElementChild.textContent, "Multiple terms detected");
   assert.equal(s.querySelector("#schedule-term-pill").lastElementChild.textContent, "Multiple terms detected");
+  const quickSave = s.querySelector("#widget-quick-save");
+  const saveAsNew = s.querySelector("#widget-save-as-new");
+  const assertStatus = (label, status) => {
+    const chips = [...s.querySelectorAll(".schedule-status-chip")];
+    assert.equal(chips.length, 2);
+    for (const chip of chips) {
+      assert.equal(chip.textContent, label);
+      assert.equal(chip.dataset.status, status);
+    }
+  };
+  assertStatus("Working - not saved", "working");
+  assert.equal(quickSave.disabled, true);
   search.value = "Course 100";
   search.dispatchEvent(new w.Event("input"));
   await waitFor(() => s.querySelectorAll(".course-card").length === 1);
-  s.querySelector("#widget-save-schedule").click();
+  s.querySelector("#widget-save-as-new").click();
   await waitFor(() => !s.querySelector("#schedule-save-modal").classList.contains("is-hidden"));
   s.querySelector("#schedule-modal-input").value = "Complete plan";
   s.querySelector(".schedule-modal-confirm").click();
   await waitFor(() => data.wdSavedSchedules?.length === 1);
   assert.equal(data.wdSavedSchedules[0].courses.length, 5);
+  assertStatus("Saved Schedule", "saved");
+  assert.equal(quickSave.disabled, false);
   const courseHeading = s.querySelector('[data-panel="course-list-panel"] .course-schedule-heading');
   assert.equal(courseHeading.firstElementChild.textContent, "Complete plan");
   assert.equal(courseHeading.lastElementChild.textContent, s.querySelector("#schedule-term-pill").lastElementChild.textContent);
   assert.equal(courseHeading.classList.contains("schedule-term-pill"), false);
-  assert.equal(courseHeading.parentElement.firstElementChild, courseHeading);
+  assert.equal(courseHeading.parentElement.className, "course-schedule-header");
+  assert.equal(courseHeading.nextElementSibling.querySelectorAll("button").length, 2);
+  assert.equal(s.querySelector("#widget-save-schedule"), null);
   s.querySelector(".schedule-saved-card").click();
   await waitFor(() => s.querySelectorAll(".course-card").length === 5);
   assert.equal(search.value, "");
   failure = true;
-  s.querySelector("#widget-save-schedule").click();
+  s.querySelector("#widget-save-as-new").click();
   await waitFor(() => !s.querySelector("#schedule-save-modal").classList.contains("is-hidden"));
   s.querySelector("#schedule-modal-input").value = "Must not persist";
   s.querySelector(".schedule-modal-confirm").click();
@@ -311,6 +338,111 @@ test("packaged content saves all five courses after search and reports failed wr
   await waitFor(() => s.querySelector("#schedule-loading-modal").classList.contains("is-hidden"));
   assert.ok(!s.querySelector("#schedule-footer-notes").textContent.includes("No supported course sections found"));
   assert.equal(s.querySelectorAll(".course-card").length, 5);
+  // Editing keeps the source name and Quick Save available. Cancel changes nothing.
+  failure = false;
+  const originalId = data.wdSavedSchedules[0].id;
+  const savedBeforeCancel = structuredClone(data.wdSavedSchedules);
+  s.querySelector(".course-card__delete-button").click();
+  assert.equal(s.querySelectorAll(".course-card").length, 4);
+  assert.equal(courseHeading.firstElementChild.textContent, "Complete plan");
+  assertStatus("Working - not saved", "working");
+  assert.equal(quickSave.disabled, false);
+  quickSave.click();
+  assert.equal(s.querySelector("#schedule-modal-title").textContent, "Update saved schedule?");
+  s.querySelector(".schedule-modal-cancel").click();
+  await waitFor(() => !quickSave.disabled);
+  assert.deepEqual(data.wdSavedSchedules, savedBeforeCancel);
+  assert.equal(s.querySelectorAll(".course-card").length, 4);
+  assertStatus("Working - not saved", "working");
+  // A pending/failed overwrite must not show a saved state or lose its source.
+  delayWrites = true;
+  quickSave.click();
+  s.querySelector(".schedule-modal-confirm").click();
+  await waitFor(() => pendingWrite !== null);
+  assertStatus("Working - not saved", "working");
+  assert.equal(quickSave.disabled, true);
+  failure = true;
+  pendingWrite();
+  pendingWrite = null;
+  await waitFor(() => !quickSave.disabled);
+  assert.deepEqual(data.wdSavedSchedules, savedBeforeCancel);
+  assertStatus("Working - not saved", "working");
+  assert.equal(courseHeading.firstElementChild.textContent, "Complete plan");
+  failure = false;
+  quickSave.click();
+  s.querySelector(".schedule-modal-confirm").click();
+  await waitFor(() => pendingWrite !== null);
+  assertStatus("Working - not saved", "working");
+  pendingWrite();
+  pendingWrite = null;
+  delayWrites = false;
+  await waitFor(() => !quickSave.disabled);
+  assertStatus("Saved Schedule", "saved");
+  assert.equal(data.wdSavedSchedules.length, 1);
+  assert.equal(data.wdSavedSchedules[0].id, originalId);
+  assert.equal(data.wdSavedSchedules[0].name, "Complete plan");
+  assert.equal(data.wdSavedSchedules[0].courses.length, 4);
+  // Colour changes count as edits; reloading the saved plan discards those edits.
+  s.querySelector('.course-card__color-option[data-color-index="8"]').click();
+  assertStatus("Working - not saved", "working");
+  assert.equal(quickSave.disabled, false);
+  s.querySelector(".schedule-saved-card").click();
+  assertStatus("Saved Schedule", "saved");
+  s.querySelector(".course-sort-button").click();
+  assertStatus("Saved Schedule", "saved");
+  // Save As New cancellation preserves the source; duplicate names still create separate IDs.
+  s.querySelector(".course-card__delete-button").click();
+  saveAsNew.click();
+  s.querySelector("#schedule-modal-input").value = "Cancelled copy";
+  s.querySelector(".schedule-modal-cancel").click();
+  await waitFor(() => !saveAsNew.disabled);
+  assert.equal(data.wdSavedSchedules.length, 1);
+  assertStatus("Working - not saved", "working");
+  assert.equal(quickSave.disabled, false);
+  saveAsNew.click();
+  s.querySelector("#schedule-modal-input").value = "Complete plan";
+  s.querySelector(".schedule-modal-confirm").click();
+  await waitFor(() => data.wdSavedSchedules.length === 2 && !saveAsNew.disabled);
+  assertStatus("Saved Schedule", "saved");
+  const newId = data.wdSavedSchedules[0].id;
+  assert.notEqual(newId, originalId);
+  assert.equal(data.wdSavedSchedules[0].courses.length, 3);
+  assert.equal(data.wdSavedSchedules[1].courses.length, 4);
+  // Rename and delete stay consistent in both headings/chips without losing working courses.
+  s.querySelector(`[data-id="${newId}"] [data-action="rename"]`).click();
+  s.querySelector("#schedule-modal-input").value = "Renamed plan";
+  s.querySelector(".schedule-modal-confirm").click();
+  await waitFor(() => courseHeading.firstElementChild.textContent === "Renamed plan");
+  assertStatus("Saved Schedule", "saved");
+  s.querySelector(`[data-id="${newId}"] [data-action="delete"]`).click();
+  s.querySelector(".schedule-modal-confirm").click();
+  await waitFor(() => quickSave.disabled);
+  assertStatus("Working - not saved", "working");
+  assert.equal(courseHeading.firstElementChild.textContent, "Working Schedule");
+  assert.equal(s.querySelectorAll(".course-card").length, 3);
+  // Deletion in another extension surface also detaches the source.
+  s.querySelector(`[data-id="${originalId}"]`).click();
+  assertStatus("Saved Schedule", "saved");
+  for (let index = 0; index < 4; index++) s.querySelector(".course-card__delete-button").click();
+  assertStatus("No courses added yet", "empty");
+  assert.equal(quickSave.disabled, false);
+  assert.equal(courseHeading.firstElementChild.textContent, "Complete plan");
+  s.querySelector(`[data-id="${originalId}"]`).click();
+  quickSave.click();
+  data.wdSavedSchedules = [];
+  for (const listener of storageListeners) await listener({ wdSavedSchedules: { newValue: [] } }, "local");
+  s.querySelector(".schedule-modal-confirm").click();
+  await waitFor(() => s.querySelector("#schedule-footer-notes").textContent.includes("no longer available"));
+  assert.equal(data.wdSavedSchedules.length, 0);
+  assert.equal(quickSave.disabled, true);
+  assertStatus("Working - not saved", "working");
+  assert.equal(courseHeading.firstElementChild.textContent, "Working Schedule");
+  s.querySelector("#widget-clear").click();
+  assertStatus("No courses added yet", "empty");
+  assert.equal(quickSave.disabled, true);
+  assert.equal(saveAsNew.disabled, true);
+  assert.equal(courseHeading.firstElementChild.textContent, "Working Schedule");
+  assert.equal(s.querySelector("#schedule-term-pill").firstElementChild.textContent, "Working Schedule");
   dom.window.close();
 });
 

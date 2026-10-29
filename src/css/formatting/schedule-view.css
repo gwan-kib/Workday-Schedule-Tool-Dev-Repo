@@ -2,6 +2,29 @@
 /* SCHEDULE VIEW: TOP CONTROLS (AUTO TERM PILL)                                */
 /* -------------------------------------------------------------------------- */
 
+.schedule-status-row { margin-bottom: 8px; }
+.schedule-status-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid currentColor;
+  border-radius: 10px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.schedule-status-chip[data-status="saved"] {
+  color: var(--hex-success-1, #168347);
+  background: color-mix(in srgb, var(--hex-success-1, #168347) 10%, var(--hex-neutral-1, white));
+}
+.schedule-status-chip[data-status="working"] {
+  color: #825400;
+  background: #fff2cb;
+}
+.schedule-status-chip[data-status="empty"] {
+  color: #555b66;
+  background: var(--hex-neutral-2, #e5e7eb);
+}
 .schedule-controls {
   display: flex;
   flex-direction: column;

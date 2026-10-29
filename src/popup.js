@@ -63,7 +63,7 @@ function queueVisibleScheduleRender(schedule) {
   scheduledRenderFrame = requestAnimationFrame(() => {
     scheduledRenderFrame = requestAnimationFrame(() => {
       scheduledRenderFrame = 0;
-      ui.scheduleName = schedule?.name || "Working Schedule (no name yet)";
+      ui.scheduleName = schedule?.name || "Working Schedule";
       renderSchedule(ui, schedule?.courses, null, popupState.timeFormat);
       wireTimeFormatToggle(schedule);
     });
