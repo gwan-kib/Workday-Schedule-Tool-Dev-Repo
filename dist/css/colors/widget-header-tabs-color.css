@@ -104,6 +104,10 @@
   opacity: 0.75;
 }
 
+.export-summary .text {
+  color: var(--hex-brand-accent-2);
+}
+
 .export-menu {
   background: var(--hex-brand-accent-1);
   border-color: var(--hex-brand-main-2);
