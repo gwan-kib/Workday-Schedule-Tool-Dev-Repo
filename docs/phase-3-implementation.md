@@ -33,7 +33,7 @@ Files are generated locally as SVG/canvas PNG and high-resolution image-PDF, wit
 See phase-3-testing.md for evidence and manual acceptance. The private saved-course fixture used locally for visual checks is not committed. No actual Workday registration or Google Calendar write was performed. The pull request remains a draft until manual acceptance and merge.
 
 
-## Scoped UI polish (3.0.4)
+## Scoped UI polish (3.0.5)
 
 A shared planner stylesheet uses the existing indigo theme tokens, pale surfaces, rounded controls and typography in both the shadow-root main panel and popup. Dialogs use a compact default width and a wide comparison variant, a consistent header, reading area, action footer and status messages. Only new planner controls have the added focus, disabled and busy states. Existing saved-schedule cards, title/loading behavior, action sizes and colors, labels and picker layout retain the accepted baseline.
 

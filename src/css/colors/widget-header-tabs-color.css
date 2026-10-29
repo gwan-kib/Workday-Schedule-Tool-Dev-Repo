@@ -94,13 +94,23 @@
 }
 
 /* export dropdown */
+.export-summary {
+  background: var(--hex-brand-main-3);
+  color: var(--hex-brand-accent-2);
+  opacity: 0.5;
+}
+
+.export-summary:hover {
+  opacity: 0.75;
+}
+
 .export-menu {
   background: var(--hex-brand-accent-1);
   border-color: var(--hex-brand-main-2);
 }
 
 .export-option {
-  background: transparent;
+  background: var(--hex-brand-accent-4);
   color: var(--hex-brand-main-1);
 }
 

@@ -264,5 +264,3 @@
 /* Phase 3 Import / Export only; existing shell controls retain their baseline. */
 .export-menu-label { padding: 6px 12px 4px; color: var(--hex-brand-main-1); font-size: 11px; font-weight: 700; }
 .export-menu-label--divider { border-top: 1px solid var(--hex-brand-accent-3); margin-top: 6px; padding-top: 12px; }
-.export-summary { opacity: 1; }
-.export-summary[aria-expanded="true"] { background: var(--hex-brand-main-2); }

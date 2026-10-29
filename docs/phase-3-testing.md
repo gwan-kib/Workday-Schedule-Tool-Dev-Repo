@@ -1,6 +1,6 @@
-# Phase 3 — manual checks for build 3.0.4
+# Phase 3 — manual checks for build 3.0.5
 
-Update the files in the folder used by your unpacked extension, reload **UBC Workday - Schedule Tool**, and refresh Workday. Chrome's Extensions page should show **3.0.4**. Keep the existing extension identity so saved plans remain available.
+Update the files in the folder used by your unpacked extension, reload **UBC Workday - Schedule Tool**, and refresh Workday. Chrome's Extensions page should show **3.0.5**. Keep the existing extension identity so saved plans remain available.
 
 UI polish is confined to Phase 3 additions and altered elements. The existing header, toolbar, filter field, saved-schedule cards/actions, popup picker and week-control text use the accepted pre-polish baseline.
 
