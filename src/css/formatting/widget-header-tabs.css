@@ -260,24 +260,9 @@
   height: 36px;
   width: 36px;
 }
+
+/* Phase 3 Import / Export only; existing shell controls retain their baseline. */
 .export-menu-label { padding: 6px 12px 4px; color: var(--hex-brand-main-1); font-size: 11px; font-weight: 700; }
 .export-menu-label--divider { border-top: 1px solid var(--hex-brand-accent-3); margin-top: 6px; padding-top: 12px; }
-.export-summary[aria-expanded="true"] { opacity: 1; background: var(--hex-brand-main-2); }
 .export-summary { opacity: 1; }
-.widget-header .button.symbolOnly, .widet-toolbar > .button.symbolOnly { flex: 0 0 36px; opacity: 1; padding: 0; }
-.widget-header .button.symbolOnly:hover, .widet-toolbar > .button.symbolOnly:hover { background: var(--hex-brand-main-2); }
-@media (max-width: 600px) {
-  .widget-header { flex-wrap: wrap; height: auto; gap: 6px; }
-  #widget-title { flex: 1; min-width: 120px; font-size: 15px; white-space: normal; }
-  .widget-header > .spacer { display: none; }
-  .widget-header .export-summary { width: 44px; padding: 0; }
-  .export-summary .text, .export-summary > .material-symbols-rounded:last-child { display: none; }
-  .widet-toolbar { display: grid; grid-template-columns: 36px 36px minmax(0, 1fr) 36px 36px; height: auto; gap: 8px 6px; }
-  .widget-search-wrap { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
-  .widet-toolbar .schedule-saved-dropdown { grid-column: 3; grid-row: 1; margin: 0; justify-self: end; }
-  .widet-toolbar .schedule-saved-summary { font-size: 12px; padding: 0 8px; }
-  #widget-refresh { grid-column: 4; grid-row: 1; }
-  #widget-clear { grid-column: 5; grid-row: 1; }
-  #widget-search { width: 100%; min-width: 0; box-sizing: border-box; }
-  .widet-toolbar > .spacer { display: none; }
-}
+.export-summary[aria-expanded="true"] { background: var(--hex-brand-main-2); }

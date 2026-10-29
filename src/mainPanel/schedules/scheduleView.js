@@ -245,7 +245,7 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
   controls?.querySelector(".schedule-week-controls")?.remove();
   const weekNote = document.createElement("p");
   weekNote.className = "schedule-week-note";
-  weekNote.textContent = "Switch weeks for alternating classes.";
+  weekNote.textContent = "(Incase course sections are biweekly)";
   weekControls.append(weekToggle, weekNote);
   (controls || host).appendChild(weekControls);
   if (!ui.scheduleOverviewHost || ui.scheduleOverviewHost.parentNode !== host.parentNode) {

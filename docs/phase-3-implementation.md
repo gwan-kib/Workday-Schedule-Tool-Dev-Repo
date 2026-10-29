@@ -33,8 +33,11 @@ Files are generated locally as SVG/canvas PNG and high-resolution image-PDF, wit
 See phase-3-testing.md for evidence and manual acceptance. The private saved-course fixture used locally for visual checks is not committed. No actual Workday registration or Google Calendar write was performed. The pull request remains a draft until manual acceptance and merge.
 
 
-## UI polish (3.0.3)
+## Scoped UI polish (3.0.4)
 
-A shared planner stylesheet uses the existing indigo theme tokens, pale surfaces, rounded controls and typography in both the shadow-root main panel and popup. Dialogs use a compact default width and a wide comparison variant, a consistent header, reading area, action footer and status messages. New controls have visible keyboard focus, disabled and busy states; saved schedule names are native load buttons alongside independently accessible actions.
+A shared planner stylesheet uses the existing indigo theme tokens, pale surfaces, rounded controls and typography in both the shadow-root main panel and popup. Dialogs use a compact default width and a wide comparison variant, a consistent header, reading area, action footer and status messages. Only new planner controls have the added focus, disabled and busy states. Existing saved-schedule cards, title/loading behavior, action sizes and colors, labels and picker layout retain the accepted baseline.
 
 Overview metrics sit above the scrolling timetable, with separate Week 1/2 chips only when values differ. Comparison uses responsive columns, independent timetable scrolling, count chips, expandable differences and immediate preferred-state feedback. Import/Export has grouped menu entries with arrow/Home/End/Tab/Escape navigation. Notes separate reading from editing, preserve Cancel behavior, expose a character count and return focus after saves or dialog closure. Import feedback includes capacity, validation guidance and collision renaming. PDF detail cards use clearer code/title hierarchy, more spacing and course-color accents; the PNG remains timetable-only.
+
+
+The UI correction restores existing shell dimensions, header/toolbar/filter styles, saved-card actions, popup picker layout and week-control wording from commit 3675ffb. Shared planner styles no longer target the widget shell or all existing controls. Retained refinements are limited to Phase 3 overview, notes, comparison, Import/Export, downloads and the altered Help control. An isolated browser comparison verified matching computed styles for 28 existing elements in the main panel and popup.

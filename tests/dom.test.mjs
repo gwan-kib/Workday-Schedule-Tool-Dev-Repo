@@ -101,7 +101,7 @@ test("week toggle keeps weekly classes and switches opposite-week sections", () 
   assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-toggle").length, 1);
   assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-note").length, 1);
   assert.equal(ui.scheduleControls.querySelector(".schedule-week-toggle").nextElementSibling.textContent,
-    "Switch weeks for alternating classes.");
+    "(Incase course sections are biweekly)");
   assert.equal(ui.scheduleGrid.querySelector(".schedule-week-toggle"), null);
   assert.equal(ui.scheduleTermPill.firstElementChild.textContent, "Fall Plan");
   assert.equal(ui.scheduleTermPill.lastElementChild.textContent, "Winter Term 1");
@@ -119,7 +119,7 @@ test("week toggle keeps weekly classes and switches opposite-week sections", () 
   assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-toggle").length, 1);
   assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-note").length, 1);
   assert.equal(ui.scheduleControls.querySelector(".schedule-week-toggle").nextElementSibling.textContent,
-    "Switch weeks for alternating classes.");
+    "(Incase course sections are biweekly)");
   assert.equal(ui.scheduleTermPill.lastElementChild.textContent, "Winter Term 1");
   document.querySelector(".schedule-time-toggle").click();
   assert.equal(document.querySelector('[data-week="2"]').getAttribute("aria-pressed"), "true");

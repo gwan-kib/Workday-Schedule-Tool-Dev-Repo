@@ -195,17 +195,15 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
     const card = document.createElement("div");
     card.className = `schedule-saved-card${schedule.id === activeScheduleId ? " is-active" : ""}`;
     card.dataset.id = schedule.id;
-    card.setAttribute("role", "group");
-    card.setAttribute("aria-label", schedule.name);
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
 
     const header = document.createElement("div");
     header.className = "schedule-saved-card-header";
 
     const info = document.createElement("div");
 
-    const title = document.createElement("button");
-    title.type = "button";
-    title.setAttribute("aria-label", `Load ${schedule.name}`);
+    const title = document.createElement("div");
     title.className = "schedule-saved-title";
     title.textContent = schedule.name;
 
@@ -216,7 +214,7 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
     if (schedule.isFavorite) {
       const badge = document.createElement("span");
       badge.className = "schedule-saved-badge";
-      badge.textContent = "Preferred";
+      badge.textContent = "Favorite";
       titleRow.appendChild(badge);
     }
 
@@ -235,7 +233,7 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
     favoriteButton.type = "button";
     favoriteButton.className = `schedule-saved-action star wd-hover-tooltip${schedule.isFavorite ? " is-favorite" : ""}`;
     favoriteButton.dataset.action = "favorite";
-    const favoriteLabel = schedule.isFavorite ? "Remove preferred status" : "Set as preferred schedule";
+    const favoriteLabel = schedule.isFavorite ? "Unstar schedule" : "Star schedule";
     favoriteButton.dataset.tooltip = favoriteLabel;
     favoriteButton.setAttribute("aria-label", favoriteLabel);
     favoriteButton.setAttribute("aria-pressed", String(schedule.isFavorite));

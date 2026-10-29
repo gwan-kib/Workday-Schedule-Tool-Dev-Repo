@@ -269,12 +269,6 @@ debugLog({ local: { content: false } });
         (event.shiftKey ? ui.exportButton : ui.helpButton)?.focus();
       }
     });
-    on(ui.savedDropdown, "keydown", (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault(); ui.savedDropdown.open = false;
-        ui.savedDropdown.querySelector("summary")?.focus();
-      }
-    });
     on(document, "click", (event) => {
       const path = event.composedPath ? event.composedPath() : [];
       if (ui.exportDropdown?.classList.contains("is-open") && !path.includes(ui.exportDropdown)) {

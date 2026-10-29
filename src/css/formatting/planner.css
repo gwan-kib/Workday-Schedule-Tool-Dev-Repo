@@ -1,5 +1,5 @@
 /* Shared planner surfaces for the Workday panel and saved-schedule popup. */
-.widget, .planner-toolbar, .planner-dialog, .planner-overview { box-sizing: border-box; }
+.planner-toolbar, .planner-dialog, .planner-overview { box-sizing: border-box; }
 .planner-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 12px; }
 .planner-toolbar button, .planner-dialog button:where(:not(.schedule-time-toggle):not([data-week])) {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -85,14 +85,16 @@
 .planner-import-file { padding: 16px; border: 1px dashed var(--hex-brand-accent-5); border-radius: 12px; background: var(--hex-brand-accent-2); }
 .planner-dialog input[type="file"] { width: 100%; padding: 0; border: 0; background: transparent; }
 .planner-dialog input[type="file"]::file-selector-button { border: 1px solid var(--hex-brand-accent-4); border-radius: 8px; padding: 9px 12px; margin-right: 10px; color: var(--hex-brand-main-1); background: var(--hex-neutral-1); font: inherit; cursor: pointer; }
-.widget :is(button, summary, select, input, textarea, a):focus-visible,
+.planner-toolbar :is(button, select):focus-visible,
+.planner-overview summary:focus-visible,
 .planner-dialog :is(button, summary, select, input, textarea):focus-visible,
-.popup-shell :is(button, summary, select, input):focus-visible {
+.widget .schedule-saved-action.notes:focus-visible,
+.popup-shell .schedule-saved-action.notes:focus-visible,
+.widget #widget-export-button:focus-visible,
+.widget .export-option:focus-visible {
   outline: 3px solid var(--hex-brand-main-3); outline-offset: 3px; box-shadow: 0 0 0 2px var(--hex-neutral-1);
 }
-.widget-header button:focus-visible, .widet-toolbar button:focus-visible, .widet-toolbar summary:focus-visible { outline-color: var(--hex-neutral-1); box-shadow: 0 0 0 2px var(--hex-brand-main-1); }
 @media (max-width: 720px) {
-  .widget { width: min(700px, 100vw); }
   .planner-comparison { grid-template-columns: minmax(0, 1fr); }
   .planner-comparison-heading { min-height: 0; }
   .planner-dialog-body { padding: 16px; }
@@ -105,5 +107,5 @@
   .planner-dialog-actions button { flex: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .planner-toolbar button, .planner-dialog button, .schedule-saved-action { transition: none; }
+  .planner-toolbar button, .planner-dialog button, .schedule-saved-action.notes { transition: none; }
 }
