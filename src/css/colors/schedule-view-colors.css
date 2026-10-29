@@ -40,6 +40,21 @@
   background: var(--hex-brand-accent-4);
 }
 
+.schedule-week-toggle button {
+  color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-1);
+  border-color: var(--hex-brand-main-2);
+}
+.schedule-week-toggle button:hover {
+  color: var(--hex-brand-main-3);
+  background: var(--hex-brand-accent-4);
+}
+.schedule-week-toggle button[aria-pressed="true"] {
+  color: var(--hex-neutral-1);
+  background: var(--hex-brand-main-2);
+  border-color: var(--hex-brand-main-1);
+}
+
 .schedule-entry-float {
   background: var(--schedule-entry-bg, var(--hex-brand-accent-5));
   color: var(--hex-neutral-3);

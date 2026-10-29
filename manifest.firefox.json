@@ -63,7 +63,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["dist/css/*.css", "dist/panel.html"],
+      "resources": ["dist/css/*.css", "dist/panel.html", "icon48.png"],
       "matches": ["https://*.myworkday.com/*"]
     }
   ]

@@ -60,6 +60,7 @@ export async function loadMainPanel(shadowRoot) {
   const wrap = document.createElement("div");
   wrap.innerHTML = html;
   shadowRoot.appendChild(wrap);
+  shadowRoot.querySelector("#widget-logo").src = chrome.runtime.getURL("icon48.png");
 
   const ui = {
     mainPanel: shadowRoot.querySelector(".widget"),

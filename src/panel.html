@@ -18,6 +18,7 @@
   <!-- Header: title + actions -->
   <!-- ========================= -->
   <div class="widget-header">
+    <img id="widget-logo" width="32" height="32" alt="" aria-hidden="true" />
     <span id="widget-title">UBC Workday - Schedule Tool</span>
 
     <span class="spacer"></span>
@@ -110,11 +111,11 @@
         <span class="schedule-status-chip" id="course-schedule-status" role="status"></span>
         <header class="course-schedule-heading" id="course-schedule-heading" aria-label="Current schedule"></header>
         <div class="course-schedule-actions">
-          <button id="widget-quick-save" class="button symbolOnly wd-hover-tooltip" type="button"
+          <button id="widget-quick-save" class="button symbolOnly wd-hover-tooltip wd-hover-tooltip--below" type="button"
             data-tooltip="Quick Save" aria-label="Quick Save" disabled>
             <span class="material-symbols-rounded" aria-hidden="true">save</span>
           </button>
-          <button id="widget-save-as-new" class="button symbolOnly wd-hover-tooltip" type="button"
+          <button id="widget-save-as-new" class="button symbolOnly wd-hover-tooltip wd-hover-tooltip--below" type="button"
             data-tooltip="Save As New" aria-label="Save As New" disabled>
             <span class="material-symbols-rounded" aria-hidden="true">save_as</span>
           </button>
@@ -143,11 +144,11 @@
     <!-- Schedule panel -->
     <!-- ========================= -->
     <div class="widget-panel" data-panel="schedule-panel">
-      <div class="schedule-status-row">
-        <span class="schedule-status-chip" id="timetable-schedule-status" role="status"></span>
-      </div>
       <div class="schedule-controls">
-        <div class="schedule-term-pill" id="schedule-term-pill">Detected Term</div>
+        <div class="schedule-heading-row">
+          <span class="schedule-status-chip" id="timetable-schedule-status" role="status"></span>
+          <div class="schedule-term-pill" id="schedule-term-pill">Detected Term</div>
+        </div>
       </div>
       <div class="schedule-grid" id="schedule-grid"></div>
     </div>

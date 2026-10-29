@@ -122,7 +122,7 @@
   box-sizing: border-box;
   border: 2px solid var(--hex-brand-main-2);
   border-radius: 10px;
-  color: var(--hex-brand-main-1);
+  color: var(--hex-brand-main-2);
   background: var(--hex-brand-accent-4);
   cursor: default;
 }

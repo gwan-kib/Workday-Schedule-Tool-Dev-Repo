@@ -815,19 +815,10 @@ debugLog({ local: { content: false } });
     };
     const storageEvents = globalThis.chrome?.storage?.onChanged;
     storageEvents?.addListener(onSavedSchedulesChanged);
-    let observedUrl = location.href;
     const host = shadowRoot.host;
     const navigationObserver = new MutationObserver(
       debounce(() => {
         if (!host.isConnected) document.documentElement.appendChild(host);
-        if (observedUrl !== location.href) {
-          observedUrl = location.href;
-          ui.footerNotes.setPersistent(
-            "page-navigation",
-            "Workday page changed. Use Refresh to import this page; your current working schedule is preserved.",
-            { tone: "info" },
-          );
-        }
       }, 100),
     );
     navigationObserver.observe(document.documentElement, { childList: true, subtree: true });

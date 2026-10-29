@@ -35,6 +35,11 @@ test("Chrome Google actions dispatch while Firefox actions are intercepted", asy
     const host = document.createElement("div");
     document.body.appendChild(host);
     const ui = await loadMainPanel(host.attachShadow({ mode: "open" }));
+    const logo = ui.root.querySelector("#widget-logo");
+    assert.equal(logo.src, `${scheme}://test/icon48.png`);
+    assert.equal(logo.nextElementSibling.id, "widget-title");
+    const manifest = JSON.parse(await readFile(new URL(`manifest.${blocked ? "firefox" : "chrome"}.json`, root), "utf8"));
+    assert.ok(manifest.web_accessible_resources.some((entry) => entry.resources.includes("icon48.png")));
     for (const control of [ui.googleSyncButton, ui.googleSignInButton, ui.googleSignOutButton]) {
       let calls = 0;
       control.addEventListener("click", () => calls++);
@@ -329,7 +334,11 @@ test("packaged content preserves saved sources, confirms overwrites and reports 
   // Navigation preserves the working plan and leaves one extension host.
   w.history.pushState({}, "", "/ubc/other-page.htmld");
   w.document.body.appendChild(w.document.createElement("div"));
-  await waitFor(() => s.querySelector("#schedule-footer-notes").textContent.includes("Workday page changed"));
+  const extensionHost = w.document.getElementById("UBC Workday - Schedule Tool");
+  extensionHost.remove();
+  await waitFor(() => extensionHost.isConnected);
+  assert.ok(!s.querySelector("#schedule-footer-notes").textContent.includes("Workday page changed"));
+  assert.equal(s.querySelectorAll(".course-card").length, 5);
   // Repeated execution must not duplicate shell/listeners after SPA activity.
   w.eval(await readFile(new URL("dist/content.js", root), "utf8"));
   assert.equal(w.document.querySelectorAll('[id="UBC Workday - Schedule Tool"]').length, 1);

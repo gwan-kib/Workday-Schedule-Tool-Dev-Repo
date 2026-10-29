@@ -455,7 +455,7 @@
   box-sizing: border-box;
   border: 2px solid var(--course-card-border, var(--hex-brand-main-2));
   border-radius: 10px;
-  color: var(--hex-neutral-3);
+  color: var(--course-card-border, var(--hex-brand-main-2));
   background: var(--course-card-bg, transparent);
   cursor: default;
 }
