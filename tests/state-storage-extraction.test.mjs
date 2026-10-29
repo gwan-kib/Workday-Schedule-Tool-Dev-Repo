@@ -33,7 +33,7 @@ globalThis.chrome = {
     },
   },
 };
-const { loadSavedSchedules, persistSavedSchedules, createScheduleSnapshot } =
+const { loadSavedSchedules, persistSavedSchedules, createScheduleSnapshot, getScheduleNameError } =
   await import("../src/mainPanel/schedules/scheduleStorage.js");
 
 test("filtering one of five courses leaves save/export canonical snapshots complete", () => {
@@ -95,6 +95,48 @@ test("legacy storage survives versioned migration with preference and deep-copy 
   assert.equal(data.wdPreferredScheduleId, snapshot.id);
   assert.equal(data.wdSavedSchedules[0].courses.length, 5);
 });
+test("schedule names ignore case and whitespace while allowing a record to retain its own name", () => {
+  const schedules = [{ id: "one", name: "Fall Plan" }, { id: "two", name: "Backup" }];
+  for (const name of ["Fall Plan", "FALL PLAN", "  fall   plan ", "fall\tplan"]) {
+    assert.match(getScheduleNameError(name, schedules), /already uses this name/);
+    assert.equal(getScheduleNameError(name, schedules, "one"), null);
+    assert.match(getScheduleNameError(name, schedules, "two"), /already uses this name/);
+  }
+  assert.equal(getScheduleNameError("New plan", schedules), null);
+  assert.match(getScheduleNameError("   ", schedules), /cannot be empty/);
+});
+
+test("persistence rejects duplicate names before writing any saved data", async () => {
+  const before = structuredClone(data);
+  writeCount = 0;
+  await assert.rejects(persistSavedSchedules([
+    createScheduleSnapshot("Fall Plan", fiveCourses()),
+    createScheduleSnapshot(" fall   PLAN ", fiveCourses()),
+  ]), /already uses this name/);
+  assert.equal(writeCount, 0);
+  assert.deepEqual(data, before);
+});
+
+test("legacy duplicate records can be renamed one at a time without permitting new collisions", async () => {
+  data = { wdSavedSchedules: [
+    createScheduleSnapshot("Old plan", fiveCourses()),
+    createScheduleSnapshot("OLD PLAN", fiveCourses()),
+    createScheduleSnapshot("Old   plan", fiveCourses()),
+  ] };
+  writeCount = 0;
+  const loaded = await loadSavedSchedules();
+  assert.equal(writeCount, 0);
+  const renamed = loaded.map((schedule, index) => index === 0 ? { ...schedule, name: "Distinct plan" } : schedule);
+  await persistSavedSchedules(renamed);
+  assert.equal(data.wdSavedSchedules.length, 3);
+  assert.equal(data.wdSavedSchedules[0].name, "Distinct plan");
+  const before = structuredClone(data);
+  await assert.rejects(persistSavedSchedules([
+    ...renamed, createScheduleSnapshot("old plan", fiveCourses()),
+  ]), /already uses this name/);
+  assert.deepEqual(data, before);
+});
+
 test("quota and read failures reject rather than reporting successful persistence", async () => {
   const before = structuredClone(data);
   lastError = { message: "QUOTA_BYTES exceeded" };

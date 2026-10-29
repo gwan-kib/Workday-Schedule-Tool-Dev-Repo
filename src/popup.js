@@ -9,6 +9,7 @@ import {
   getPreferredSchedule,
   loadSavedSchedules,
   persistSavedSchedules,
+  getScheduleNameError,
   togglePreferredSchedule,
 } from "./mainPanel/schedules/scheduleStorage.js";
 import { createFooterNoteController } from "./mainPanel/shell/footerNoteController.js";
@@ -236,8 +237,9 @@ ui.savedMenu?.addEventListener("click", async (event) => {
       if (promptedName === null) return;
 
       const nextName = promptedName.trim();
-      if (!nextName) {
-        ui.footerNotes?.showTemporary("Schedule name cannot be empty.", { tone: "warn" });
+      const nameError = getScheduleNameError(nextName, popupState.schedules, scheduleId);
+      if (nameError) {
+        ui.footerNotes?.showTemporary(nameError, { tone: "warn" });
         if (ui.savedDropdown) ui.savedDropdown.open = true;
         return;
       }

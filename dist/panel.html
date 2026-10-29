@@ -345,9 +345,11 @@
           <input
             id="schedule-modal-input"
             class="schedule-modal-input"
+            aria-describedby="schedule-modal-error"
             type="text"
             placeholder="e.g. Fall semester plan"
           />
+          <span class="schedule-modal-error" id="schedule-modal-error" aria-live="polite"></span>
         </label>
         <div class="schedule-modal-actions">
           <button class="button schedule-modal-cancel" type="button" data-action="cancel">Cancel</button>

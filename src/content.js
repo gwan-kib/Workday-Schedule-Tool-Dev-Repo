@@ -38,6 +38,7 @@ import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
   getMaxScheduleCount,
+  getScheduleNameError,
   loadSavedSchedules,
   persistSavedSchedules,
   renderSavedSchedules,
@@ -649,6 +650,7 @@ debugLog({ local: { content: false } });
         confirmLabel: "Save",
         showInput: true,
         showCancel: true,
+        validateInput: (value) => getScheduleNameError(value, STATE.savedSchedules),
       });
       if (!name) return;
       if (!canSaveMoreSchedules(STATE.savedSchedules))
@@ -689,6 +691,7 @@ debugLog({ local: { content: false } });
           inputLabel: "Schedule name",
           inputPlaceholder: "e.g. Fall semester plan",
           inputValue: selected.name,
+          validateInput: (value) => getScheduleNameError(value, STATE.savedSchedules, scheduleId),
         });
         if (!nextName || nextName === selected.name) {
           if (ui.savedDropdown) ui.savedDropdown.open = true;

@@ -7,6 +7,17 @@ const STORAGE_KEY = "wdSavedSchedules";
 const PREFERRED_SCHEDULE_KEY = "wdPreferredScheduleId";
 const MAX_SCHEDULES = 10;
 
+const scheduleNameKey = (name) => String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+const DUPLICATE_NAME_MESSAGE = "A saved schedule already uses this name. Choose a different name.";
+
+export function getScheduleNameError(name, schedules, excludeId = null) {
+  const key = scheduleNameKey(name);
+  if (!key) return "Schedule name cannot be empty.";
+  return schedules.some((schedule) => schedule.id !== excludeId && scheduleNameKey(schedule.name) === key)
+    ? DUPLICATE_NAME_MESSAGE
+    : null;
+}
+
 // Deep-clones courses for storage. Input: array of courses. Output: cloned array.
 const cloneCourses = (courses) => {
   if (typeof structuredClone === "function") return structuredClone(courses);
@@ -83,6 +94,21 @@ export async function loadSavedSchedules() {
 
 export async function persistSavedSchedules(schedules) {
   const sanitized = normalizeSchedules(schedules);
+  const names = new Map();
+  for (const schedule of sanitized) {
+    const key = scheduleNameKey(schedule.name);
+    if (!names.has(key)) names.set(key, []);
+    names.get(key).push(schedule);
+  }
+  const duplicates = [...names.values()].filter((group) => group.length > 1).flat();
+  if (duplicates.length) {
+    // Preserve old duplicate records so users can rename them one at a time.
+    // No new record or rename may introduce an additional name collision.
+    const existing = await loadSavedSchedules();
+    if (duplicates.some((schedule) => !existing.some((previous) =>
+      previous.id === schedule.id && scheduleNameKey(previous.name) === scheduleNameKey(schedule.name),
+    ))) throw new Error(DUPLICATE_NAME_MESSAGE);
+  }
   const preferredScheduleId = sanitized.find((schedule) => schedule.isFavorite)?.id || null;
   if (useChromeStorage) {
     await storageSet({

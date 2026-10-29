@@ -390,7 +390,7 @@ test("packaged content preserves saved sources, confirms overwrites and reports 
   assertStatus("Saved Schedule", "saved");
   s.querySelector(".course-sort-button").click();
   assertStatus("Saved Schedule", "saved");
-  // Save As New cancellation preserves the source; duplicate names still create separate IDs.
+  // Save As New rejects duplicate names without changing the working plan or saved source.
   s.querySelector(".course-card__delete-button").click();
   saveAsNew.click();
   s.querySelector("#schedule-modal-input").value = "Cancelled copy";
@@ -400,7 +400,27 @@ test("packaged content preserves saved sources, confirms overwrites and reports 
   assertStatus("Working - not saved", "working");
   assert.equal(quickSave.disabled, false);
   saveAsNew.click();
-  s.querySelector("#schedule-modal-input").value = "Complete plan";
+  const input = s.querySelector("#schedule-modal-input");
+  const nameError = s.querySelector("#schedule-modal-error");
+  const beforeDuplicateSave = structuredClone(data.wdSavedSchedules);
+  for (const duplicate of ["Complete plan", "complete PLAN", "  Complete   plan  "]) {
+    input.value = duplicate;
+    input.dispatchEvent(new w.Event("input"));
+    s.querySelector(".schedule-modal-confirm").click();
+    assert.match(nameError.textContent, /already uses this name/);
+    assert.equal(input.getAttribute("aria-invalid"), "true");
+    assert.equal(s.querySelector("#schedule-save-modal").classList.contains("is-hidden"), false);
+    assert.deepEqual(data.wdSavedSchedules, beforeDuplicateSave);
+    assertStatus("Working - not saved", "working");
+    assert.equal(courseHeading.firstElementChild.textContent, "Complete plan");
+  }
+  s.querySelector(".schedule-modal-cancel").click();
+  await waitFor(() => !saveAsNew.disabled);
+  assert.equal(quickSave.disabled, false);
+  saveAsNew.click();
+  assert.equal(nameError.textContent, "");
+  input.value = "Copy plan";
+  input.dispatchEvent(new w.Event("input"));
   s.querySelector(".schedule-modal-confirm").click();
   await waitFor(() => data.wdSavedSchedules.length === 2 && !saveAsNew.disabled);
   assertStatus("Saved Schedule", "saved");
@@ -409,6 +429,19 @@ test("packaged content preserves saved sources, confirms overwrites and reports 
   assert.equal(data.wdSavedSchedules[0].courses.length, 3);
   assert.equal(data.wdSavedSchedules[1].courses.length, 4);
   // Rename and delete stay consistent in both headings/chips without losing working courses.
+  s.querySelector(`[data-id="${newId}"] [data-action="rename"]`).click();
+  const beforeDuplicateRename = structuredClone(data.wdSavedSchedules);
+  input.value = "  COMPLETE   PLAN ";
+  s.querySelector(".schedule-modal-confirm").click();
+  assert.match(nameError.textContent, /already uses this name/);
+  assert.deepEqual(data.wdSavedSchedules, beforeDuplicateRename);
+  assert.equal(courseHeading.firstElementChild.textContent, "Copy plan");
+  assertStatus("Saved Schedule", "saved");
+  input.value = "COPY PLAN";
+  input.dispatchEvent(new w.Event("input"));
+  assert.equal(nameError.textContent, "");
+  s.querySelector(".schedule-modal-confirm").click();
+  await waitFor(() => courseHeading.firstElementChild.textContent === "COPY PLAN");
   s.querySelector(`[data-id="${newId}"] [data-action="rename"]`).click();
   s.querySelector("#schedule-modal-input").value = "Renamed plan";
   s.querySelector(".schedule-modal-confirm").click();
@@ -444,6 +477,36 @@ test("packaged content preserves saved sources, confirms overwrites and reports 
   assert.equal(courseHeading.firstElementChild.textContent, "Working Schedule");
   assert.equal(s.querySelector("#schedule-term-pill").firstElementChild.textContent, "Working Schedule");
   dom.window.close();
+});
+
+test("popup rename rejects an existing name and allows capitalization changes to its own name", async (t) => {
+  const dom = new JSDOM(await readFile(new URL("src/popup.html", root), "utf8"), {
+    url: "https://extension.test/popup.html", runScripts: "outside-only", pretendToBeVisual: true,
+  });
+  t.after(() => dom.window.close());
+  const w = dom.window;
+  let data = { wdSavedSchedules: [
+    { id: "one", name: "Fall Plan", courses: [course()], isFavorite: true },
+    { id: "two", name: "Backup", courses: [course()] },
+  ] };
+  let writes = 0;
+  w.chrome = { runtime: {}, storage: { local: {
+    get(keys, callback) { callback(structuredClone(data)); },
+    set(values, callback) { writes++; data = { ...data, ...structuredClone(values) }; callback(); },
+  } } };
+  w.eval(await readFile(new URL("dist/popup.js", root), "utf8"));
+  await waitFor(() => w.document.querySelectorAll(".schedule-saved-card").length === 2);
+  const before = structuredClone(data);
+  w.prompt = () => " FALL   plan ";
+  w.document.querySelector('[data-id="two"] [data-action="rename"]').click();
+  await waitFor(() => w.document.querySelector("#popup-footer-alert").textContent.includes("already uses this name"));
+  assert.deepEqual(data, before);
+  assert.equal(writes, 0);
+  w.prompt = () => "BACKUP";
+  w.document.querySelector('[data-id="two"] [data-action="rename"]').click();
+  await waitFor(() => data.wdSavedSchedules[1].name === "BACKUP");
+  assert.equal(writes, 1);
+  assert.equal(data.wdSavedSchedules[0].name, "Fall Plan");
 });
 
 test("grade buttons recover from a failed session request when clicked to retry", async (t) => {

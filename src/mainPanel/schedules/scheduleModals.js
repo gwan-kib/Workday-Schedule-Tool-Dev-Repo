@@ -9,6 +9,13 @@ export function createScheduleModalController(ui) {
   debug.log({ id: "createScheduleModalController.start" }, "Initializing schedule modal controller");
   let resolveScheduleModal = null;
   let choiceSelect = null;
+  let validateModalInput = null;
+  const inputError = ui.saveModalField.querySelector(".schedule-modal-error");
+  const setInputError = (message) => {
+    ui.saveModalInput.classList.toggle("is-invalid", Boolean(message));
+    ui.saveModalInput.setAttribute("aria-invalid", String(Boolean(message)));
+    if (inputError) inputError.textContent = message || "";
+  };
 
   const closeScheduleModal = (value) => {
     if (!ui.saveModal) return;
@@ -33,9 +40,11 @@ export function createScheduleModalController(ui) {
     inputPlaceholder = "e.g. Fall semester plan",
     inputValue = "",
     choices = null,
+    validateInput = null,
   }) => {
     if (!ui.saveModal) return Promise.resolve(null);
     if (resolveScheduleModal) closeScheduleModal(null);
+    validateModalInput = validateInput;
     choiceSelect?.remove();
     choiceSelect = null;
     if (choices?.length) {
@@ -66,7 +75,7 @@ export function createScheduleModalController(ui) {
     ui.saveModalCancel.classList.toggle("is-hidden", !showCancel);
 
     ui.saveModalInput.value = inputValue;
-    ui.saveModalInput.classList.remove("is-invalid");
+    setInputError(null);
 
     ui.saveModal.classList.remove("is-hidden");
     ui.saveModal.setAttribute("aria-hidden", "false");
@@ -97,9 +106,9 @@ export function createScheduleModalController(ui) {
         const needsInput = !ui.saveModalField.classList.contains("is-hidden");
         if (needsInput) {
           const value = ui.saveModalInput.value.trim();
-          if (!value) {
-            debug.warn({ id: "createScheduleModalController.validation" }, "Schedule modal input was empty");
-            ui.saveModalInput.classList.add("is-invalid");
+          const error = !value ? "This field cannot be empty." : validateModalInput?.(value);
+          if (error) {
+            setInputError(error);
             ui.saveModalInput.focus();
             return;
           }
@@ -109,7 +118,7 @@ export function createScheduleModalController(ui) {
       }
     });
 
-    on(ui.saveModalInput, "input", () => ui.saveModalInput.classList.remove("is-invalid"));
+    on(ui.saveModalInput, "input", () => setInputError(null));
     on(ui.saveModalInput, "keydown", (event) => {
       if (event.key === "Enter") ui.saveModalConfirm.click();
     });

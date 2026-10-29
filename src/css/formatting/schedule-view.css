@@ -205,6 +205,13 @@
   font-weight: 600;
 }
 
+.schedule-modal-error {
+  color: var(--hex-danger-1);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.schedule-modal-error:empty { display: none; }
+
 .schedule-modal-input {
   padding: 8px 10px;
   border-radius: 10px;
