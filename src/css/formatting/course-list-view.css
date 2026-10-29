@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 
 .widget-panel {
-  padding: 16px 16px 20px;
+  padding: 10px 16px 20px;
 }
 
 .widget-panel[data-panel="course-list-panel"].is-active {
