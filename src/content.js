@@ -7,6 +7,7 @@ import { syncPreviewText } from "./exportLogic/googleCalendar/syncPreviewText.js
 import { hydrateCourseLookups } from "./mainPanel/courses/courseLookupController.js";
 import { courseIdentity, stableId } from "./core/meetings.js";
 import { createScheduleStore } from "./core/scheduleStore.js";
+import { captureScheduleChange, createScheduleUndoHistory } from "./core/scheduleUndo.js";
 import { on as attachEvent, debounce } from "./utilities/dom.js";
 import { STATE } from "./core/state.js";
 import { ensureMount } from "./utilities/shadowMount.js";
@@ -63,6 +64,17 @@ debugLog({ local: { content: false } });
     const store = createScheduleStore(STATE);
     let storageReady = false;
     let saveInProgress = false;
+    let undoInProgress = false;
+    let undoNoticeId = null;
+    const undoHistory = createScheduleUndoHistory();
+    const renderUndoState = () => {
+      ui.undoButton.disabled = undoInProgress || saveInProgress || ui.loadingModal?.classList.contains("is-open") || !undoHistory.canUndo;
+      ui.undoButton.dataset.tooltip = undoHistory.canUndo ? `Undo: ${undoHistory.label}` : "Undo";
+    };
+    const recordChange = (before, label) => {
+      undoHistory.record(before, captureScheduleChange(STATE), label);
+      renderUndoState();
+    };
     const on = (el, type, handler, options) =>
       attachEvent(
         el,
@@ -102,6 +114,7 @@ debugLog({ local: { content: false } });
       });
       ui.quickSaveButton.disabled = saveInProgress || !storageReady || !saveState.saved;
       ui.saveAsNewButton.disabled = saveInProgress || !storageReady || !STATE.courses.length;
+      renderUndoState();
       return saveState;
     };
     const updateScheduleView = () => {
@@ -136,11 +149,13 @@ debugLog({ local: { content: false } });
         ui.loadingModal.classList.remove("is-hidden");
         ui.loadingModal.classList.add("is-open");
         ui.loadingModal.setAttribute("aria-hidden", "false");
+        renderUndoState();
         return;
       }
       ui.loadingModal.classList.add("is-hidden");
       ui.loadingModal.classList.remove("is-open");
       ui.loadingModal.setAttribute("aria-hidden", "true");
+      renderUndoState();
     };
     const showLoadingOverlay = (message = "Loading...") => {
       const token = Symbol("loading-overlay");
@@ -213,6 +228,7 @@ debugLog({ local: { content: false } });
           });
           if (!acceptEmpty) return false;
         }
+        const before = preserveExisting ? captureScheduleChange(STATE) : null;
         store.load(accumulated);
         STATE.syncPlanId = stableId(`working|${accumulated.map(courseIdentity).sort().join("|")}`);
         STATE.syncPlanName = "Working Schedule";
@@ -221,6 +237,7 @@ debugLog({ local: { content: false } });
         STATE.currentScheduleName = null;
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         filterCourses(ui.searchInput.value);
+        if (before) recordChange(before, "Search page for courses");
         debug.log({ id: "loadCoursesFromPage.complete" }, "Loaded courses from page", {
           courseCount: STATE.courses.length,
         });
@@ -280,10 +297,13 @@ debugLog({ local: { content: false } });
     });
     // These controls manage the live schedule currently loaded from the page.
     on(ui.refreshButton, "click", async () => {
+      if (undoInProgress) return;
       const loaded = await loadCoursesFromPage({ preserveExisting: true });
       if (loaded) renderAll();
     });
     on(ui.clearButton, "click", () => {
+      if (undoInProgress) return;
+      const before = captureScheduleChange(STATE);
       store.load([]);
       STATE.syncPlanId = crypto.randomUUID();
       STATE.syncPlanName = "Working Schedule";
@@ -293,6 +313,33 @@ debugLog({ local: { content: false } });
       filterCourses("");
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      recordChange(before, "Clear courses");
+    });
+    on(ui.undoButton, "click", async () => {
+      if (undoInProgress || saveInProgress || !undoHistory.canUndo) return;
+      const plan = undoHistory.plan(STATE);
+      undoInProgress = true;
+      renderUndoState();
+      const closeLoading = showLoadingOverlay("Undoing schedule change...");
+      try {
+        if (plan.savedChanged) await updateSavedSchedules(plan.savedSchedules);
+        if (plan.working) {
+          const { courses, ...source } = plan.working;
+          Object.assign(STATE, source);
+          store.load(courses);
+          courseColorController.assignCourseColors(STATE.courses);
+        }
+        undoHistory.commit(plan);
+        filterCourses(ui.searchInput.value);
+        renderAll();
+        renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+        if (undoNoticeId) ui.footerNotes.removeTemporary(undoNoticeId);
+        undoNoticeId = showFooterAlert(`Undone: ${plan.label}.`, { tone: "success" });
+      } finally {
+        undoInProgress = false;
+        closeLoading();
+        renderUndoState();
+      }
     });
     // Posts a transient status message into the widget footer without disturbing persistent notes.
     const showFooterAlert = (text, { tone = "info", durationMs = 4000 } = {}) => {
@@ -308,6 +355,7 @@ debugLog({ local: { content: false } });
         )
         .join("|");
     const addSingleCourseToSchedule = (course) => {
+      if (undoInProgress) return false;
       if (!course?.code || !course?.section_number) {
         showFooterAlert("Could not add the course because its section details were incomplete.", { tone: "warn" });
         return false;
@@ -319,22 +367,27 @@ debugLog({ local: { content: false } });
       }
       // Add the course through the same state path used by full schedule imports so rendering,
       // colors, conflict detection, search filtering, and exports stay consistent.
+      const before = captureScheduleChange(STATE);
       store.add(course);
       STATE.syncPlanId ||= crypto.randomUUID();
       courseColorController.assignCourseColors(STATE.courses);
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       filterCourses(ui.searchInput.value);
       renderAll();
+      recordChange(before, `Add ${course.code} ${course.section_number}`);
       showFooterAlert(`${course.code} ${course.section_number} added to the extension.`, { tone: "success" });
       return true;
     };
     const removeCourseFromSchedule = (course) => {
+      if (undoInProgress) return;
+      const before = captureScheduleChange(STATE);
       const initialCount = STATE.courses.length;
       store.remove(course);
       if (STATE.courses.length === initialCount) return;
       filterCourses(ui.searchInput.value);
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      recordChange(before, `Remove ${course.code || "course"} ${course.section_number || ""}`.trim());
       showFooterAlert(`${course.code || "Course"} ${course.section_number || ""} removed from the extension.`, {
         tone: "warn",
       });
@@ -621,7 +674,7 @@ debugLog({ local: { content: false } });
     };
     // Keep the source ID through edits; replace it only after a successful Save As New.
     const runSave = async (action) => {
-      if (saveInProgress) return;
+      if (saveInProgress || undoInProgress) return;
       saveInProgress = true;
       renderSaveState();
       try {
@@ -647,11 +700,13 @@ debugLog({ local: { content: false } });
       if (current?.id !== saved.id)
         throw new Error("This saved schedule is no longer available. Use Save As New.");
       const snapshot = { ...current, courses: store.snapshot(), savedAt: new Date().toISOString() };
+      const before = captureScheduleChange(STATE);
       await updateSavedSchedules(STATE.savedSchedules.map((schedule) =>
         schedule.id === snapshot.id ? snapshot : schedule,
       ));
       STATE.currentScheduleName = snapshot.name;
       STATE.syncPlanName = snapshot.name;
+      recordChange(before, `Update saved schedule "${snapshot.name}"`);
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       showFooterAlert(`Updated "${snapshot.name}".`, { tone: "success" });
     }));
@@ -679,17 +734,19 @@ debugLog({ local: { content: false } });
       if (!canSaveMoreSchedules(STATE.savedSchedules))
         throw new Error("Schedule limit reached. Delete a saved schedule and retry.");
       const snapshot = createScheduleSnapshot(name, store.snapshot(), null);
+      const before = captureScheduleChange(STATE);
       if (!STATE.savedSchedules.length) snapshot.isFavorite = true;
       await updateSavedSchedules([snapshot, ...STATE.savedSchedules]);
       STATE.currentSavedScheduleId = snapshot.id;
       STATE.currentScheduleName = snapshot.name;
       STATE.syncPlanId = snapshot.id;
       STATE.syncPlanName = snapshot.name;
+      recordChange(before, `Add saved schedule "${snapshot.name}"`);
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       if (ui.savedDropdown) ui.savedDropdown.open = true;
     }));
     on(ui.savedMenu, "click", async (event) => {
-      if (saveInProgress) return;
+      if (saveInProgress || undoInProgress) return;
       const actionButton = event.target.closest("[data-action]");
       const card = event.target.closest(".schedule-saved-card");
       const scheduleId = card?.dataset.id;
@@ -749,13 +806,14 @@ debugLog({ local: { content: false } });
         event.stopPropagation();
         debug.log({ id: "savedMenu.delete" }, "Deleting saved schedule", { scheduleId, scheduleName: selected.name });
         const confirmed = await openScheduleModal({
-          title: "Permanently Delete Schedule?",
-          message: `This action will permanently delete "${selected.name}".`,
+          title: "Delete Schedule?",
+          message: `Delete "${selected.name}" from saved schedules? You can undo this in the current Workday tab.`,
           confirmLabel: "Delete",
           showInput: false,
           showCancel: true,
         });
         if (!confirmed) return;
+        const before = captureScheduleChange(STATE);
         await updateSavedSchedules(STATE.savedSchedules.filter((s) => s.id !== scheduleId));
         if (STATE.currentSavedScheduleId === scheduleId) {
           STATE.currentSavedScheduleId = null;
@@ -763,10 +821,12 @@ debugLog({ local: { content: false } });
           STATE.syncPlanId = crypto.randomUUID();
           STATE.syncPlanName = "Working Schedule";
         }
+        recordChange(before, `Delete saved schedule "${selected.name}"`);
         updateScheduleView();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         return;
       }
+      const before = captureScheduleChange(STATE);
       STATE.currentSavedScheduleId = scheduleId;
       STATE.currentScheduleName = selected.name;
       STATE.syncPlanId = selected.id;
@@ -778,6 +838,7 @@ debugLog({ local: { content: false } });
       ui.searchInput.value = "";
       filterCourses("");
       renderAll();
+      recordChange(before, `Load saved schedule "${selected.name}"`);
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       setActiveView("course-list-panel");
       if (ui.savedDropdown) ui.savedDropdown.open = false;
@@ -808,7 +869,9 @@ debugLog({ local: { content: false } });
     mountPlanner(ui, {
       getState: () => STATE,
       saveSchedules: async (next) => {
+        const before = captureScheduleChange(STATE);
         await updateSavedSchedules(next);
+        recordChange(before, "Import or update saved schedules");
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         renderSaveState();
       },

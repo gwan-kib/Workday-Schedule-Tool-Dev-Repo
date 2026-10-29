@@ -1,8 +1,8 @@
-# Phase 3 — manual checks for build 3.0.6
+# Phase 3 — manual checks for build 3.0.7
 
-Update the files in the folder used by your unpacked extension, reload **UBC Workday - Schedule Tool**, and refresh Workday. Chrome's Extensions page should show **3.0.6**. Keep the existing extension identity so saved plans remain available.
+Update the files in the folder used by your unpacked extension, reload **UBC Workday - Schedule Tool**, and refresh Workday. Chrome's Extensions page should show **3.0.7**. Keep the existing extension identity so saved plans remain available.
 
-UI polish is confined to Phase 3 additions and altered elements. The existing header, toolbar, filter field, saved-schedule cards/actions, popup picker and week-control text use the accepted pre-polish baseline.
+UI polish is confined to Phase 3 additions and altered elements. The requested Undo button now sits directly beside Clear. The existing header, toolbar, filter field, saved-schedule cards/actions, popup picker and week-control text use the accepted pre-polish baseline.
 
 | Where | What to check | Expected result |
 | --- | --- | --- |
@@ -22,7 +22,7 @@ UI polish is confined to Phase 3 additions and altered elements. The existing he
 
 ## Verification completed
 
-- **89 automated tests passed**, including save/storage/calendar regressions, full-week statistics, alternate-week values, removed controls, single-schedule import, note editing, trusted links, split-date display and two-page export structure.
+- **97 automated tests passed**, including save/storage/calendar regressions, full-week statistics, alternate-week values, removed controls, single-schedule import, note editing, trusted links, split-date display and two-page export structure.
 - Chrome and Firefox builds succeeded.
 - Isolated Chromium browser checks passed for the new overview, removed controls, comparison/preference, Import/Export backup and single-schedule import, main/popup notes, malformed/multi-plan file rejection, automatic name suffixes, PNG/PDF downloads and a 420px popup. No browser script errors occurred.
 - A private nine-course fixture was used locally to verify **24 hours / Friday**, non-duplicated timetable blocks and full course details. Private fixture data is not included in the repository.
@@ -38,4 +38,24 @@ Real-account Workday navigation/session handling, Firefox runtime behavior and s
 - Open Compare saved plans: check difference chips, expandable changes, preferred status, Swap sides and the retained teaching week. New comparison dialogs adapt to narrow windows; the existing main panel keeps its fixed-width layout.
 - Open Import / Export: check grouped entries, upload/download/sync icons, keyboard navigation, single-file import, duplicate-name feedback and the saved-plan limit.
 - Check PNG/PDF downloads: the schedule remains the same; the new PDF course-details page retains its improved typography and spacing.
-- Existing baseline verification: 28 rendered main-panel/popup elements matched the accepted build after hover animations settled. Saved-schedule styling and its renderer match the original source exactly. All 89 automated tests and isolated Chromium feature checks passed.
+- Existing baseline verification: 28 rendered main-panel/popup elements matched the accepted build after hover animations settled. Saved-schedule styling and its renderer match the original source exactly. All 97 automated tests and isolated Chromium feature checks passed.
+
+
+## Undo (3.0.7)
+
+Undo is a multi-step history of up to 50 completed course/schedule actions in the current Workday tab. It starts disabled, is disabled during loading/saving, and its tooltip names the next action. Reloading/closing the tab clears this history; popup and other-tab actions do not join this tab's history. This is separate from the removed section-swap feature.
+
+| Action | Check after Undo |
+| --- | --- |
+| Add a course, including from a Workday registration card | Only that addition is removed; previous courses remain. A rejected duplicate does not consume an Undo step. |
+| Delete a course | The course returns with its details and place in the schedule. |
+| Clear | The entire previous course group returns, with its saved-source link and correct save status. Clearing an already empty draft adds no step. |
+| Load another saved schedule or Search page for a different group | The previous working course group/source is restored as one action. Initial automatic page loading is not an Undo action. |
+| Save As New or import one WST schedule | The newly added saved schedule is removed; the previous working schedule/source is retained. |
+| Delete a saved schedule in this Workday tab | Its original ID, notes, courses and position return. A newer preferred selection is kept. Name collisions get the first available (1), (2), etc. |
+| Remove a course, then Quick Save | The first Undo restores the previous saved courses; the working draft remains edited. The second Undo restores the removed course, making the draft saved again. |
+| Click Undo repeatedly | Each completed action is reversed once, in reverse order, until the button is disabled. |
+
+Undo never performs Workday registration or Google Calendar actions. It preserves unrelated saved plans and later notes/renames on a saved-course update. If newer course data exists in another window, it refuses to overwrite that data. If a saved restore fails, both the current state and the pending Undo step remain available for retry. The 10-saved-schedule limit still applies.
+
+Verification: eight new history tests and an isolated packaged-browser flow covered single/bulk edits, saved additions/deletions/updates, duplicate/no-op handling, source state, limits/collisions, newer data, unrelated colors/metadata, failed persistence and retry, storage change notifications, and the adjacent Undo/Clear targets. All 97 tests passed; the browser reported no script errors.

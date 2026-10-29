@@ -79,6 +79,7 @@ export async function loadMainPanel(shadowRoot) {
     saveAsNewButton: shadowRoot.querySelector("#widget-save-as-new"),
     scheduleStatusChips: shadowRoot.querySelectorAll(".schedule-status-chip"),
     clearButton: shadowRoot.querySelector("#widget-clear"),
+    undoButton: shadowRoot.querySelector("#widget-undo"),
 
     exportDropdown: shadowRoot.querySelector("#widget-export"),
     exportButton: shadowRoot.querySelector("#widget-export-button"),

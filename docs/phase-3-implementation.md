@@ -33,7 +33,7 @@ Files are generated locally as SVG/canvas PNG and high-resolution image-PDF, wit
 See phase-3-testing.md for evidence and manual acceptance. The private saved-course fixture used locally for visual checks is not committed. No actual Workday registration or Google Calendar write was performed. The pull request remains a draft until manual acceptance and merge.
 
 
-## Scoped UI polish (3.0.6)
+## Scoped UI polish (3.0.7)
 
 A shared planner stylesheet uses the existing indigo theme tokens, pale surfaces, rounded controls and typography in both the shadow-root main panel and popup. Dialogs use a compact default width and a wide comparison variant, a consistent header, reading area, action footer and status messages. Only new planner controls have the added focus, disabled and busy states. Existing saved-schedule cards, title/loading behavior, action sizes and colors, labels and picker layout retain the accepted baseline.
 
@@ -41,3 +41,8 @@ Overview metrics sit above the scrolling timetable, with separate Week 1/2 chips
 
 
 The UI correction restores existing shell dimensions, header/toolbar/filter styles, saved-card actions, popup picker layout and week-control wording from commit 3675ffb. Shared planner styles no longer target the widget shell or all existing controls. Retained refinements are limited to Phase 3 overview, notes, comparison, Import/Export, downloads and the altered Help control. An isolated browser comparison verified matching computed styles for 28 existing elements in the main panel and popup.
+
+
+## Course/schedule Undo (3.0.7)
+
+The Undo icon beside Clear uses a 50-entry tab-local history in core/scheduleUndo.js. The coordinator checkpoints successful single course edits, Clear, explicit group loads, Save As New, Quick Save course updates, single-plan import and saved-plan deletion. No-op, canceled, failed and metadata-only actions do not add entries. Saved inverses patch only affected records, validate newer course data, preserve unrelated saved records/metadata, respect capacity and resolve restore name collisions. Saved writes complete before working state and the history cursor change, allowing retry after failure. Undo restores the working group's saved source when available, retains later manual color choices, rerenders both views and exposes the next action in its tooltip. History is not persisted or shared with popup/other tabs; initialization does not create an entry.
