@@ -32,7 +32,9 @@ Start with two saved plans that differ by at least one section. Include a lectur
 
 ## Verification already completed
 
-- 73 automated tests passed, including the existing Phase 0–2 suite and new date/statistics, conflict-lane, comparison, swap, backup validation, trusted-link, redirect/error and export tests.
+- 78 automated tests passed, including the existing Phase 0–2 suite and new date/statistics, conflict-lane, comparison, swap, backup validation, trusted-link, redirect/error, split-date meeting display and export tests.
+
+Matching weekday/time records of the same section are now combined into one visible block when Workday splits their date ranges. Verify that the class is shown once, while genuine different sections/times remain distinct and clashes are still reported only on shared active dates.
 - Chrome and Firefox packages built successfully.
 - Isolated Chromium checks with synthetic Workday data passed: read-only comparison, preferred plan, authorized-page alternative discovery, swap preview/apply/Undo, PNG/PDF downloads in both orientations, JSON backup, malformed-file rejection, replacement confirmation and a 420px popup. No browser script errors occurred; fixture Workday requests used GET only.
 - Exported PDF pages were rendered and visually inspected. These PDFs contain image pages; the details are visually readable but are not selectable PDF text.

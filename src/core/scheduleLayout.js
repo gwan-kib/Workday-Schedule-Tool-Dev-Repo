@@ -69,5 +69,32 @@ export function scheduleLayout(courses, week = 0) {
       });
     }
   });
+  // Workday can split a section's otherwise identical meeting into multiple
+  // teaching ranges. Draw that section once, retaining the exact active dates
+  // and source IDs for conflict checks and exports. Different sections/times
+  // stay separate, and canonical meetings above remain unchanged.
+  for (const [day, events] of eventsByDay) {
+    const combined = new Map();
+    for (const event of events) {
+      const key = JSON.stringify([event.courseId, day, event.startMinutes, event.endMinutes, event.eventType]);
+      const existing = combined.get(key);
+      if (!existing) {
+        combined.set(key, {
+          ...event,
+          dates: [...event.dates],
+          sourceMeetingIds: [event.id.slice(0, -(day.length + 1))],
+          locations: event.location ? [event.location] : [],
+        });
+        continue;
+      }
+      existing.dates = [...new Set([...existing.dates, ...event.dates])].sort();
+      existing.sourceMeetingIds.push(event.id.slice(0, -(day.length + 1)));
+      if (event.location && !existing.locations.includes(event.location)) existing.locations.push(event.location);
+      existing.location = existing.locations.join(" / ");
+      existing.startDate = existing.startDate < event.startDate ? existing.startDate : event.startDate;
+      existing.endDate = existing.endDate > event.endDate ? existing.endDate : event.endDate;
+    }
+    eventsByDay.set(day, [...combined.values()]);
+  }
   return { ...normalized, meetings, selectedWeek, days, slots, eventsByDay };
 }

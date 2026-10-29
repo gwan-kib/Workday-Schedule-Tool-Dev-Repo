@@ -359,7 +359,7 @@ test("conflict badges distinguish meeting patterns of the same section across te
   globalThis.window = dom.window;
   globalThis.getComputedStyle = dom.window.getComputedStyle;
   const fall = line('Mon', '9:00 a.m. - 10:00 a.m.', '2026-09-07 - 2026-09-20');
-  const winter = line('Mon', '9:00 a.m. - 10:00 a.m.', '2027-01-04 - 2027-01-17');
+  const winter = line('Mon', '9:30 a.m. - 10:30 a.m.', '2027-01-04 - 2027-01-17');
   renderSchedule({ scheduleGrid: document.querySelector('#grid') }, [
     course({ code: 'A 101', meetingLines: [fall, winter] }),
     course({ code: 'B 101', meetingLines: [fall] }),

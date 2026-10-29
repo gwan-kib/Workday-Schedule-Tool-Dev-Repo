@@ -108,8 +108,8 @@ export function timetablePages(
         label = sectionLabel(ev.course),
         conflict = details.conflicts.some(
           (c) =>
-            c.a.id === ev.id.replace(/-(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/, "") ||
-            c.b.id === ev.id.replace(/-(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/, ""),
+            ev.sourceMeetingIds.includes(c.a.id) ||
+            ev.sourceMeetingIds.includes(c.b.id),
         );
       const reference = `[${courses.indexOf(ev.course) + 1}]`,
         shortCode = String(ev.code).replace(/\s/g, "");
