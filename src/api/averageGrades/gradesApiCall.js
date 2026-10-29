@@ -33,7 +33,8 @@ const buildGradesUrl = ({ version, campus, yearsession, subject, course, section
 };
 
 // Builds the yearsessions API URL. Input: params object. Output: URL string.
-const buildYearsessionsUrl = ({ version, campus }) => `${API_BASE}/${version}/yearsessions/${campus}/`;
+export const buildYearsessionsUrl = ({ version = DEFAULT_API_VERSION, campus }) =>
+  `${API_BASE}/${version}/yearsessions/${campus}`;
 
 // Builds the public UBCGrades course page URL. Input: course params. Output: URL string.
 export const buildUbcGradesCourseUrl = ({ campus, yearsession, subject, course, section }) => {

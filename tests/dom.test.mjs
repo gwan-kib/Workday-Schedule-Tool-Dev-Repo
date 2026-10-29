@@ -1,3 +1,4 @@
+import { loadAverageForButton, getCourseAverageState } from "../src/mainPanel/courses/courseLookupController.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -229,4 +230,37 @@ test("packaged content saves all five courses after search and reports failed wr
   w.eval(await readFile(new URL("dist/content.js", root), "utf8"));
   assert.equal(w.document.querySelectorAll('[id="UBC Workday - Schedule Tool"]').length, 1);
   dom.window.close();
+});
+
+test("grade buttons recover from a failed session request when clicked to retry", async (t) => {
+  const dom = new JSDOM('<div id="list"></div>');
+  t.after(() => dom.window.close());
+  globals(dom);
+  let failOnce = true;
+  const urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(url);
+    if (url === "https://ubcgrades.com/api/v3/yearsessions/UBCO") {
+      if (failOnce) {
+        failOnce = false;
+        return new Response("Not found", { status: 404 });
+      }
+      return new Response(JSON.stringify(["2025W"]));
+    }
+    if (url === "https://ubcgrades.com/api/v3/grades/UBCO/2025W/RETRY/101")
+      return new Response(JSON.stringify([{ section: "OVERALL", average: 80, reported: 100 }]));
+    return new Response("Not found", { status: 404 });
+  };
+  const c = course({ code: "RETRY_O 101" });
+  const ui = { tableBody: document.querySelector("#list") };
+  renderCourseObjects(ui, [c]);
+  const button = ui.tableBody.querySelector(".course-card__avg-button");
+  await loadAverageForButton(button, getCourseAverageState(c));
+  assert.match(button.textContent, /click to retry/);
+  assert.equal(button.disabled, false);
+  button.click();
+  await waitFor(() => button.textContent.includes("80.0%"));
+  assert.ok(!button.textContent.includes("network error"));
+  assert.match(ui.tableBody.querySelector(".grade-result-details").textContent, /Samples: latest 100/);
+  assert.equal(urls.filter((url) => url.includes("yearsessions")).length, 2);
 });

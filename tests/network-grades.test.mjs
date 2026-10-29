@@ -1,3 +1,4 @@
+import { buildYearsessionsUrl, fetchSectionGradesWithFallbackResult } from "../src/api/averageGrades/gradesApiCall.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createLimiter, fetchReliable, TtlCache } from "../src/utilities/network.js";
@@ -136,7 +137,9 @@ test("grade lookup aggregates all offered sessions within a bounded five-year wi
   const urls = [];
   globalThis.fetch = async (url) => {
     urls.push(url);
-    if (url.includes("yearsessions")) return response(200, ["2025W", "2024W", "2023W", "2022W", "2021W", "2020W"]);
+    if (url === "https://ubcgrades.com/api/v3/yearsessions/UBCO")
+      return response(200, ["2025W", "2024W", "2023W", "2022W", "2021W", "2020W"]);
+    if (url.includes("yearsessions")) return response(404, {});
     if (url.includes("2025W")) return response(200, [{ section: "OVERALL", average: 90, reported: 30 }]);
     if (url.includes("2024W")) return response(200, [{ section: "OVERALL", average: 60, reported: 10 }]);
     return response(404, {});
@@ -173,4 +176,50 @@ test("RMP no-match and service-error states remain distinct and duplicate lookup
   ]);
   assert.deepEqual(results, [null, null]);
   assert.equal(calls, 1);
+});
+
+test("year-session URLs match the live canonical route for both campuses", () => {
+  for (const campus of ["UBCO", "UBCV"]) {
+    assert.equal(buildYearsessionsUrl({ campus }), `https://ubcgrades.com/api/v3/yearsessions/${campus}`);
+    assert.equal(
+      buildYearsessionsUrl({ campus, version: "v3" }),
+      `https://ubcgrades.com/api/v3/yearsessions/${campus}`,
+    );
+  }
+});
+
+test("legacy grade fallback uses the canonical session URL and resolves an available year", async () => {
+  const urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(url);
+    if (url === "https://ubcgrades.com/api/v3/yearsessions/UBCV") return response(200, ["2025W"]);
+    if (url === "https://ubcgrades.com/api/v3/grades/UBCV/2025W/LEGACY/101")
+      return response(200, [{ average: 75, reported: 10, section: "OVERALL" }]);
+    return response(404, {});
+  };
+  const result = await fetchSectionGradesWithFallbackResult({
+    campus: "UBCV",
+    yearsession: "2026W",
+    subject: "LEGACY",
+    course: "101",
+  });
+  assert.equal(result.params.yearsession, "2025W");
+  assert.equal(result.data[0].average, 75);
+  assert.ok(urls.includes("https://ubcgrades.com/api/v3/yearsessions/UBCV"));
+  assert.ok(!urls.some((url) => /yearsessions\/UBCV\/$/.test(url)));
+});
+
+test("courses with no published offerings report unavailable instead of a network error", async () => {
+  globalThis.fetch = async (url) =>
+    url === "https://ubcgrades.com/api/v3/yearsessions/UBCV" ? response(200, ["2025W", "2024W"]) : response(404, {});
+  const result = await fetchCourseStatistics({
+    campus: "UBCV",
+    subject: "MISSING",
+    course: "999",
+    yearsession: "2026W",
+  });
+  assert.equal(result.latest, null);
+  assert.equal(result.fiveYear.average, null);
+  assert.deepEqual(result.fiveYear.covered, []);
+  assert.match(courseStatisticsLabel(result), /Latest year: unavailable/);
 });

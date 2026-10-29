@@ -1,5 +1,5 @@
 import { fetchReliable, TtlCache } from "../../utilities/network.js";
-import { buildUbcGradesCourseUrl } from "./gradesApiCall.js";
+import { buildUbcGradesCourseUrl, buildYearsessionsUrl } from "./gradesApiCall.js";
 const cache = new TtlCache(60 * 60 * 1000);
 
 const number = (value) =>
@@ -83,7 +83,7 @@ export async function fetchCourseStatistics({ campus, subject, course, yearsessi
   if (!/^(UBCO|UBCV)$/.test(campus) || !/^[A-Z0-9]+$/.test(subject) || !/^\d{3}[A-Z]?$/.test(course))
     throw new Error("Unsupported course for grade lookup.");
   const requestYear = Number(String(yearsession).slice(0, 4));
-  const available = await json(`https://ubcgrades.com/api/v3/yearsessions/${campus}/`);
+  const available = await json(buildYearsessionsUrl({ campus }));
   const sessions = [...new Set((Array.isArray(available) ? available : available?.yearsessions || []).map(String))]
     .filter((s) => /^\d{4}[WS]$/.test(s) && +s.slice(0, 4) <= requestYear)
     .sort()
@@ -109,7 +109,7 @@ export async function fetchCourseStatistics({ campus, subject, course, yearsessi
   const result = summarizeCourseYears(records.filter(Boolean), window);
   result.stale ||= Boolean(available.stale);
   const latestSession = records
-    .filter((r) => r?.year === result.latest?.year && r.stats?.average !== null)
+    .filter((r) => r && r.year === result.latest?.year && r.stats?.average != null)
     .sort((a, b) => b.session.localeCompare(a.session))[0]?.session;
   result.source = buildUbcGradesCourseUrl({ campus, subject, course, yearsession: latestSession || `${end}W` });
   return result;
