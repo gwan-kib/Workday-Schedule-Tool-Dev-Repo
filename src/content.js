@@ -70,6 +70,8 @@ debugLog({ local: { content: false } });
     const renderUndoState = () => {
       ui.undoButton.disabled = undoInProgress || saveInProgress || ui.loadingModal?.classList.contains("is-open") || !undoHistory.canUndo;
       ui.undoButton.dataset.tooltip = undoHistory.canUndo ? `Undo: ${undoHistory.label}` : "Undo";
+      ui.redoButton.disabled = undoInProgress || saveInProgress || ui.loadingModal?.classList.contains("is-open") || !undoHistory.canRedo;
+      ui.redoButton.dataset.tooltip = undoHistory.canRedo ? `Redo: ${undoHistory.redoLabel}` : "Redo";
     };
     const recordChange = (before, label) => {
       undoHistory.record(before, captureScheduleChange(STATE), label);
@@ -315,12 +317,13 @@ debugLog({ local: { content: false } });
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       recordChange(before, "Clear courses");
     });
-    on(ui.undoButton, "click", async () => {
-      if (undoInProgress || saveInProgress || !undoHistory.canUndo) return;
-      const plan = undoHistory.plan(STATE);
+    const restoreHistory = async (direction) => {
+      const isRedo = direction === "redo";
+      if (undoInProgress || saveInProgress || !(isRedo ? undoHistory.canRedo : undoHistory.canUndo)) return;
+      const plan = undoHistory.plan(STATE, direction);
       undoInProgress = true;
       renderUndoState();
-      const closeLoading = showLoadingOverlay("Undoing schedule change...");
+      const closeLoading = showLoadingOverlay(isRedo ? "Redoing schedule change..." : "Undoing schedule change...");
       try {
         if (plan.savedChanged) await updateSavedSchedules(plan.savedSchedules);
         if (plan.working) {
@@ -334,13 +337,15 @@ debugLog({ local: { content: false } });
         renderAll();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         if (undoNoticeId) ui.footerNotes.removeTemporary(undoNoticeId);
-        undoNoticeId = showFooterAlert(`Undone: ${plan.label}.`, { tone: "success" });
+        undoNoticeId = showFooterAlert(`${isRedo ? "Redone" : "Undone"}: ${plan.label}.`, { tone: "success" });
       } finally {
         undoInProgress = false;
         closeLoading();
         renderUndoState();
       }
-    });
+    };
+    on(ui.undoButton, "click", () => restoreHistory("undo"));
+    on(ui.redoButton, "click", () => restoreHistory("redo"));
     // Posts a transient status message into the widget footer without disturbing persistent notes.
     const showFooterAlert = (text, { tone = "info", durationMs = 4000 } = {}) => {
       return ui.footerNotes?.showTemporary(text, { tone, durationMs });

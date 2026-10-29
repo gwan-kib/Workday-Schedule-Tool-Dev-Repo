@@ -14,6 +14,13 @@ const undo = (history, state) => {
   if (next.working) Object.assign(state, next.working);
   history.commit(next);
 };
+const redo = (history, state) => {
+  const next = history.plan(state, "redo");
+  if (!next) return;
+  state.savedSchedules = next.savedSchedules;
+  if (next.working) Object.assign(state, next.working);
+  history.commit(next);
+};
 
 test("Undo ignores no-op and metadata-only actions, including repeatedly clearing an empty draft", () => {
   const s = state(), history = createScheduleUndoHistory();
@@ -109,4 +116,85 @@ test("history is bounded and planning a restore leaves data unchanged until a su
   undo(history, s); undo(history, s);
   assert.equal(history.canUndo, false);
   assert.deepEqual(s.courses.map((c) => c.code), ["A"]);
+});
+
+test("Redo reapplies course additions, removals, group replacement and Clear in original order", () => {
+  const s = state(), history = createScheduleUndoHistory();
+  assert.equal(history.canRedo, false);
+  assert.equal(history.plan(s, "redo"), null);
+  change(history, s, (s) => { s.courses = [course("A")]; }, "Add A");
+  change(history, s, (s) => { s.courses.push(course("B")); }, "Add B");
+  change(history, s, (s) => { s.courses.shift(); }, "Remove A");
+  change(history, s, (s) => { s.courses = [course("C"), course("D")]; }, "Load group");
+  change(history, s, (s) => { s.courses = []; }, "Clear");
+  for (let i = 0; i < 5; i++) undo(history, s);
+  assert.equal(history.redoLabel, "Add A");
+  for (const expected of [["A"], ["A", "B"], ["B"], ["C", "D"], []]) {
+    redo(history, s); assert.deepEqual(s.courses.map((c) => c.code), expected);
+  }
+  assert.equal(history.canRedo, false);
+  assert.equal(history.canUndo, true);
+  undo(history, s); assert.deepEqual(s.courses.map((c) => c.code), ["C", "D"]);
+});
+
+test("new course actions clear Redo, while no-op and metadata-only actions preserve it", () => {
+  const s = state(), history = createScheduleUndoHistory();
+  change(history, s, (s) => { s.courses.push(course("A")); }); undo(history, s);
+  assert.equal(change(history, s, (s) => { s.savedSchedules[0].notes = "New notes"; }), false);
+  assert.equal(change(history, s, () => {}), false);
+  assert.equal(history.canRedo, true);
+  change(history, s, (s) => { s.courses.push(course("B")); });
+  assert.equal(history.canRedo, false);
+  undo(history, s); redo(history, s);
+  assert.deepEqual(s.courses.map((c) => c.code), ["B"]);
+});
+
+test("Redo saved deletion uses the actual restored record after a name collision", () => {
+  const s = state(), history = createScheduleUndoHistory();
+  change(history, s, (s) => { s.savedSchedules = []; }, "Delete Alpha");
+  s.savedSchedules.push({ ...plan("other", "Alpha"), isFavorite: false });
+  undo(history, s);
+  assert.equal(s.savedSchedules.find((p) => p.id === "alpha").name, "Alpha (1)");
+  redo(history, s);
+  assert.deepEqual(s.savedSchedules.map((p) => p.id), ["other"]);
+  undo(history, s);
+  assert.equal(s.savedSchedules.find((p) => p.id === "alpha").name, "Alpha (1)");
+  assert.equal(s.savedSchedules.find((p) => p.id === "alpha").notes, "Keep the lab");
+});
+
+test("Redo a saved addition retains metadata captured at Undo and preserves a newer preference", () => {
+  const s = state(), history = createScheduleUndoHistory();
+  change(history, s, (s) => { s.savedSchedules.push({ ...plan("beta", "Beta"), isFavorite: false }); }, "Import Beta");
+  s.savedSchedules[1].name = "Renamed Beta"; s.savedSchedules[1].notes = "Edited after import";
+  undo(history, s); redo(history, s);
+  assert.equal(s.savedSchedules[1].name, "Renamed Beta");
+  assert.equal(s.savedSchedules[1].notes, "Edited after import");
+  assert.equal(s.savedSchedules[0].isFavorite, true);
+});
+
+test("Redo saved course updates preserves later notes and rejects newer course data", () => {
+  const s = state(), history = createScheduleUndoHistory();
+  change(history, s, (s) => { s.savedSchedules[0].courses.pop(); }, "Quick Save");
+  undo(history, s); s.savedSchedules[0].notes = "Newer note";
+  redo(history, s);
+  assert.equal(s.savedSchedules[0].courses.length, 1);
+  assert.equal(s.savedSchedules[0].notes, "Newer note");
+  undo(history, s); s.savedSchedules[0].courses.push(course("EXTERNAL"));
+  const before = structuredClone(s);
+  assert.throws(() => history.plan(s, "redo"), /Redo was not applied/);
+  assert.deepEqual(s, before);
+  assert.equal(history.canRedo, true);
+});
+
+test("Redo respects capacity and keeps its step available when restoration is blocked", () => {
+  const s = state(), history = createScheduleUndoHistory();
+  change(history, s, (s) => { s.savedSchedules.push({ ...plan("beta", "Beta"), isFavorite: false }); }, "Import Beta");
+  undo(history, s);
+  for (let i = 0; i < 9; i++) s.savedSchedules.push({ ...plan(String(i), `Plan ${i}`), isFavorite: false });
+  assert.throws(() => history.plan(s, "redo"), /limit: 10/);
+  assert.equal(s.savedSchedules.length, 10);
+  assert.equal(history.canRedo, true);
+  s.savedSchedules.pop(); redo(history, s);
+  assert.equal(s.savedSchedules.length, 10);
+  assert.equal(s.savedSchedules.some((p) => p.id === "beta"), true);
 });

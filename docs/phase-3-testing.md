@@ -1,8 +1,8 @@
-# Phase 3 — manual checks for build 3.0.7
+# Phase 3 — manual checks for build 3.0.8
 
-Update the files in the folder used by your unpacked extension, reload **UBC Workday - Schedule Tool**, and refresh Workday. Chrome's Extensions page should show **3.0.7**. Keep the existing extension identity so saved plans remain available.
+Update the files in the folder used by your unpacked extension, reload **UBC Workday - Schedule Tool**, and refresh Workday. Chrome's Extensions page should show **3.0.8**. Keep the existing extension identity so saved plans remain available.
 
-UI polish is confined to Phase 3 additions and altered elements. The requested Undo button now sits directly beside Clear. The existing header, toolbar, filter field, saved-schedule cards/actions, popup picker and week-control text use the accepted pre-polish baseline.
+UI polish is confined to Phase 3 additions and altered elements. The requested Undo and Redo buttons now sit beside Clear. The existing header, toolbar, filter field, saved-schedule cards/actions, popup picker and week-control text use the accepted pre-polish baseline.
 
 | Where | What to check | Expected result |
 | --- | --- | --- |
@@ -22,7 +22,7 @@ UI polish is confined to Phase 3 additions and altered elements. The requested U
 
 ## Verification completed
 
-- **97 automated tests passed**, including save/storage/calendar regressions, full-week statistics, alternate-week values, removed controls, single-schedule import, note editing, trusted links, split-date display and two-page export structure.
+- **103 automated tests passed**, including save/storage/calendar regressions, full-week statistics, alternate-week values, removed controls, single-schedule import, note editing, trusted links, split-date display and two-page export structure.
 - Chrome and Firefox builds succeeded.
 - Isolated Chromium browser checks passed for the new overview, removed controls, comparison/preference, Import/Export backup and single-schedule import, main/popup notes, malformed/multi-plan file rejection, automatic name suffixes, PNG/PDF downloads and a 420px popup. No browser script errors occurred.
 - A private nine-course fixture was used locally to verify **24 hours / Friday**, non-duplicated timetable blocks and full course details. Private fixture data is not included in the repository.
@@ -38,10 +38,10 @@ Real-account Workday navigation/session handling, Firefox runtime behavior and s
 - Open Compare saved plans: check difference chips, expandable changes, preferred status, Swap sides and the retained teaching week. New comparison dialogs adapt to narrow windows; the existing main panel keeps its fixed-width layout.
 - Open Import / Export: check grouped entries, upload/download/sync icons, keyboard navigation, single-file import, duplicate-name feedback and the saved-plan limit.
 - Check PNG/PDF downloads: the schedule remains the same; the new PDF course-details page retains its improved typography and spacing.
-- Existing baseline verification: 28 rendered main-panel/popup elements matched the accepted build after hover animations settled. Saved-schedule styling and its renderer match the original source exactly. All 97 automated tests and isolated Chromium feature checks passed.
+- Existing baseline verification: 28 rendered main-panel/popup elements matched the accepted build after hover animations settled. Saved-schedule styling and its renderer match the original source exactly. All 103 automated tests and isolated Chromium feature checks passed.
 
 
-## Undo (3.0.7)
+## Undo (3.0.8)
 
 Undo is a multi-step history of up to 50 completed course/schedule actions in the current Workday tab. It starts disabled, is disabled during loading/saving, and its tooltip names the next action. Reloading/closing the tab clears this history; popup and other-tab actions do not join this tab's history. This is separate from the removed section-swap feature.
 
@@ -58,4 +58,21 @@ Undo is a multi-step history of up to 50 completed course/schedule actions in th
 
 Undo never performs Workday registration or Google Calendar actions. It preserves unrelated saved plans and later notes/renames on a saved-course update. If newer course data exists in another window, it refuses to overwrite that data. If a saved restore fails, both the current state and the pending Undo step remain available for retry. The 10-saved-schedule limit still applies.
 
-Verification: eight new history tests and an isolated packaged-browser flow covered single/bulk edits, saved additions/deletions/updates, duplicate/no-op handling, source state, limits/collisions, newer data, unrelated colors/metadata, failed persistence and retry, storage change notifications, and the adjacent Undo/Clear targets. All 97 tests passed; the browser reported no script errors.
+Verification: eight new history tests and an isolated packaged-browser flow covered single/bulk edits, saved additions/deletions/updates, duplicate/no-op handling, source state, limits/collisions, newer data, unrelated colors/metadata, failed persistence and retry, storage change notifications, and the adjacent Undo/Clear targets. All 103 tests passed; the browser reported no script errors.
+
+
+## Redo (3.0.8)
+
+Redo sits between Undo and Clear and reapplies the most recently undone course/saved-schedule action. It supports the same 50-step tab-local history, disabled/busy states, tooltip, saved-data validation, capacity rules and failed-write retry as Undo. A new successful course or saved-schedule action clears the Redo branch; no-op, duplicate, canceled and metadata-only actions do not. Reloading the tab clears both histories.
+
+Manual checks:
+
+1. Add or delete a course, click Undo, then Redo. The course list should return to the edited state. Both buttons should enable/disable according to the remaining steps.
+2. Clear a full schedule, Undo, then Redo. Undo restores the entire group and source; Redo clears the group again.
+3. Save As New, Undo, then Redo. The same saved schedule ID and name should return once, with the correct active-source status.
+4. Delete a saved schedule, Undo, Redo, then Undo again. The same plan should disappear and return with its notes/details intact.
+5. Remove a course and Quick Save, then Undo/Redo both steps. Working-course edits and saved-course updates remain separate actions.
+6. Undo an imported WST schedule, then Redo. It should return once. If it cannot be saved, the current state and Redo step stay available for retry.
+7. Undo a change, then make a different successful course edit. Redo should become disabled. Trying to add an existing course should leave Redo available.
+
+Verification: all 103 tests passed, including six new Redo cases. The packaged Chromium interface passed repeated Undo/Redo, course/group edits, saved create/delete/update, import, same-ID restoration, branch clearing, duplicate handling, failed persistence/retry and Undo/Redo/Clear adjacency, with storage-change events and no script errors.
