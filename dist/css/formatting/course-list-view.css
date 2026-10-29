@@ -504,10 +504,13 @@
   text-align: center;
   gap: 4px;
   margin: 0;
-  padding: 0;
+  padding: 6px 18px;
   border: none;
-  border-radius: 0;
-  background: none;
+  border-radius: 999px;
+  justify-self: center;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   overflow-wrap: anywhere;
 }
 .course-schedule-heading .schedule-heading-name { font-size: 16px; }

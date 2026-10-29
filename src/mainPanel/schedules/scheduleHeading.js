@@ -35,7 +35,7 @@ export function scheduleTermLabel(courses = []) {
   return terms.size > 1 ? "Multiple terms detected" : [...terms][0] || "Term unavailable";
 }
 
-// Shared content for the plain course heading and the timetable's term pill.
+// Shared name and term labels for the course and timetable headings.
 export function renderScheduleHeading(host, scheduleName, courses) {
   if (!host) return;
   const name = document.createElement("span");

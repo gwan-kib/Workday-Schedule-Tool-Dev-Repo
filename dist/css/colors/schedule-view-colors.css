@@ -40,6 +40,8 @@
   background: var(--hex-brand-accent-4);
 }
 
+.schedule-week-note { color: var(--hex-brand-main-2); }
+
 .schedule-week-toggle button {
   color: var(--hex-brand-main-1);
   background: var(--hex-brand-accent-1);

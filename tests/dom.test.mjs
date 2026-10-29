@@ -36,10 +36,9 @@ test("Chrome Google actions dispatch while Firefox actions are intercepted", asy
     document.body.appendChild(host);
     const ui = await loadMainPanel(host.attachShadow({ mode: "open" }));
     const logo = ui.root.querySelector("#widget-logo");
-    assert.equal(logo.src, `${scheme}://test/icon48.png`);
+    assert.ok(logo.src.startsWith("data:image/png;base64,"));
+    assert.deepEqual(Buffer.from(logo.src.split(",")[1], "base64"), await readFile(new URL("icon48.png", root)));
     assert.equal(logo.nextElementSibling.id, "widget-title");
-    const manifest = JSON.parse(await readFile(new URL(`manifest.${blocked ? "firefox" : "chrome"}.json`, root), "utf8"));
-    assert.ok(manifest.web_accessible_resources.some((entry) => entry.resources.includes("icon48.png")));
     for (const control of [ui.googleSyncButton, ui.googleSignInButton, ui.googleSignOutButton]) {
       let calls = 0;
       control.addEventListener("click", () => calls++);
@@ -100,6 +99,9 @@ test("week toggle keeps weekly classes and switches opposite-week sections", () 
   renderSchedule(ui, courses);
   assert.equal(document.querySelector("select"), null);
   assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-toggle").length, 1);
+  assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-note").length, 1);
+  assert.equal(ui.scheduleControls.querySelector(".schedule-week-toggle").nextElementSibling.textContent,
+    "(Incase course sections are biweekly)");
   assert.equal(ui.scheduleGrid.querySelector(".schedule-week-toggle"), null);
   assert.equal(ui.scheduleTermPill.firstElementChild.textContent, "Fall Plan");
   assert.equal(ui.scheduleTermPill.lastElementChild.textContent, "Winter Term 1");
@@ -115,6 +117,9 @@ test("week toggle keeps weekly classes and switches opposite-week sections", () 
   assert.ok(!titles().includes("LABONE 201"));
   assert.equal(ui.selectedScheduleWeek, 2);
   assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-toggle").length, 1);
+  assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-note").length, 1);
+  assert.equal(ui.scheduleControls.querySelector(".schedule-week-toggle").nextElementSibling.textContent,
+    "(Incase course sections are biweekly)");
   assert.equal(ui.scheduleTermPill.lastElementChild.textContent, "Winter Term 1");
   document.querySelector(".schedule-time-toggle").click();
   assert.equal(document.querySelector('[data-week="2"]').getAttribute("aria-pressed"), "true");

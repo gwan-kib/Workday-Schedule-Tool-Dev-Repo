@@ -232,6 +232,8 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
   const allConflicts = detectScheduleConflicts(all.eventsByDay).conflictBlocks;
   ui.conflictPartnersByCode = buildConflictPartnerLookup(allConflicts);
   host.replaceChildren();
+  const weekControls = document.createElement("div");
+  weekControls.className = "schedule-week-controls";
   const weekToggle = document.createElement("div");
   weekToggle.className = "schedule-week-toggle";
   weekToggle.setAttribute("role", "group");
@@ -249,8 +251,12 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
     weekToggle.appendChild(button);
   }
   const controls = ui.scheduleControls || ui.scheduleTermPill?.closest(".schedule-controls");
-  controls?.querySelector(".schedule-week-toggle")?.remove();
-  (controls || host).appendChild(weekToggle);
+  controls?.querySelector(".schedule-week-controls")?.remove();
+  const weekNote = document.createElement("p");
+  weekNote.className = "schedule-week-note";
+  weekNote.textContent = "(Incase course sections are biweekly)";
+  weekControls.append(weekToggle, weekNote);
+  (controls || host).appendChild(weekControls);
   const tableWrap = buildScheduleTable(timeFormat, layout);
   host.appendChild(tableWrap);
   const draw = () => renderOverlayBlocks(tableWrap, layout.eventsByDay, conflictBlocks, timeFormat);

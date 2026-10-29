@@ -230,5 +230,7 @@
   --course-card-chip-bg: var(--course-card-sub-chip-bg);
 }
 
-.course-schedule-heading .schedule-heading-name { color: var(--hex-brand-main-1); }
-.course-schedule-heading .schedule-heading-term { color: var(--hex-neutral-3); }
+.course-schedule-heading {
+  background: var(--hex-brand-main-2);
+  color: var(--hex-brand-accent-1);
+}

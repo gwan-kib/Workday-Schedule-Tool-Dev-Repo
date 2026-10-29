@@ -574,10 +574,22 @@
   margin: 4px 0;
 }
 
+.schedule-week-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0;
+}
 .schedule-week-toggle {
   display: inline-flex;
   gap: 6px;
-  margin: 8px 0;
+}
+.schedule-week-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
 }
 .schedule-week-toggle button {
   border: 2px solid;
