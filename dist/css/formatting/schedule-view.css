@@ -647,6 +647,8 @@
 .planner-dialog input[type=url] { width:min(550px,100%); }
 .planner-dialog input[type=checkbox] { margin:8px; }
 .planner-status { color:#7b4400; white-space:pre-wrap; }
+.schedule-notes-text { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 100px; }
+.schedule-notes-input { display: block; box-sizing: border-box; width: 100%; min-height: 180px; resize: vertical; margin: 8px 0; padding: 12px; border: 1px solid #627086; border-radius: 8px; color: #172033; background: #fff; font: inherit; }
 .planner-comparison { display:grid; grid-template-columns:repeat(2,minmax(460px,1fr)); gap:20px; overflow-x:auto; align-items:start; }
 .planner-comparison-column { min-width:0; }
 .planner-preview-grid { min-width:0; }

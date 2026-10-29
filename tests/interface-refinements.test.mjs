@@ -116,7 +116,7 @@ test("PNG model contains only the matching timetable; PDF has precisely two unnu
   );
 });
 
-test("Import/Export has distinct backup and restore actions; Help is an accessible icon", async () => {
+test("Import/Export has distinct backup and single-schedule import actions, with matching icons", async () => {
   const html = await readFile(
     new URL("../src/panel.html", import.meta.url),
     "utf8",
@@ -130,6 +130,8 @@ test("Import/Export has distinct backup and restore actions; Help is an accessib
     root.querySelector("#widget-export-button .text").textContent,
     "Import / Export",
   );
+  assert.equal(root.querySelector("#widget-refresh").dataset.tooltip, "Search page");
+  assert.equal(root.querySelector("#widget-refresh .material-symbols-rounded").textContent.trim(), "search");
   assert.equal(root.querySelector(".help .text"), null);
   assert.equal(root.querySelector(".help").getAttribute("aria-label"), "Help");
   const courses = [course()],
@@ -145,7 +147,6 @@ test("Import/Export has distinct backup and restore actions; Help is an accessib
   mountPlanner(ui, {
     getState: () => state,
     saveSchedules: async () => {},
-    onRestored: async () => {},
   });
   renderCourseObjects(ui, courses);
   assert.equal(root.querySelector(".planner-swap-button"), null);
@@ -165,12 +166,17 @@ test("Import/Export has distinct backup and restore actions; Help is an accessib
   [...root.querySelectorAll("dialog button")]
     .find((b) => b.textContent === "Close")
     .click();
-  menu.querySelector('[data-planner-action="restore"]').click();
+  menu.querySelector('[data-planner-action="import"]').click();
   await new Promise((r) => setTimeout(r, 5));
   assert.equal(
     root.querySelector("dialog").getAttribute("aria-label"),
-    "Restore schedules",
+    "Import WST schedule",
   );
   assert.ok(root.querySelector("dialog input[type=file]"));
+  assert.equal(root.querySelector("dialog input[type=file]").multiple,false);
+  assert.equal(root.querySelector("dialog select"),null);
+  assert.equal(root.querySelector(".export-icon").textContent.trim(),"swap_vert");
+  assert.equal(menu.querySelector('[data-planner-action="import"] .material-symbols-rounded').textContent,"upload");
+  assert.equal(menu.querySelector('[data-planner-action="backup"] .material-symbols-rounded').textContent,"download");
   dom.window.close();
 });

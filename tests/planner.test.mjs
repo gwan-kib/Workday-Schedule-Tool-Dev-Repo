@@ -10,7 +10,8 @@ import {
 import {
   createBackup,
   parseBackup,
-  planRestore,
+  planScheduleImport,
+  parseWstSchedule,
 } from "../src/core/scheduleBackup.js";
 import {
   trustedSectionLink,
@@ -78,7 +79,7 @@ test("compare distinguishes section swaps and moved times without mutating snaps
   assert.equal(JSON.stringify(a), before);
 });
 
-test("backup round-trip strips secrets; merge resolves IDs/names and protects current preference", () => {
+test("backup round-trip strips secrets; a single import appends a uniquely named copy and keeps preference", () => {
   const a = snapshot(
     "a",
     "Plan A",
@@ -98,14 +99,13 @@ test("backup round-trip strips secrets; merge resolves IDs/names and protects cu
     text = JSON.stringify(backup);
   assert.ok(!text.includes("secret"));
   assert.equal(parseBackup(text).schedules[0].courses[0].code, "A 101");
-  assert.equal(planRestore([a], backup).schedules.length, 1);
-  const modified = structuredClone(backup);
-  modified.schedules[0].courses[0].section_number = "002";
-  const merged = planRestore([a], modified, "merge", () => "new-id");
-  assert.equal(merged.schedules[1].id, "new-id");
-  assert.match(merged.schedules[1].name, /imported/);
-  assert.equal(merged.schedules.filter((s) => s.isFavorite).length, 1);
-  assert.equal(planRestore([a], modified, "replace").schedules.length, 1);
+  const incoming = parseWstSchedule(text);
+  const imported = planScheduleImport([a], incoming, () => "new-id");
+  assert.equal(imported.schedules.length, 2);
+  assert.equal(imported.imported.id, "new-id");
+  assert.equal(imported.imported.name, "Plan A (1)");
+  assert.equal(imported.imported.isFavorite, false);
+  assert.equal(imported.schedules.filter(s => s.isFavorite).length, 1);
   assert.equal(a.courses[0].section_number, "001");
 });
 
@@ -250,7 +250,6 @@ test("comparison stays read-only until an explicit preference action", async () 
       writes++;
       state.savedSchedules = v;
     },
-    onRestored: async () => {},
   });
   const find = (text) =>
     [...document.querySelectorAll("button")].find(

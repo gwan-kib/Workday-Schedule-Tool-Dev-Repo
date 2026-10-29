@@ -1,3 +1,4 @@
+import { MAX_SCHEDULE_NOTES_LENGTH } from "./scheduleNotes.js";
 import { normalizeSchedule, dateNumber } from "./meetings.js";
 import { trustedSectionLink } from "../extraction/trustedWorkday.js";
 export const BACKUP_VERSION = 1;
@@ -117,7 +118,7 @@ export function validateBackup(data) {
     fail("file format not recognized.");
   if (data.version !== BACKUP_VERSION)
     fail(
-      "unsupported version. Update the extension before restoring this file.",
+      "unsupported version. Update the extension before importing this file.",
     );
   if (!Array.isArray(data.schedules) || data.schedules.length > 10)
     fail("expected up to 10 schedules.");
@@ -143,6 +144,8 @@ export function validateBackup(data) {
     names.add(key);
     if (s.colorAssignments != null && !colors(s.colorAssignments))
       fail("schedule colors.");
+    if (s.notes != null && !string(s.notes, MAX_SCHEDULE_NOTES_LENGTH))
+      fail("schedule notes.");
     if (s.isFavorite != null && typeof s.isFavorite !== "boolean")
       fail("preferred schedule flag.");
     if (s.isFavorite && preferred) fail("multiple preferred schedules.");
@@ -157,6 +160,7 @@ export function validateBackup(data) {
       courses: s.courses.map(cleanCourse),
       colorAssignments: s.colorAssignments ? [...s.colorAssignments] : null,
       isFavorite: Boolean(s.isFavorite),
+      notes: s.notes || "",
     };
   });
   return {
@@ -188,45 +192,51 @@ export function parseBackup(text) {
   }
   return validateBackup(data);
 }
-export function planRestore(
+// Import is additive: one file, one saved schedule, no settings replacement.
+export function parseWstSchedule(text) {
+  const backup = parseBackup(text);
+  if (backup.schedules.length !== 1)
+    throw new Error(
+      "Choose a file containing exactly one WST schedule. Export a single schedule and try again.",
+    );
+  return backup.schedules[0];
+}
+export function planScheduleImport(
   existing,
-  backup,
-  mode = "merge",
+  incoming,
   idFactory = () => crypto.randomUUID(),
 ) {
-  if (!["merge", "replace"].includes(mode)) fail("restore mode.");
-  const incoming = validateBackup(backup);
-  if (mode === "replace") return incoming;
-  const schedules = structuredClone(existing),
-    names = new Set(
-      existing.map((s) => s.name.trim().replace(/\s+/g, " ").toLowerCase()),
+  if (existing.length >= 10)
+    throw new Error(
+      "You can save up to 10 schedules. Remove one before importing another.",
     );
-  const key = (n) => n.trim().replace(/\s+/g, " ").toLowerCase();
-  for (const s of incoming.schedules) {
-    if (
-      existing.some(
-        (old) =>
-          old.id === s.id &&
-          old.name === s.name &&
-          JSON.stringify(old.courses.map(cleanCourse)) ===
-            JSON.stringify(s.courses),
-      )
-    )
-      continue;
-    const copy = structuredClone(s);
-    if (schedules.some((old) => old.id === copy.id)) copy.id = idFactory();
-    let suffix = 2;
-    while (names.has(key(copy.name)))
-      copy.name = `${s.name} (imported ${suffix++})`;
-    names.add(key(copy.name));
-    copy.isFavorite =
-      copy.isFavorite && !schedules.some((old) => old.isFavorite);
-    schedules.push(copy);
+  const schedule = validateBackup({
+    format: "ubc-workday-schedules",
+    version: BACKUP_VERSION,
+    schedules: [incoming],
+  }).schedules[0];
+  const key = (value) => value.trim().replace(/\s+/g, " ").toLowerCase();
+  const names = new Set(existing.map((item) => key(item.name)));
+  const base = schedule.name;
+  let name = base,
+    number = 1;
+  while (names.has(key(name))) {
+    const suffix = ` (${number++})`;
+    name = base.slice(0, 200 - suffix.length) + suffix;
   }
-  if (schedules.length > 10)
-    fail(
-      "merge would exceed 10 saved schedules. Choose fewer plans or use Replace.",
-    );
-  // Existing settings win in Merge; the caller supplies missing keys only.
-  return { ...incoming, schedules };
+  let id;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    id = idFactory();
+    if (
+      typeof id === "string" &&
+      id &&
+      !existing.some((item) => item.id === id)
+    )
+      break;
+    id = null;
+  }
+  if (!id)
+    throw new Error("Could not create a new schedule ID. Retry the import.");
+  const imported = { ...schedule, id, name, isFavorite: false };
+  return { schedules: [...structuredClone(existing), imported], imported };
 }

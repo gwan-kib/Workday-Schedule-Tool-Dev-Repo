@@ -95,6 +95,15 @@ test("legacy storage survives versioned migration with preference and deep-copy 
   assert.equal(data.wdPreferredScheduleId, snapshot.id);
   assert.equal(data.wdSavedSchedules[0].courses.length, 5);
 });
+
+test('schedule notes survive storage, preference changes and course updates', async()=>{
+  lastError=null;
+  const snapshot={...createScheduleSnapshot('Notes plan',fiveCourses()),notes:'Keep the lab\nCheck room'};
+  await persistSavedSchedules([snapshot]);
+  let saved=await loadSavedSchedules();assert.equal(saved[0].notes,snapshot.notes);
+  await persistSavedSchedules(saved.map(s=>({...s,isFavorite:true,courses:s.courses.slice(1)})));
+  saved=await loadSavedSchedules();assert.equal(saved[0].notes,snapshot.notes);assert.equal(saved[0].courses.length,4);
+});
 test("schedule names ignore case and whitespace while allowing a record to retain its own name", () => {
   const schedules = [{ id: "one", name: "Fall Plan" }, { id: "two", name: "Backup" }];
   for (const name of ["Fall Plan", "FALL PLAN", "  fall   plan ", "fall\tplan"]) {

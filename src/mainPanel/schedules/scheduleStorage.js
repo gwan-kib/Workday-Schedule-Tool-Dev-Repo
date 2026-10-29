@@ -1,3 +1,5 @@
+import { scheduleNotesText } from "../../core/scheduleNotes.js";
+import { createScheduleNotesButton } from "./scheduleNotes.js";
 import { storageGet, storageSet } from "../../utilities/storage.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 const debug = debugFor("scheduleStorage");
@@ -51,6 +53,7 @@ const sanitizeSchedules = (schedules) => {
       courses: Array.isArray(s.courses) ? s.courses : [],
       colorAssignments: Array.isArray(s.colorAssignments) ? s.colorAssignments : null,
       isFavorite: Boolean(s.isFavorite),
+      notes: scheduleNotesText(s),
     }));
 };
 
@@ -137,6 +140,7 @@ export function createScheduleSnapshot(name, courses, colorAssignments) {
     courses: cloneCourses(courses || []),
     colorAssignments: Array.isArray(colorAssignments) ? [...colorAssignments] : null,
     isFavorite: false,
+    notes: "",
   };
 }
 
@@ -268,6 +272,7 @@ export function renderSavedSchedules(ui, schedules, activeScheduleId = null) {
 
     actions.appendChild(favoriteButton);
     actions.appendChild(renameButton);
+    actions.appendChild(createScheduleNotesButton(schedule));
     actions.appendChild(deleteButton);
 
     card.appendChild(header);

@@ -162,8 +162,8 @@ export function renderCourseObjects(
     emptyState.className = "course-list-empty";
     emptyState.innerHTML = `
       <span class="course-list-empty__copy">
-        <span class="material-symbols-rounded course-list-empty__icon" aria-hidden="true">refresh</span>
-        <span class="course-list-empty__text">Click the refresh button to load in a schedule.</span>
+        <span class="material-symbols-rounded course-list-empty__icon" aria-hidden="true">search</span>
+        <span class="course-list-empty__text">Click the search button to find courses on this page.</span>
         <span class="course-list-empty__hint">You need to be on a page with a schedule table</span>
         <span class="course-list-empty__hint">(e.g. the 'View My Courses' page or a 'Saved Schedule')</span>
       </span>

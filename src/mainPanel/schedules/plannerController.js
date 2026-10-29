@@ -2,12 +2,12 @@ import { renderSchedule } from "./scheduleView.js";
 import { node } from "./plannerOverview.js";
 import { compareSchedules, sectionLabel } from "../../core/planner.js";
 import { courseIdentity } from "../../core/meetings.js";
-import { storageGet, storageSet } from "../../utilities/storage.js";
+import { storageGet } from "../../utilities/storage.js";
 import {
   BACKUP_SETTINGS,
   createBackup,
-  parseBackup,
-  planRestore,
+  parseWstSchedule,
+  planScheduleImport,
 } from "../../core/scheduleBackup.js";
 import {
   downloadBlob,
@@ -51,7 +51,9 @@ export function plannerDialog(ui, title) {
     cleanup.forEach((f) => f());
     dialog.close?.();
     dialog.remove();
-    previous?.focus?.();
+    if (previous?.isConnected) previous.focus?.();
+    else
+      (ui.savedDropdown?.querySelector("summary") || ui.exportButton)?.focus();
   };
   header.append(node("h2", title), button("Close", close));
   dialog.append(header, status, content);
@@ -71,7 +73,7 @@ export function plannerDialog(ui, title) {
     if (e.key !== "Tab") return;
     const items = [
         ...dialog.querySelectorAll(
-          'button,input,select,summary,[tabindex="0"]',
+          'button,input,textarea,select,summary,[tabindex="0"]',
         ),
       ].filter((n) => !n.disabled && !n.hidden && n.getClientRects().length),
       first = items[0],
@@ -114,7 +116,7 @@ export function plannerDialog(ui, title) {
   return { dialog, content, status, run, close, preview, cleanup };
 }
 
-export function mountPlanner(ui, { getState, saveSchedules, onRestored }) {
+export function mountPlanner(ui, { getState, saveSchedules }) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
   const error = (e) =>
@@ -136,7 +138,7 @@ export function mountPlanner(ui, { getState, saveSchedules, onRestored }) {
   ui.exportMenu?.addEventListener("click", (event) => {
     const action = event.target.closest("[data-planner-action]")?.dataset
       .plannerAction;
-    if (!["backup", "restore"].includes(action)) return;
+    if (!["backup", "import"].includes(action)) return;
     ui.exportDropdown?.classList.remove("is-open");
     ui.exportButton?.setAttribute("aria-expanded", "false");
     safe(() => openBackup(action))();
@@ -277,12 +279,12 @@ export function mountPlanner(ui, { getState, saveSchedules, onRestored }) {
   function openBackup(action) {
     const d = plannerDialog(
       ui,
-      action === "restore" ? "Restore schedules" : "Back up schedules",
+      action === "import" ? "Import WST schedule" : "Back up schedules",
     );
     d.content.append(
       node(
         "p",
-        "Back up saved schedules and display preferences, or restore them from a JSON backup.",
+        "Back up saved schedules, or import a file containing one WST schedule.",
       ),
     );
     if (action === "backup") {
@@ -310,10 +312,12 @@ export function mountPlanner(ui, { getState, saveSchedules, onRestored }) {
                   type: "application/json",
                 },
               ),
-              `${timetableFilename([], "Workday-backup")}.json`,
+              plans.length === 1
+                ? `${timetableFilename(plans[0].courses, plans[0].name)}.wst.json`
+                : "WST-schedules-backup.json",
             );
             d.status.textContent =
-              "Backup downloaded. Only saved plans are included; save working changes first.";
+              "Backup downloaded. To import one schedule later, export that schedule individually. Save working changes before backing up.";
           }),
         ),
       );
@@ -321,97 +325,35 @@ export function mountPlanner(ui, { getState, saveSchedules, onRestored }) {
     }
     const file = node("input");
     file.type = "file";
-    file.accept = ".json,application/json";
-    file.setAttribute("aria-label", "JSON backup file");
-    const mode = select("Import mode", [
-      ["merge", "Merge — keep existing plans and preferences"],
-      ["replace", "Replace — replace saved plans and preferences"],
-    ]);
-    const preview = node("section");
-    d.content.append(node("h3", "Import / restore"), file, mode.wrap, preview);
-    let backup = null;
-    const show = () => {
-      preview.replaceChildren();
-      if (!backup) return;
-      const existing = getState().savedSchedules,
-        next = planRestore(existing, backup, mode.input.value),
-        signature = JSON.stringify(existing),
-        selectedMode = mode.input.value;
-      preview.append(
-        node(
-          "p",
-          `File: ${backup.schedules.length} saved plan(s). After ${selectedMode}: ${next.schedules.length} plan(s). ${selectedMode === "replace" ? "Existing saved plans and these preferences will be replaced. Working courses and account data are preserved." : "Duplicate copies are skipped; conflicting names/IDs are imported separately. Existing preferences and preferred plan win."}`,
-        ),
-      );
-      next.schedules.forEach((s) =>
-        preview.append(
-          node(
-            "p",
-            `${s.name}${s.isFavorite ? " (Preferred)" : ""} · ${s.courses.length} section(s)`,
-          ),
-        ),
-      );
-      preview.append(
-        node(
-          "p",
-          `Non-sensitive settings: ${Object.keys(backup.settings).join(", ") || "none"}.`,
-        ),
-      );
-      const confirm = node("input");
-      confirm.type = "checkbox";
-      const label = node(
-        "label",
-        selectedMode === "replace"
-          ? " I confirm replacement of my saved plans and preferences."
-          : " I confirm merging these saved plans.",
-      );
-      label.prepend(confirm);
-      const apply = button(
-        selectedMode === "replace" ? "Confirm Replace" : "Confirm Merge",
-        d.run(async () => {
-          if (!confirm.checked)
-            throw new Error("Confirm the import preview first.");
-          if (JSON.stringify(getState().savedSchedules) !== signature)
-            throw new Error(
-              "Saved plans changed. Change import mode to refresh the preview.",
-            );
-          const settings = await storageGet(BACKUP_SETTINGS);
-          const defaults = {
-            wdCourseColorAssignments: [1, 2, 3, 4, 5, 6, 7, 8],
-            wdHoverTooltipsEnabled: true,
-            wdTimeFormat: "am/pm",
-          };
-          const imported =
-            selectedMode === "replace"
-              ? { ...defaults, ...backup.settings }
-              : { ...backup.settings, ...settings };
-          await storageSet({
-            ...imported,
-            wdSavedSchedules: next.schedules,
-            wdPreferredScheduleId:
-              next.schedules.find((s) => s.isFavorite)?.id || null,
-            wdScheduleSchemaVersion: 1,
-          });
-          await onRestored(next.schedules, imported);
-          preview.replaceChildren();
-          backup = null;
-          d.status.textContent =
-            "Restore complete. Saved plans refreshed. Reload Workday to apply restored display preferences.";
-        }),
-      );
-      preview.append(label, apply);
-    };
+    file.accept = ".json,.wst,application/json";
+    file.multiple = false;
+    file.setAttribute("aria-label", "WST schedule file");
+    d.content.append(
+      node(
+        "p",
+        "Choose one schedule file. It will be added to your saved schedules with its original name; if needed, (1), (2), and so on will be added.",
+      ),
+      file,
+    );
     file.onchange = d.run(async () => {
-      backup = null;
-      preview.replaceChildren();
-      const selected = file.files?.[0];
-      if (!selected) return;
-      if (selected.size > 5 * 1024 * 1024)
-        throw new Error("Backup file exceeds 5 MB.");
-      backup = parseBackup(await selected.text());
-      show();
+      if (!file.files?.length) return;
+      if (file.files.length !== 1)
+        throw new Error("Choose one WST schedule file at a time.");
+      const selected = file.files[0];
+      file.disabled = true;
+      try {
+        if (selected.size > 5 * 1024 * 1024)
+          throw new Error("Schedule file exceeds 5 MB.");
+        const incoming = parseWstSchedule(await selected.text());
+        const result = planScheduleImport(getState().savedSchedules, incoming);
+        await saveSchedules(result.schedules);
+        d.status.textContent = `Imported "${result.imported.name}" into saved schedules.`;
+      } finally {
+        file.disabled = false;
+        file.value = "";
+      }
     });
-    mode.input.onchange = d.run(show);
   }
+
   return {};
 }

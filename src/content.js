@@ -1,3 +1,4 @@
+import { openScheduleNotes } from "./mainPanel/schedules/scheduleNotes.js";
 import { mountPlanner } from "./mainPanel/schedules/plannerController.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
 import { getScheduleSaveState } from "./core/scheduleSaveState.js";
@@ -155,7 +156,7 @@ debugLog({ local: { content: false } });
     // and preserve the current UI when requested.
     const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
       debug.log({ id: "loadCoursesFromPage.start" }, "Loading courses from page", { preserveExisting });
-      let closeLoadingOverlay = showLoadingOverlay(preserveExisting ? "Refreshing schedule..." : "Loading schedule...");
+      let closeLoadingOverlay = showLoadingOverlay(preserveExisting ? "Searching page for courses..." : "Loading schedule...");
       try {
         let result = await extractCoursesData();
         closeLoadingOverlay();
@@ -190,7 +191,7 @@ debugLog({ local: { content: false } });
             if (!accept) return false;
             ui.footerNotes.setPersistent(
               "import-status",
-              `Incomplete import: ${result.failures.length} section(s) missing. Refresh to retry.`,
+              `Incomplete import: ${result.failures.length} section(s) missing. Search page to retry.`,
               { tone: "warn" },
             );
             break;
@@ -257,9 +258,6 @@ debugLog({ local: { content: false } });
     });
     // These controls manage the live schedule currently loaded from the page.
     on(ui.refreshButton, "click", async () => {
-      ui.refreshButton.classList.remove("rotate");
-      void ui.refreshButton.offsetWidth;
-      ui.refreshButton.classList.add("rotate");
       const loaded = await loadCoursesFromPage({ preserveExisting: true });
       if (loaded) renderAll();
     });
@@ -676,6 +674,18 @@ debugLog({ local: { content: false } });
       if (!scheduleId) return;
       const selected = STATE.savedSchedules.find((s) => s.id === scheduleId);
       if (!selected) return;
+      if (actionButton?.dataset.action === "notes") {
+        event.stopPropagation();
+        openScheduleNotes(ui, {
+          scheduleId,
+          getSchedules: () => STATE.savedSchedules,
+          saveSchedules: async next => {
+            await updateSavedSchedules(next);
+            renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+          },
+        });
+        return;
+      }
       if (actionButton?.dataset.action === "favorite") {
         event.stopPropagation();
         await updateSavedSchedules(togglePreferredSchedule(STATE.savedSchedules, scheduleId));
@@ -779,17 +789,6 @@ debugLog({ local: { content: false } });
         await updateSavedSchedules(next);
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         renderSaveState();
-      },
-      onRestored: async (next, settings) => {
-        STATE.savedSchedules = next;
-        storageReady = true;
-        if (!next.some(s => s.id === STATE.currentSavedScheduleId)) {
-          STATE.currentSavedScheduleId = null;
-          STATE.currentScheduleName = null;
-        }
-        STATE.view.timeFormat = settings.wdTimeFormat || STATE.view.timeFormat;
-        renderSavedSchedules(ui, next, STATE.currentSavedScheduleId);
-        renderAll();
       },
     });
     try {

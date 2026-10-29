@@ -1,3 +1,4 @@
+import { openScheduleNotes, createScheduleNotesButton } from "./mainPanel/schedules/scheduleNotes.js";
 import { exportTimetable, exportAppearance } from "./exportLogic/exportTimetable.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
 import {
@@ -171,13 +172,14 @@ function renderPicker() {
 
     actions.appendChild(favoriteButton);
     actions.appendChild(renameButton);
+    actions.appendChild(createScheduleNotesButton(schedule));
     actions.appendChild(deleteButton);
     card.appendChild(header);
     card.appendChild(actions);
     ui.savedMenu.appendChild(card);
   });
 
-  ui.pickerWrap?.classList.toggle("is-hidden", popupState.schedules.length <= 1);
+  ui.pickerWrap?.classList.toggle("is-hidden", popupState.schedules.length === 0);
 }
 
 // Renders the active saved schedule preview, falling back to the preferred schedule when needed.
@@ -244,6 +246,20 @@ ui.savedMenu?.addEventListener("click", async (event) => {
     const card = event.target.closest(".schedule-saved-card");
     const scheduleId = card?.dataset.id;
     if (!scheduleId) return;
+
+    if (actionButton?.dataset.action === "notes") {
+      event.stopPropagation();
+      openScheduleNotes(ui, {
+        scheduleId,
+        getSchedules: () => popupState.schedules,
+        saveSchedules: async next => {
+          await persistSavedSchedules(next);
+          popupState.schedules = next;
+          renderPicker();
+        },
+      });
+      return;
+    }
 
     if (actionButton?.dataset.action === "favorite") {
       event.stopPropagation();

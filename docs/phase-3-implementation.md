@@ -1,4 +1,4 @@
-# Phase 3 implementation — build 3.0.1
+# Phase 3 implementation — build 3.0.2
 
 The current UI follows the requested simplified planning workflow. Section-alternative discovery, swap previews/Apply/Undo and the separate conflicts/transitions disclosure have been removed.
 
@@ -8,9 +8,15 @@ The current UI follows the requested simplified planning workflow. Section-alter
 
 The overview contains only Scheduled hours/week and Busiest day. It has no date, decimal, average/range, conflict count, or explanation paragraph. This full-week overview policy does not change the actual-date meeting model used by conflict detection, calendar sync or ICS.
 
-## Saved plans and backup
+## Saved plans, notes and import
 
-`plannerController.js` retains read-only, main-panel saved-plan comparison and explicit Set as Preferred. Back up schedules and Restore schedules are distinct entries under Import / Export, with separate dialogs. Help is icon-only with an accessible label. Backup merge/replace validation, confirmation, secret exclusion and the existing saved-storage schema remain unchanged.
+`plannerController.js` retains read-only, main-panel saved-plan comparison and explicit Set as Preferred. Back up schedules and Import WST schedule are distinct entries under Import / Export. The header uses swap_vert; export entries have download icons and import has upload, matching Google Calendar's sync icon style. The page-course reader uses the search icon and Search page tooltip.
+
+Import accepts one version-1 WST JSON file containing exactly one saved schedule. It adds a new record with a fresh ID, retaining the original name or appending the first free (1), (2), etc. Existing snapshots, the working draft, preferred schedule and display/account settings are not replaced. Re-importing the same file adds another named copy. The existing 10-plan limit and file validation remain. Export a single selected plan to produce a compatible .wst.json file; an all-plan backup remains a separate export and is not accepted by this single-plan import.
+
+Each main-panel and popup saved-schedule card has a notes action. It opens a read-only view, with a separate Edit note screen offering Save note and Cancel. Notes are plain text, limited to 10,000 characters, and included in saved storage and schedule files. Existing schedules default to empty notes without rewriting storage on read. Quick Save, preference changes and renaming preserve notes. Note saves reject deleted schedules and stale edits rather than recreating or overwriting them; persistence errors keep the draft editor open.
+
+Help remains icon-only with an accessible label. Saved storage and backup schema versions remain at 1, with the optional notes field added compatibly. Imports exclude credential/account data and do not apply settings from the file.
 
 ## Timetable and visual downloads
 

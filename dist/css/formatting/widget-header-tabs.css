@@ -249,24 +249,11 @@
   font-weight: 600;
 }
 
-/* Refresh button */
+/* Search page button */
 #widget-refresh {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 36px;
   width: 36px;
-}
-
-#widget-refresh.rotate .refresh-icon {
-  animation: spin360 0.4s ease-in-out;
-}
-
-@keyframes spin360 {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
