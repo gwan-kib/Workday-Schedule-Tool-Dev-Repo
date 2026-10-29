@@ -21,7 +21,7 @@ test("heading terms use metadata or all meeting ranges without changing scheduli
   assert.equal(scheduleTermLabel([course({ term: "2026 Winter Session - Term 2" })]), "Winter Term 2");
   assert.equal(
     scheduleTermLabel([course({ meetingLines: [line(), line("Mon", undefined, "2027-01-01 - 2027-04-15")] })]),
-    "Winter Term 1 / Winter Term 2",
+    "Multiple terms detected",
   );
   assert.equal(scheduleTermLabel([]), "Term unavailable");
 });

@@ -32,7 +32,7 @@ export function scheduleTermLabel(courses = []) {
         terms.add(termForMonth((index % 12) + 1));
     }
   }
-  return [...terms].join(" / ") || "Term unavailable";
+  return terms.size > 1 ? "Multiple terms detected" : [...terms][0] || "Term unavailable";
 }
 
 // Shared content for the plain course heading and the timetable's term pill.
@@ -40,7 +40,7 @@ export function renderScheduleHeading(host, scheduleName, courses) {
   if (!host) return;
   const name = document.createElement("span");
   name.className = "schedule-heading-name";
-  name.textContent = scheduleName || "Working schedule";
+  name.textContent = scheduleName || "Working Schedule (no name yet)";
   const term = document.createElement("span");
   term.className = "schedule-heading-term";
   term.textContent = scheduleTermLabel(courses);

@@ -89,7 +89,7 @@ debugLog({ local: { content: false } });
     const { openScheduleModal } = createScheduleModalController(ui);
     // Rebuild the visual views from shared STATE whenever schedule data or view settings change.
     const updateScheduleView = () => {
-      ui.scheduleName = STATE.currentScheduleName || STATE.syncPlanName || "Working schedule";
+      ui.scheduleName = STATE.currentScheduleName || STATE.syncPlanName || "Working Schedule (no name yet)";
       renderScheduleHeading(ui.courseScheduleHeading, ui.scheduleName, STATE.courses);
       renderSchedule(ui, STATE.courses, STATE.view.semester, STATE.view.timeFormat);
       ui.onTimeFormatChange = (next) => {
@@ -197,7 +197,7 @@ debugLog({ local: { content: false } });
         }
         store.load(accumulated);
         STATE.syncPlanId = stableId(`working|${accumulated.map(courseIdentity).sort().join("|")}`);
-        STATE.syncPlanName = "Working schedule";
+        STATE.syncPlanName = "Working Schedule (no name yet)";
         courseColorController.assignCourseColors(STATE.courses);
         STATE.currentSavedScheduleId = null;
         STATE.currentScheduleName = null;
@@ -249,7 +249,7 @@ debugLog({ local: { content: false } });
     on(ui.clearButton, "click", () => {
       store.load([]);
       STATE.syncPlanId = crypto.randomUUID();
-      STATE.syncPlanName = "Working schedule";
+      STATE.syncPlanName = "Working Schedule (no name yet)";
       STATE.currentSavedScheduleId = null;
       STATE.currentScheduleName = null;
       ui.searchInput.value = "";
@@ -460,7 +460,7 @@ debugLog({ local: { content: false } });
             STATE.syncPlanId ||
             STATE.currentSavedScheduleId ||
             stableId(`working|${courses.map(courseIdentity).sort().join("|")}`),
-          planName: STATE.currentScheduleName || STATE.syncPlanName || "Working schedule",
+          planName: STATE.currentScheduleName || STATE.syncPlanName || "Working Schedule (no name yet)",
         };
         let closeLoading = showLoadingOverlay("Preparing Google Calendar preview...");
         try {

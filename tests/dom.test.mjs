@@ -227,6 +227,10 @@ test("packaged content saves all five courses after search and reports failed wr
   await waitFor(() => shadow()?.querySelectorAll(".course-card").length === 5);
   const s = shadow(),
     search = s.querySelector("#widget-search");
+  assert.equal(s.querySelector("#course-schedule-heading").firstElementChild.textContent, "Working Schedule (no name yet)");
+  assert.equal(s.querySelector("#schedule-term-pill").firstElementChild.textContent, "Working Schedule (no name yet)");
+  assert.equal(s.querySelector("#course-schedule-heading").lastElementChild.textContent, "Multiple terms detected");
+  assert.equal(s.querySelector("#schedule-term-pill").lastElementChild.textContent, "Multiple terms detected");
   search.value = "Course 100";
   search.dispatchEvent(new w.Event("input"));
   await waitFor(() => s.querySelectorAll(".course-card").length === 1);
