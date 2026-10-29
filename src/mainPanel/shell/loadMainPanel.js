@@ -68,6 +68,7 @@ export async function loadMainPanel(shadowRoot) {
     floatingButton: shadowRoot.querySelector("#floating-button"),
 
     tableBody: shadowRoot.querySelector("#course-list"),
+    courseScheduleHeading: shadowRoot.querySelector("#course-schedule-heading"),
     tableHead: shadowRoot.querySelector("#course-sortbar"),
 
     searchInput: shadowRoot.querySelector("#widget-search"),

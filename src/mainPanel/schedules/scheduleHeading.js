@@ -34,3 +34,15 @@ export function scheduleTermLabel(courses = []) {
   }
   return [...terms].join(" / ") || "Term unavailable";
 }
+
+// Shared content for the plain course heading and the timetable's term pill.
+export function renderScheduleHeading(host, scheduleName, courses) {
+  if (!host) return;
+  const name = document.createElement("span");
+  name.className = "schedule-heading-name";
+  name.textContent = scheduleName || "Working schedule";
+  const term = document.createElement("span");
+  term.className = "schedule-heading-term";
+  term.textContent = scheduleTermLabel(courses);
+  host.replaceChildren(name, term);
+}

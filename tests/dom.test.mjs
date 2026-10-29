@@ -236,6 +236,11 @@ test("packaged content saves all five courses after search and reports failed wr
   s.querySelector(".schedule-modal-confirm").click();
   await waitFor(() => data.wdSavedSchedules?.length === 1);
   assert.equal(data.wdSavedSchedules[0].courses.length, 5);
+  const courseHeading = s.querySelector('[data-panel="course-list-panel"] .course-schedule-heading');
+  assert.equal(courseHeading.firstElementChild.textContent, "Complete plan");
+  assert.equal(courseHeading.lastElementChild.textContent, s.querySelector("#schedule-term-pill").lastElementChild.textContent);
+  assert.equal(courseHeading.classList.contains("schedule-term-pill"), false);
+  assert.equal(courseHeading.parentElement.firstElementChild, courseHeading);
   s.querySelector(".schedule-saved-card").click();
   await waitFor(() => s.querySelectorAll(".course-card").length === 5);
   assert.equal(search.value, "");

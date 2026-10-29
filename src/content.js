@@ -1,3 +1,4 @@
+import { renderScheduleHeading } from "./mainPanel/schedules/scheduleHeading.js";
 import { syncPreviewText } from "./exportLogic/googleCalendar/syncPreviewText.js";
 import { hydrateCourseLookups } from "./mainPanel/courses/courseLookupController.js";
 import { courseIdentity, stableId } from "./core/meetings.js";
@@ -89,6 +90,7 @@ debugLog({ local: { content: false } });
     // Rebuild the visual views from shared STATE whenever schedule data or view settings change.
     const updateScheduleView = () => {
       ui.scheduleName = STATE.currentScheduleName || STATE.syncPlanName || "Working schedule";
+      renderScheduleHeading(ui.courseScheduleHeading, ui.scheduleName, STATE.courses);
       renderSchedule(ui, STATE.courses, STATE.view.semester, STATE.view.timeFormat);
       ui.onTimeFormatChange = (next) => {
         STATE.view.timeFormat = next;

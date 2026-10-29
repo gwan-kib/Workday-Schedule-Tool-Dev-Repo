@@ -1,4 +1,4 @@
-import { scheduleTermLabel } from "./scheduleHeading.js";
+import { renderScheduleHeading } from "./scheduleHeading.js";
 import { scheduleLayout } from "../../core/scheduleLayout.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { createFooterNoteController } from "../shell/footerNoteController.js";
@@ -282,15 +282,7 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
     );
   else footer?.removePersistent("meeting-diagnostics");
   updateFooterConflictMessage(ui, conflictBlocks);
-  if (ui.scheduleTermPill) {
-    const name = document.createElement("span");
-    name.className = "schedule-heading-name";
-    name.textContent = ui.scheduleName || "Working schedule";
-    const term = document.createElement("span");
-    term.className = "schedule-heading-term";
-    term.textContent = scheduleTermLabel(courses);
-    ui.scheduleTermPill.replaceChildren(name, term);
-  }
+  renderScheduleHeading(ui.scheduleTermPill, ui.scheduleName, courses);
   ui.scheduleTimeFormat = timeFormat;
   tableWrap.querySelector(".schedule-time-toggle")?.addEventListener("click", () => {
     const next = timeFormat === "am/pm" ? "24h" : "am/pm";
