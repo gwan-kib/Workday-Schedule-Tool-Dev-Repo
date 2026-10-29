@@ -271,7 +271,8 @@ h3 {
 }
 
 .popup-content .schedule-term-pill {
-  height: 30px;
+  height: auto;
+  min-height: 42px;
   width: 180px;
   padding: 6px 12px;
   font-size: 13px;

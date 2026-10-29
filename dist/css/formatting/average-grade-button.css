@@ -4,7 +4,7 @@
   align-items: stretch;
   gap: 6px;
   flex: 0 0 auto;
-  width: 130px;
+  width: 170px;
   margin: 10px;
 }
 
@@ -116,10 +116,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 20px;
-  height: 24px;
-  cursor: help;
-  font-size: 17px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 2px solid var(--hex-brand-main-2);
+  border-radius: 8px;
+  color: var(--hex-brand-main-1);
+  background: var(--hex-brand-accent-4);
+  cursor: default;
 }
 .registration__course-actions .grade-average-hint::after {
   content: attr(data-tooltip);
@@ -141,4 +146,18 @@
 .registration__course-actions .grade-average-hint:hover::after,
 .registration__course-actions .grade-average-hint:focus-visible::after {
   opacity: 1;
+}
+
+.registration__course-actions .grade-average-hint .material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  font-style: normal;
+  letter-spacing: normal;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
 }

@@ -2,7 +2,7 @@
 export function gradeResultText(result) {
   const format = (value) => (Number.isFinite(value) ? `${value.toFixed(1)}%` : "N/A");
   return {
-    summary: format(result?.latest?.average),
+    summary: `Average: ${format(result?.latest?.average)}`,
     tooltip: `5-year average: ${format(result?.fiveYear?.average)}${result?.stale ? " (cached)" : ""}`,
   };
 }
@@ -20,7 +20,11 @@ export function renderGradeAverageHint(button, tooltip = "5-year average: N/A") 
   if (!hint) {
     hint = document.createElement("span");
     hint.className = "grade-average-hint wd-hover-tooltip";
-    hint.textContent = "ⓘ";
+    const icon = document.createElement("span");
+    icon.className = "material-symbols-rounded";
+    icon.textContent = "info";
+    icon.setAttribute("aria-hidden", "true");
+    hint.appendChild(icon);
     hint.tabIndex = 0;
     hint.setAttribute("role", "note");
     hint.addEventListener("click", (event) => {

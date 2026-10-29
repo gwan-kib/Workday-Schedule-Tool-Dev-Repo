@@ -1,17 +1,15 @@
-# Manual tests for the simplified UI and alternating weeks
+# Manual tests for the latest schedule and sync UI
 
-Rebuild/load the updated Chrome or Firefox package, reload the extension, and refresh the Workday tab. Automated checks use fixtures and do not verify your live Workday session or browser layout.
+Reload the updated extension and refresh Workday. These checks cover visible changes; fixture tests do not establish real-browser layout or live Google behavior.
 
-| Test | What changed / what to look for |
+| Test | What to look for |
 | --- | --- |
-| Grade display in the extension course list | The grade button shows **one latest available course average**, e.g. `80.0%`. It no longer includes a second five-year average, dates, coverage, sample counts or a details paragraph. Clicking a loaded grade still opens UBCGrades. |
-| Grade display on Workday registration cards | The same compact single-number display appears on supported lecture cards. The info control sits **to the right** of the grade button; it should not cover the grade or Add button. |
-| Five-year hover/focus | Hover the `ⓘ` beside a loaded grade, then reach it using Tab. Both should reveal **5-year average: …%**. Confirm that it can differ from the main latest-year number. Missing five-year data must show N/A rather than inventing an average. Moving away hides the tooltip. |
-| Week controls in the panel and popup | **Meeting dates:** and its dropdown are gone. **Week 1 / Week 2** buttons replace them, with the selected week visibly indicated. Weekly lectures remain visible in both. Reliably anchored alternating labs/sections appear only in the matching cycle; opposite-week labs should swap when toggled. |
-| Week selection and data preservation | Switch to Week 2, change AM/PM, then search/rerender or reopen the same view. The selected week should remain Week 2. Saving/exporting must retain the full plan, including both alternating weeks; the toggle changes only the timetable preview. Uncertain alternating patterns remain under Meeting Times Unknown. |
-| Unsupported-page warning | Open a Workday page with no supported sections, then refresh the extension panel. The old **No supported course sections found…** message must not appear. Your existing working plan should remain intact. Real sign-in and import-failure messages should still appear when applicable. |
-| Google sync confirmation (Chrome) | The confirmation no longer lists **Dates:**. Target, plan, change counts and Confirm/Cancel remain. The old long exception/cancellation paragraph is replaced with **Holidays and reading breaks supplied by Workday are automatically excluded.** Cancel must still cause no calendar changes. |
+| Schedule heading, panel and popup | Your saved schedule name is first, with its term below, e.g. **Fall Plan** then **Winter Term 1**. Rename/load another saved schedule and check the heading updates. Multiple-term plans list their terms; an unnamed plan says Working schedule. |
+| Week controls | Week 1 / Week 2 sit inside the schedule controls, beneath the heading, outside the scrolling timetable. Repeated toggles must not duplicate controls. Weekly classes remain in both; anchored alternating sections switch weeks. |
+| Grade buttons | Supported course-list and Workday registration buttons read **Average: 80.0%** (with the actual latest value), or **Average: N/A** when unavailable. The five-year number stays outside the grade button. Clicking a resolved grade still opens UBCGrades. |
+| Info control styling | The control to the right uses the Google Material Symbols **info** icon, theme colors and a two-pixel border. Its cursor stays the normal arrow when hovered. Hover/Tab-focus still shows the five-year average, or N/A, without a details paragraph. |
+| Sync confirmation labels | Expect **Schedule Name:** and **Adding: … · Updating: … · Removing: … · Unchanged: …**. There is no Dates row or older-unscoped-imports warning. |
+| Skipped list | A schedule with missing/invalid meeting data lists **Skipped:** followed by the actual course/section and reason for each skipped meeting. A schedule with no skips says **Skipped: None**. Long lists should scroll within the dialog. |
+| Confirmation spacing and safety | A blank line separates the holiday sentence from the preceding summary/warnings. Cancel still makes no calendar changes. Old events without schedule IDs remain preserved even though their warning is hidden. |
 
-Week 1 is the first Monday-based week of each connected meeting-date period; separate periods restart the cycle. Compare anchored alternating sections with their actual Workday dates. No week is guessed for a section without a reliable anchor.
-
-Holiday wording remains conditional on verified exception dates supplied in the meeting data. This UI change does not add a complete UBC holiday/reading-break calendar or infer dates missing from Workday.
+Term labels prefer explicit term metadata; otherwise they summarize the meeting-date seasons for display only. Week selection does not change the full saved/exported schedule. Holiday exclusions still require verified exception dates supplied in Workday data.

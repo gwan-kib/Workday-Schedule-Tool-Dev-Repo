@@ -4,6 +4,8 @@
 
 .schedule-controls {
   display: flex;
+  flex-direction: column;
+  gap: 4px;
   justify-content: center;
   align-items: center;
   padding: 8px 12px;
@@ -11,6 +13,9 @@
 
 .schedule-term-pill {
   display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
   align-items: center;
   justify-content: center;
 
@@ -24,7 +29,9 @@
   font-weight: 700;
   line-height: 1;
 
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -541,4 +548,19 @@
   font-weight: 700;
   background: var(--hex-brand-accent-1);
   outline: 1px solid currentColor;
+}
+
+.schedule-heading-name {
+  font-weight: 700;
+  line-height: 1.2;
+}
+.schedule-heading-term {
+  font-size: 0.85em;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.schedule-modal-dialog {
+  max-height: min(80vh, 640px);
+  overflow-y: auto;
 }

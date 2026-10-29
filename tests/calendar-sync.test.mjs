@@ -170,6 +170,9 @@ test("incomplete meeting data defers destructive removals and previews skipped c
   await sync((await preview([course(), course({ code: "TEST 202" })], plan("A"))).previewId);
   const p = await preview([course(), course({ code: "TEST 202", meetingLines: ["TBA"] })], plan("A"));
   assert.equal(p.skipped, 1);
+  assert.equal(p.skippedItems.length, 1);
+  assert.match(p.skippedItems[0], /TEST 202 001/);
+  assert.match(p.skippedItems[0], /missing or unsupported/);
   assert.equal(p.removals, 0);
   assert.equal(p.deferredRemovals, 1);
   await sync(p.previewId);

@@ -66,9 +66,14 @@ test("untrusted instructor/timetable labels stay literal and rendering does not 
   dom.window.close();
 });
 test("week toggle keeps weekly classes and switches opposite-week sections", () => {
-  const dom = new JSDOM('<div id="grid"></div>');
+  const dom = new JSDOM('<div class="schedule-controls"><div id="pill"></div></div><div id="grid"></div>');
   globals(dom);
-  const ui = { scheduleGrid: document.querySelector("#grid") };
+  const ui = {
+    scheduleGrid: document.querySelector("#grid"),
+    scheduleTermPill: document.querySelector("#pill"),
+    scheduleControls: document.querySelector(".schedule-controls"),
+    scheduleName: "Fall Plan",
+  };
   const range = "2026-09-07 - 2026-12-15";
   const courses = [
     course({ code: "WEEKLY 101", meetingLines: [line("Mon", undefined, range)] }),
@@ -89,6 +94,10 @@ test("week toggle keeps weekly classes and switches opposite-week sections", () 
   const before = JSON.stringify(courses);
   renderSchedule(ui, courses);
   assert.equal(document.querySelector("select"), null);
+  assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-toggle").length, 1);
+  assert.equal(ui.scheduleGrid.querySelector(".schedule-week-toggle"), null);
+  assert.equal(ui.scheduleTermPill.firstElementChild.textContent, "Fall Plan");
+  assert.equal(ui.scheduleTermPill.lastElementChild.textContent, "Winter Term 1");
   assert.equal(document.querySelector(".schedule-unknown h3").textContent, "Meeting Times Unknown");
   const titles = () => [...document.querySelectorAll(".schedule-entry-title")].map((n) => n.textContent).join(" ");
   assert.match(titles(), /WEEKLY 101/);
@@ -100,6 +109,8 @@ test("week toggle keeps weekly classes and switches opposite-week sections", () 
   assert.match(titles(), /LABTWO 202/);
   assert.ok(!titles().includes("LABONE 201"));
   assert.equal(ui.selectedScheduleWeek, 2);
+  assert.equal(ui.scheduleControls.querySelectorAll(".schedule-week-toggle").length, 1);
+  assert.equal(ui.scheduleTermPill.lastElementChild.textContent, "Winter Term 1");
   document.querySelector(".schedule-time-toggle").click();
   assert.equal(document.querySelector('[data-week="2"]').getAttribute("aria-pressed"), "true");
   assert.equal(JSON.stringify(courses), before);
@@ -113,15 +124,16 @@ test("grades show one number and a separate focusable five-year hover control", 
   const text = gradeResultText({ latest: { average: 80 }, fiveYear: { average: 75.5 } });
   button.textContent = text.summary;
   renderGradeAverageHint(button, text.tooltip);
-  assert.equal(button.textContent, "80.0%");
+  assert.equal(button.textContent, "Average: 80.0%");
   const hint = button.nextElementSibling;
   assert.equal(hint.classList.contains("grade-average-hint"), true);
   assert.equal(hint.dataset.tooltip, "5-year average: 75.5%");
   assert.equal(hint.tabIndex, 0);
+  assert.equal(hint.querySelector(".material-symbols-rounded").textContent, "info");
   renderGradeAverageHint(button, "5-year average: N/A");
   assert.equal(document.querySelectorAll(".grade-average-hint").length, 1);
   assert.equal(document.querySelector(".grade-result-details"), null);
-  assert.equal(gradeResultText({ latest: null, fiveYear: { average: null } }).summary, "N/A");
+  assert.equal(gradeResultText({ latest: null, fiveYear: { average: null } }).summary, "Average: N/A");
   dom.window.close();
 });
 
@@ -172,6 +184,8 @@ test("packaged content saves all five courses after search and reports failed wr
               removals: 0,
               unchanged: 5,
               skipped: 0,
+              skippedItems: [],
+              legacy: 13,
               windows: ["2026-09-01 - 2026-12-15"],
             },
           });
@@ -252,6 +266,14 @@ test("packaged content saves all five courses after search and reports failed wr
   await waitFor(() => s.querySelector("#schedule-modal-title").textContent === "Confirm Google Calendar sync");
   assert.equal(calendarMessages.find((m) => m.type === "PREVIEW_GCAL").payload.courses.length, 5);
   assert.ok(!s.querySelector("#schedule-modal-message").textContent.includes("Dates:"));
+  assert.match(s.querySelector("#schedule-modal-message").textContent, /Schedule Name: Complete plan/);
+  assert.match(
+    s.querySelector("#schedule-modal-message").textContent,
+    /Adding: 0 · Updating: 0 · Removing: 0 · Unchanged: 5/,
+  );
+  assert.match(s.querySelector("#schedule-modal-message").textContent, /Skipped: None/);
+  assert.ok(!s.querySelector("#schedule-modal-message").textContent.includes("older unscoped"));
+  assert.match(s.querySelector("#schedule-modal-message").textContent, /\n\nHolidays and reading breaks/);
   assert.ok(
     s
       .querySelector("#schedule-modal-message")
@@ -312,7 +334,7 @@ test("grade buttons recover from a failed session request when clicked to retry"
   button.click();
   await waitFor(() => button.textContent.includes("80.0%"));
   assert.ok(!button.textContent.includes("network error"));
-  assert.equal(button.textContent, "80.0%");
+  assert.equal(button.textContent, "Average: 80.0%");
   assert.equal(ui.tableBody.querySelector(".grade-result-details"), null);
   assert.match(button.nextElementSibling.dataset.tooltip, /5-year average: 80.0%/);
   assert.equal(urls.filter((url) => url.includes("yearsessions")).length, 2);

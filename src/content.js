@@ -1,3 +1,4 @@
+import { syncPreviewText } from "./exportLogic/googleCalendar/syncPreviewText.js";
 import { hydrateCourseLookups } from "./mainPanel/courses/courseLookupController.js";
 import { courseIdentity, stableId } from "./core/meetings.js";
 import { createScheduleStore } from "./core/scheduleStore.js";
@@ -87,6 +88,7 @@ debugLog({ local: { content: false } });
     const { openScheduleModal } = createScheduleModalController(ui);
     // Rebuild the visual views from shared STATE whenever schedule data or view settings change.
     const updateScheduleView = () => {
+      ui.scheduleName = STATE.currentScheduleName || STATE.syncPlanName || "Working schedule";
       renderSchedule(ui, STATE.courses, STATE.view.semester, STATE.view.timeFormat);
       ui.onTimeFormatChange = (next) => {
         STATE.view.timeFormat = next;
@@ -489,7 +491,7 @@ debugLog({ local: { content: false } });
             confirmLabel: "Confirm sync",
             showInput: false,
             showCancel: true,
-            message: `Target: primary Google Calendar\nPlan: ${preview.planName}\nAdd: ${preview.additions} · Update: ${preview.updates} · Remove: ${preview.removals} · Unchanged: ${preview.unchanged}\nSkipped meetings: ${preview.skipped}\n${preview.removals ? "WARNING: Confirming removes the listed managed events.\n" : ""}${preview.deferredRemovals ? `${preview.deferredRemovals} removal(s) deferred because meeting data is incomplete.\n` : ""}${preview.legacy ? `${preview.legacy} older unscoped import(s) will be preserved. Review/remove those manually in Google Calendar if needed.\n` : ""}${preview.otherPlans ? "Other preserved plans may overlap this plan.\n" : ""}Holidays and reading breaks supplied by Workday are automatically excluded.`,
+            message: syncPreviewText(preview),
           });
           if (!confirmed) return;
           if (
@@ -616,6 +618,7 @@ debugLog({ local: { content: false } });
       STATE.currentScheduleName = snapshot.name;
       STATE.syncPlanId = snapshot.id;
       STATE.syncPlanName = snapshot.name;
+      updateScheduleView();
       debug.log({ id: "saveSchedule.saved" }, "Saved schedule snapshot", {
         scheduleName: name,
         scheduleCount: STATE.savedSchedules.length,
@@ -660,6 +663,7 @@ debugLog({ local: { content: false } });
         );
         if (STATE.currentSavedScheduleId === scheduleId) STATE.currentScheduleName = nextName;
         if (STATE.syncPlanId === scheduleId) STATE.syncPlanName = nextName;
+        updateScheduleView();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         showFooterAlert(`Renamed schedule to "${nextName}".`, { tone: "success" });
         if (ui.savedDropdown) ui.savedDropdown.open = true;

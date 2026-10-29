@@ -24,6 +24,7 @@ const ui = {
   meta: document.querySelector("#popup-meta"),
   scheduleGrid: document.querySelector("#popup-schedule-grid"),
   scheduleTermPill: document.querySelector("#popup-term-pill"),
+  scheduleControls: document.querySelector(".schedule-controls"),
   footerAlert: document.querySelector("#popup-footer-alert"),
 };
 
@@ -62,6 +63,7 @@ function queueVisibleScheduleRender(schedule) {
   scheduledRenderFrame = requestAnimationFrame(() => {
     scheduledRenderFrame = requestAnimationFrame(() => {
       scheduledRenderFrame = 0;
+      ui.scheduleName = schedule?.name || "Working schedule";
       renderSchedule(ui, schedule?.courses, null, popupState.timeFormat);
       wireTimeFormatToggle(schedule);
     });

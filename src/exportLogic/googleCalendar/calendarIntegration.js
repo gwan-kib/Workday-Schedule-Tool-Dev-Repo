@@ -1,4 +1,4 @@
-import { normalizeSchedule, stableId } from "../../core/meetings.js";
+import { normalizeSchedule, stableId, courseIdentity } from "../../core/meetings.js";
 import { fetchReliable, createLimiter } from "../../utilities/network.js";
 import { storageGet, storageSet } from "../../utilities/storage.js";
 import { computeSyncPlan, tagPlanEvent, remoteSnapshot, eventFingerprint } from "./syncPlan.js";
@@ -196,6 +196,16 @@ export async function previewCoursesToCalendar(courses, options = {}) {
     removals: diff.removals.length,
     unchanged: diff.unchanged.length,
     skipped: preview.skipped,
+    skippedItems: normalized.diagnostics.map((diagnostic) => {
+      const course = courses.find((item) => courseIdentity(item) === diagnostic.courseId);
+      const name =
+        [course?.code, course?.section_number].filter(Boolean).join(" ") || course?.title || "Unknown course";
+      const meeting =
+        diagnostic.lineIndex != null && course?.meetingLines?.length > 1
+          ? ` (meeting ${diagnostic.lineIndex + 1})`
+          : "";
+      return `${name}${meeting}: ${diagnostic.message}`;
+    }),
     deferredRemovals: diff.deferredRemovals,
     legacy: diff.legacy,
     windows: [...new Set(normalized.meetings.map((m) => `${m.startDate} – ${m.endDate}`))],

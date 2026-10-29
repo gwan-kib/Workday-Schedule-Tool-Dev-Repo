@@ -1,3 +1,4 @@
+import { scheduleTermLabel } from "./scheduleHeading.js";
 import { scheduleLayout } from "../../core/scheduleLayout.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { createFooterNoteController } from "../shell/footerNoteController.js";
@@ -247,7 +248,9 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
     });
     weekToggle.appendChild(button);
   }
-  host.appendChild(weekToggle);
+  const controls = ui.scheduleControls || ui.scheduleTermPill?.closest(".schedule-controls");
+  controls?.querySelector(".schedule-week-toggle")?.remove();
+  (controls || host).appendChild(weekToggle);
   const tableWrap = buildScheduleTable(timeFormat, layout);
   host.appendChild(tableWrap);
   const draw = () => renderOverlayBlocks(tableWrap, layout.eventsByDay, conflictBlocks, timeFormat);
@@ -279,7 +282,15 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
     );
   else footer?.removePersistent("meeting-diagnostics");
   updateFooterConflictMessage(ui, conflictBlocks);
-  if (ui.scheduleTermPill) ui.scheduleTermPill.textContent = `Week ${layout.selectedWeek}`;
+  if (ui.scheduleTermPill) {
+    const name = document.createElement("span");
+    name.className = "schedule-heading-name";
+    name.textContent = ui.scheduleName || "Working schedule";
+    const term = document.createElement("span");
+    term.className = "schedule-heading-term";
+    term.textContent = scheduleTermLabel(courses);
+    ui.scheduleTermPill.replaceChildren(name, term);
+  }
   ui.scheduleTimeFormat = timeFormat;
   tableWrap.querySelector(".schedule-time-toggle")?.addEventListener("click", () => {
     const next = timeFormat === "am/pm" ? "24h" : "am/pm";

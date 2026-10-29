@@ -436,7 +436,7 @@
 }
 
 .course-card__avg-button {
-  width: 100px;
+  width: 132px;
   height: 40px;
   padding: 0 10px;
 }
@@ -449,9 +449,27 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 20px;
-  width: 20px;
-  height: 24px;
-  cursor: help;
-  font-size: 17px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 2px solid var(--course-card-border, var(--hex-brand-main-2));
+  border-radius: 8px;
+  color: var(--hex-neutral-3);
+  background: var(--course-card-chip-bg, var(--hex-brand-accent-4));
+  cursor: default;
+}
+
+.grade-average-hint .material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  font-style: normal;
+  letter-spacing: normal;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
 }

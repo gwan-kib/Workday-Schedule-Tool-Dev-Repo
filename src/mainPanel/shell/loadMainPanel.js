@@ -86,6 +86,7 @@ export async function loadMainPanel(shadowRoot) {
 
     scheduleGrid: shadowRoot.querySelector("#schedule-grid"),
     scheduleTermPill: shadowRoot.querySelector("#schedule-term-pill"),
+    scheduleControls: shadowRoot.querySelector(".schedule-controls"),
 
     savedDropdown: shadowRoot.querySelector("#schedule-saved-dropdown"),
     savedMenu: shadowRoot.querySelector("#schedule-saved-menu"),
