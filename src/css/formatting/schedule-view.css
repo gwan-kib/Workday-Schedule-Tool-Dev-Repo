@@ -626,13 +626,13 @@
   overflow-y: auto;
 }
 .planner-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:10px 0; }
-.planner-toolbar button, .planner-dialog button, .planner-swap-button, .planner-conflicts button {
+.planner-toolbar button, .planner-dialog button {
   padding:7px 10px; border:1px solid #627086; border-radius:8px; background:var(--hex-neutral-1,#fff); color:var(--hex-brand-main-1,#172033); cursor:pointer; font:inherit; font-size:13px;
 }
 .planner-toolbar select, .planner-dialog input, .planner-dialog select { padding:7px; max-width:100%; border:1px solid #627086; border-radius:6px; font:inherit; color:#172033; background:#fff; }
 .planner-toolbar button:disabled, .planner-dialog button:disabled { opacity:.5; cursor:default; }
-.planner-overview, .planner-conflicts { margin:10px 0; padding:10px; border:1px solid #8793a5; border-radius:10px; font-size:13px; }
-.planner-overview summary, .planner-conflicts summary { cursor:pointer; font-weight:600; }
+.planner-overview { margin:10px 0; padding:10px; border:1px solid #8793a5; border-radius:10px; font-size:13px; }
+.planner-overview summary { cursor:pointer; font-weight:600; }
 .planner-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
 .planner-metrics dt { font-size:12px; font-weight:600; }
 .planner-metrics dd { margin:4px 0 0; }
@@ -656,7 +656,6 @@
 .schedule-entry-float.is-changed { box-shadow:inset 0 0 0 2px #184c90; }
 .schedule-entry-float:focus { outline:3px solid #172033; outline-offset:1px; z-index:10; }
 .schedule-entry-title { overflow-wrap:anywhere; }
-.planner-conflicts li { margin:10px 0; }
 .widget-panel[data-panel="schedule-panel"] { height:100%; min-height:0; }
 .widget-panel[data-panel="schedule-panel"] > .schedule-controls,
 .widget-panel[data-panel="schedule-panel"] > .planner-toolbar { flex-shrink:0; }

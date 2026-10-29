@@ -30,13 +30,16 @@
         type="button"
         aria-haspopup="menu"
         aria-expanded="false"
-        data-tooltip="Export"
+        data-tooltip="Import / Export"
+        aria-label="Import / Export"
       >
         <span class="material-symbols-rounded export-icon" aria-hidden="true"> ios_share </span>
-        <span class="text">Export</span>
+        <span class="text">Import / Export</span>
         <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
       </button>
       <div class="export-menu" id="widget-export-menu" role="menu">
+        <button class="export-option" type="button" data-planner-action="backup">Back up schedules (.json)</button>
+        <button class="export-option" type="button" data-planner-action="restore">Restore schedules (.json)</button>
         <button class="export-option" type="button" data-export="ics">Download .ics file</button>
         <button class="export-option" type="button" data-export="gcal-sync">
           <span class="material-symbols-rounded" aria-hidden="true">sync</span>
@@ -44,8 +47,8 @@
         </button>
       </div>
     </div>
-    <button class="button help" type="button" data-tooltip="help-panel">
-      <span class="material-symbols-rounded"> help </span><span class="text">Help</span>
+    <button class="button help symbolOnly" type="button" data-tooltip="help-panel" aria-label="Help" title="Help">
+      <span class="material-symbols-rounded" aria-hidden="true"> help </span>
     </button>
     <button class="button settings symbolOnly" type="button" data-tooltip="settings-panel">
       <span class="material-symbols-rounded">settings</span>

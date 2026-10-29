@@ -437,12 +437,6 @@ export function renderCourseObjects(
       });
     }
 
-    const swapButton = document.createElement("button");
-    swapButton.type = "button";
-    swapButton.className = "planner-swap-button";
-    swapButton.textContent = "Section alternatives";
-    swapButton.addEventListener("click", () => ui.onSwapCourse?.(course));
-    if (ui.onSwapCourse) card.appendChild(swapButton);
     if (!courseWorkdayLink) {
       const note = document.createElement("small");
       note.textContent = "Workday section link unavailable or untrusted. Open Workday and copy the current Section link.";

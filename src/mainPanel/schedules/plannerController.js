@@ -1,16 +1,7 @@
 import { renderSchedule } from "./scheduleView.js";
 import { node } from "./plannerOverview.js";
-import {
-  compareSchedules,
-  sectionLabel,
-  previewSwap,
-} from "../../core/planner.js";
+import { compareSchedules, sectionLabel } from "../../core/planner.js";
 import { courseIdentity } from "../../core/meetings.js";
-import { collectSectionEntries } from "../../extraction/workdaySelectors.js";
-import {
-  fetchCourseFromWorkdayId,
-  fetchCourseFromWorkdayLink,
-} from "../../extraction/singleCourseImport.js";
 import { storageGet, storageSet } from "../../utilities/storage.js";
 import {
   BACKUP_SETTINGS,
@@ -22,6 +13,7 @@ import {
   downloadBlob,
   exportTimetable,
   timetableFilename,
+  exportAppearance,
 } from "../../exportLogic/exportTimetable.js";
 
 const button = (label, handler) => {
@@ -122,10 +114,7 @@ export function plannerDialog(ui, title) {
   return { dialog, content, status, run, close, preview, cleanup };
 }
 
-export function mountPlanner(
-  ui,
-  { getState, replaceCourses, saveSchedules, onRestored, onRevealCourse },
-) {
+export function mountPlanner(ui, { getState, saveSchedules, onRestored }) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
   const error = (e) =>
@@ -140,40 +129,18 @@ export function mountPlanner(
       safe(() => openComparison()),
     ),
     button(
-      "Backup / Restore",
-      safe(() => openBackup()),
-    ),
-    button(
       "Download PNG / PDF",
       safe(() => openExport()),
     ),
   );
-  const settingsButton = button(
-    "Back up or restore schedules",
-    safe(() => openBackup()),
-  );
-  ui.root
-    .querySelector('[data-panel="settings-panel"] .settings-panel')
-    ?.append(settingsButton);
-  ui.onRevealCourse = onRevealCourse;
-  ui.onSwapCourse = (course) => void openAlternatives(course).catch(error);
-  let undo = null;
-  const undoButton = button(
-    "Undo section swap",
-    safe(() => {
-      const state = getState();
-      if (!undo) return;
-      if (JSON.stringify(state.courses) !== undo.after)
-        throw new Error(
-          "The schedule changed after this swap. Undo is unavailable to protect those edits.",
-        );
-      replaceCourses(undo.before);
-      undo = null;
-      undoButton.disabled = true;
-    }),
-  );
-  undoButton.disabled = true;
-  toolbar.append(undoButton);
+  ui.exportMenu?.addEventListener("click", (event) => {
+    const action = event.target.closest("[data-planner-action]")?.dataset
+      .plannerAction;
+    if (!["backup", "restore"].includes(action)) return;
+    ui.exportDropdown?.classList.remove("is-open");
+    ui.exportButton?.setAttribute("aria-expanded", "false");
+    safe(() => openBackup(action))();
+  });
 
   function openComparison() {
     const plans = structuredClone(getState().savedSchedules);
@@ -273,113 +240,6 @@ export function mountPlanner(
     draw();
   }
 
-  async function openAlternatives(original) {
-    const before = structuredClone(getState().courses),
-      beforeSignature = JSON.stringify(before);
-    const d = plannerDialog(
-        ui,
-        `Section alternatives · ${sectionLabel(original)}`,
-      ),
-      source = node("div"),
-      previewHost = node("div");
-    d.content.append(
-      node(
-        "p",
-        "Planning only. Preview a replacement, then explicitly apply it. Workday enrollment is never changed.",
-      ),
-      source,
-      previewHost,
-    );
-    const input = node("input");
-    input.type = "url";
-    input.placeholder = "Paste UBC Workday Section link";
-    input.setAttribute("aria-label", "Alternative section link");
-    const paste = button(
-      "Preview pasted section",
-      d.run(async () => show(await fetchCourseFromWorkdayLink(input.value))),
-    );
-    const choices = node("div");
-    source.append(choices, input, paste);
-    let previewUi;
-    const show = (course) => {
-      previewUi?.scheduleResizeObserver?.disconnect();
-      previewHost.replaceChildren();
-      const preview = previewSwap(before, original, course);
-      previewHost.append(node("h3", `Replace with ${sectionLabel(course)}`));
-      preview.warnings.forEach((w) =>
-        previewHost.append(node("p", "Warning: " + w)),
-      );
-      previewHost.append(
-        node(
-          "p",
-          `${preview.conflicts.length} confirmed conflicting pair(s); ${preview.diagnostics.length} uncertain meeting pattern(s).`,
-        ),
-      );
-      const apply = button(
-        "Apply section swap",
-        d.run(async () => {
-          if (JSON.stringify(getState().courses) !== beforeSignature)
-            throw new Error(
-              "Your working schedule changed. Close this preview and try again.",
-            );
-          replaceCourses(preview.courses);
-          undo = { before, after: JSON.stringify(getState().courses) };
-          undoButton.disabled = false;
-          d.close();
-        }),
-      );
-      previewHost.append(apply);
-      previewUi = d.preview(
-        previewHost,
-        preview.courses,
-        "Section swap preview",
-      );
-    };
-    d.cleanup.push(() => previewUi?.scheduleResizeObserver?.disconnect());
-    const discover = async () => {
-      choices.replaceChildren();
-      d.status.textContent =
-        "Looking for alternatives in authorized Workday sections on this page…";
-      const norm = (s) => String(s).replace(/\s+/g, "").toUpperCase();
-      const entries = collectSectionEntries(document).filter(
-        (e) =>
-          norm(e.label).includes(norm(original.code)) &&
-          e.courseId !== String(original.workdayCourseId),
-      );
-      if (!entries.length) {
-        d.status.textContent =
-          "No alternative section data is available on this page. Open the relevant Find Course Sections results in Workday and retry, or paste a Section link below.";
-        return;
-      }
-      let found = 0,
-        failed = 0,
-        index = 0;
-      const candidates = entries.slice(0, 30);
-      const worker = async () => {
-        while (index < candidates.length && d.dialog.isConnected) {
-          const e = candidates[index++];
-          try {
-            const c = await fetchCourseFromWorkdayId(e.courseId);
-            if (norm(c.code) !== norm(original.code)) continue;
-            found++;
-            choices.append(
-              button(
-                `Preview ${sectionLabel(c)}`,
-                d.run(() => show(c)),
-              ),
-            );
-          } catch {
-            failed++;
-          }
-        }
-      };
-      await Promise.all([worker(), worker(), worker()]);
-      d.status.textContent = `${found} alternative section(s) found${failed ? `; ${failed} unavailable (sign in or use a pasted link)` : ""}${entries.length > 30 ? "; first 30 results checked" : ""}. Cross-listed alternatives can be previewed with a pasted link.`;
-    };
-    source.prepend(button("Find alternatives on this page", d.run(discover)));
-    await discover();
-  }
-
   function openExport() {
     const d = plannerDialog(ui, "Download timetable"),
       orientation = select("Orientation", [
@@ -389,7 +249,7 @@ export function mountPlanner(
     d.content.append(
       node(
         "p",
-        "Exports the full working schedule across all dates, including details and a conflict legend. Files are generated on this device.",
+        "PNG downloads the timetable only. PDF includes the timetable and one page of course details.",
       ),
       orientation.wrap,
     );
@@ -400,17 +260,13 @@ export function mountPlanner(
           d.run(async () => {
             const state = getState(),
               target = ui.root.host || ui.mainPanel,
-              style = target ? getComputedStyle(target) : null;
-            const palette = Array.from(
-              { length: 8 },
-              (_, i) =>
-                style?.getPropertyValue(`--course-color-${i + 1}-bg`).trim() ||
-                "",
-            );
+              appearance = exportAppearance(target);
             await exportTimetable(state.courses, format, {
               name: state.currentScheduleName || "Working Schedule",
               orientation: orientation.input.value,
-              palette,
+              ...appearance,
+              week: ui.selectedScheduleWeek || 1,
+              timeFormat: state.view?.timeFormat || "am/pm",
             });
             d.status.textContent = `${format.toUpperCase()} download ready.`;
           }),
@@ -418,42 +274,51 @@ export function mountPlanner(
       );
   }
 
-  function openBackup() {
-    const d = plannerDialog(ui, "Schedule backup and restore");
+  function openBackup(action) {
+    const d = plannerDialog(
+      ui,
+      action === "restore" ? "Restore schedules" : "Back up schedules",
+    );
     d.content.append(
       node(
         "p",
-        "Backups contain saved course plans, instructor/room details, preferred status, colors and non-sensitive preferences. Treat files as personal data. Credentials and Google Calendar account/sync data are excluded. This version has no personal-block or user-theme setting to back up.",
+        "Back up saved schedules and display preferences, or restore them from a JSON backup.",
       ),
     );
-    const selection = select("Export plans", [
-      ["all", "All saved schedules"],
-      ...getState().savedSchedules.map((s) => [s.id, s.name]),
-    ]);
-    d.content.append(
-      selection.wrap,
-      button(
-        "Download JSON backup",
-        d.run(async () => {
-          const state = getState(),
-            settings = await storageGet(BACKUP_SETTINGS),
-            plans =
-              selection.input.value === "all"
-                ? state.savedSchedules
-                : state.savedSchedules.filter(
-                    (s) => s.id === selection.input.value,
-                  );
-          downloadBlob(
-            new Blob([JSON.stringify(createBackup(plans, settings), null, 2)], {
-              type: "application/json",
-            }),
-            `${timetableFilename([], "Workday-backup")}.json`,
-          );
-          d.status.textContent =
-            "Backup downloaded. Only saved plans are included; save working changes first.";
-        }),
-      ),
-    );
+    if (action === "backup") {
+      const selection = select("Export plans", [
+        ["all", "All saved schedules"],
+        ...getState().savedSchedules.map((s) => [s.id, s.name]),
+      ]);
+      d.content.append(
+        selection.wrap,
+        button(
+          "Download JSON backup",
+          d.run(async () => {
+            const state = getState(),
+              settings = await storageGet(BACKUP_SETTINGS),
+              plans =
+                selection.input.value === "all"
+                  ? state.savedSchedules
+                  : state.savedSchedules.filter(
+                      (s) => s.id === selection.input.value,
+                    );
+            downloadBlob(
+              new Blob(
+                [JSON.stringify(createBackup(plans, settings), null, 2)],
+                {
+                  type: "application/json",
+                },
+              ),
+              `${timetableFilename([], "Workday-backup")}.json`,
+            );
+            d.status.textContent =
+              "Backup downloaded. Only saved plans are included; save working changes first.";
+          }),
+        ),
+      );
+      return;
+    }
     const file = node("input");
     file.type = "file";
     file.accept = ".json,application/json";
@@ -548,5 +413,5 @@ export function mountPlanner(
     });
     mode.input.onchange = d.run(show);
   }
-  return { undoButton };
+  return {};
 }

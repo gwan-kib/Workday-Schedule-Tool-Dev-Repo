@@ -54,6 +54,6 @@ test('main/popup renderer and visual export show one block per matching section/
   assert.equal(document.querySelectorAll('.schedule-entry-float').length,1);
   assert.equal(document.querySelector('.schedule-entry-float').classList.contains('has-conflict'),false);
   const svg=timetablePages([splitCourse()]).pages[0];
-  assert.equal((svg.match(/<clipPath /g)||[]).length,1);
+  assert.equal((svg.match(/class="schedule-entry"/g)||[]).length,1);
   dom.window.close();
 });

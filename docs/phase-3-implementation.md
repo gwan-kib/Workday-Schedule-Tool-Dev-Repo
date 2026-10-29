@@ -1,28 +1,27 @@
-# Phase 3 implementation
+# Phase 3 implementation — build 3.0.1
 
-Based on merged Phase 0–2 commit `7d8b073` and epic #74.
+The current UI follows the requested simplified planning workflow. Section-alternative discovery, swap previews/Apply/Undo and the separate conflicts/transitions disclosure have been removed.
 
-## Components
+## Overview
 
-- `core/planner.js`: pure, date-aware weekly statistics, exact conflict/transition descriptions, snapshot differences, swap previews and interval lanes.
-- `core/scheduleBackup.js`: allowlisted version-1 JSON format, bounded validation, secret exclusion and non-destructive merge planning. Restore writes saved plans, preferred ID, schema and validated preferences in one storage call after preview/confirmation.
-- `extraction/trustedWorkday.js`: shared HTTPS `wd10.myworkday.com` `/ubc/` section-link validation. No arbitrary host, tenant, port, credentials or registration endpoint is accepted. UBC's published Workday portal identifies this production host: https://hr.ubc.ca/sites/default/files/documents/EFAP_Outline_Resources_November_2024.pdf
-- `mainPanel/schedules/plannerController.js`: main-panel comparison, explicit preferred-plan action, alternative discovery/pasted links, swap preview/Apply/Undo, backups and visual exports. Comparison uses cloned snapshots; draft replacement goes through the existing store.
-- `mainPanel/schedules/plannerOverview.js`: shared transparent metrics and accessible conflict/transition disclosures used in the main panel, comparisons, previews and popup.
-- `exportLogic/exportTimetable.js`: offline SVG/canvas PNG and paginated image-PDF generation. Numbered grid references link visually to complete detail pages. Exported display fields exclude internal URLs and Workday IDs. Both orientations and weekends are supported.
+`core/planner.js` calculates two representative teaching weeks using the timetable's recurrence selection, after excluding holiday/exception interruptions from this overview calculation. Matching meeting patterns split around a reading break count once. Hours are rounded to the nearest whole number; busiest day uses the full weekday name, with the earliest weekday winning a tie. Each metric appears once when both weeks agree, otherwise with separate Week 1/Week 2 values.
 
-## Deliberate boundaries
+The overview contains only Scheduled hours/week and Busiest day. It has no date, decimal, average/range, conflict count, or explanation paragraph. This full-week overview policy does not change the actual-date meeting model used by conflict detection, calendar sync or ICS.
 
-Automatic alternatives come from matching section entries already exposed on the user's authorized Workday page. Discovery checks up to 30 candidates with three workers, using the existing section reader. It does not guess private Workday APIs, navigate registration flows or submit any Workday form. The pasted-link reader supports alternatives when page data is unavailable, including cross-listed sections.
+## Saved plans and backup
 
-Pairing constraints are not supplied by the existing course model. Every preview explains that linked lecture/lab/tutorial compatibility must be checked, retains other components, and permits explicit application. Unknown meeting times/recurrence and changed term coverage are separately warned about.
+`plannerController.js` retains read-only, main-panel saved-plan comparison and explicit Set as Preferred. Back up schedules and Restore schedules are distinct entries under Import / Export, with separate dialogs. Help is icon-only with an accessible label. Backup merge/replace validation, confirmation, secret exclusion and the existing saved-storage schema remain unchanged.
 
-Undo requires the working draft to still match the post-swap snapshot, preventing later edits from being overwritten. Backup Merge preserves existing preferences and preferred status, skips identical snapshots, and renames/re-identifies conflicting incoming plans. Replace requires explicit checked confirmation. Both modes preserve the working draft and account/sync data.
+## Timetable and visual downloads
 
-The backup schema deliberately has no pass-through fields. New preference or commitment models must receive explicit validators before a later format migration. Unsupported versions are rejected without writes. Existing saved storage remains schema version 1.
+The display combines matching records of one section/day/time across date ranges, while preserving source IDs and exact active dates for clash detection. Real overlaps still occupy separate lanes. Existing clash symbols/footer messages remain; the standalone conflicts/transitions panel is removed.
 
-PDFs use high-resolution image pages and contain no scripts, uploads or external rendering dependencies. Oversized PNGs exceeding browser canvas limits request a paginated PDF instead. Timetables use actual dates for clashes; visually adjacent lanes can represent separate terms or teaching weeks and are explained accordingly.
+`exportTimetable.js` uses the same 30-minute rows, weekday columns, lane layout, section labels, time format and color tokens as the extension. Export follows the selected teaching week. PNG contains only this full timetable; it does not include the overview, detail appendix, reference numbers or a branding footer.
+
+PDF contains exactly two pages in the chosen orientation: the timetable and course details. Details include section/type, title, instructor, building/floor/room, full weekday names and meeting times. Equivalent patterns split across teaching date ranges are consolidated. Oversized detail lists use a taller second page to preserve readable content while retaining two pages. Normal nine-course portrait and landscape examples fit A4.
+
+Files are generated locally as SVG/canvas PNG and high-resolution image-PDF, with no upload or external rendering service. Workday URLs and internal account/section IDs are excluded from the printed display fields.
 
 ## Validation
 
-See `phase-3-testing.md` for the test evidence and remaining real-account/Firefox/manual acceptance checks. No Workday registration or Google Calendar write was performed during validation. The epic's completion requirement includes merge and manual acceptance; implementation alone does not satisfy that final tracker state.
+See phase-3-testing.md for evidence and manual acceptance. The private saved-course fixture used locally for visual checks is not committed. No actual Workday registration or Google Calendar write was performed. The pull request remains a draft until manual acceptance and merge.

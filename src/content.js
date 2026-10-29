@@ -775,12 +775,6 @@ debugLog({ local: { content: false } });
     );
     mountPlanner(ui, {
       getState: () => STATE,
-      replaceCourses: (courses) => {
-        store.load(courses);
-        courseColorController.assignCourseColors(STATE.courses);
-        filterCourses(ui.searchInput.value);
-        renderAll();
-      },
       saveSchedules: async (next) => {
         await updateSavedSchedules(next);
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
@@ -796,14 +790,6 @@ debugLog({ local: { content: false } });
         STATE.view.timeFormat = settings.wdTimeFormat || STATE.view.timeFormat;
         renderSavedSchedules(ui, next, STATE.currentSavedScheduleId);
         renderAll();
-      },
-      onRevealCourse: (course) => {
-        ui.searchInput.value = "";
-        filterCourses("");
-        renderAll();
-        setActiveView("course-list-panel");
-        const card = [...ui.tableBody.querySelectorAll(".course-card")].find(c => c.dataset.courseId === courseIdentity(course));
-        if (card) { card.tabIndex = -1; card.focus(); card.scrollIntoView?.({ block: "nearest" }); }
       },
     });
     try {

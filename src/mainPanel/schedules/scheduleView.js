@@ -1,4 +1,4 @@
-import { renderPlannerOverview, renderConflictDetails } from "./plannerOverview.js";
+import { renderPlannerOverview } from "./plannerOverview.js";
 import { eventLanes } from "../../core/planner.js";
 import { courseIdentity } from "../../core/meetings.js";
 import { renderScheduleHeading } from "./scheduleHeading.js";
@@ -249,7 +249,6 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
   weekControls.append(weekToggle, weekNote);
   (controls || host).appendChild(weekControls);
   renderPlannerOverview(host, courses);
-  renderConflictDetails(host, courses, ui.onRevealCourse);
   const tableWrap = buildScheduleTable(timeFormat, layout);
   const maxConcurrent = Math.max(1, ...[...layout.eventsByDay.values()].flatMap(events => [...eventLanes(events).values()].map(l => l.count)));
   const tableWidth = `${Math.max(660, 64 + layout.days.length * 100 * maxConcurrent)}px`;

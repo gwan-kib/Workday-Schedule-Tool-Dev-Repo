@@ -1,4 +1,4 @@
-import { exportTimetable } from "./exportLogic/exportTimetable.js";
+import { exportTimetable, exportAppearance } from "./exportLogic/exportTimetable.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
 import {
   applyCourseColorAssignments,
@@ -227,7 +227,7 @@ async function boot() {
       button.disabled = true;
       try {
         const schedule = popupState.schedules.find(s => s.id === popupState.activeScheduleId);
-        await exportTimetable(schedule?.courses || [], format, { name: schedule?.name, orientation: orientation.value });
+        await exportTimetable(schedule?.courses || [], format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
       } catch (error) { ui.footerNotes.showTemporary(error.message, { tone: "warn" }); }
       finally { button.disabled = false; }
     });

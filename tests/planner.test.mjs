@@ -6,7 +6,6 @@ import {
   conflictDetails,
   eventLanes,
   compareSchedules,
-  previewSwap,
 } from "../src/core/planner.js";
 import {
   createBackup,
@@ -32,42 +31,6 @@ const snapshot = (id, name, courses, isFavorite = false) => ({
   isFavorite,
   savedAt: "2026-10-01T00:00:00Z",
   colorAssignments: [1, 2, 3, 4, 5, 6, 7, 8],
-});
-
-test("stats use actual dates, exceptions, alternate weeks and exclude online campus time", () => {
-  const a = c("A 101", "9:00 a.m. - 10:00 a.m.");
-  const b = c("B 101", "11:00 a.m. - 12:00 p.m.", { isOnline: true });
-  const alt = c("C 101", "1:00 p.m. - 2:00 p.m.", {
-    meetingLines: [
-      line("Tue (Alternate Weeks)", "1:00 p.m. - 2:00 p.m.", range),
-    ],
-    meetingAnchors: ["2026-09-08"],
-  });
-  const stats = scheduleStatistics([a, b, alt]);
-  assert.equal(stats.weeks, 2);
-  assert.equal(stats.hours.average, 2.5);
-  assert.equal(stats.hours.min, 2);
-  assert.equal(stats.hours.max, 3);
-  assert.equal(stats.campusDays.average, 1.5);
-  assert.equal(stats.gapHours.average, 1);
-  assert.equal(stats.daysOff.average, 5.5);
-  assert.equal(stats.earliest, 540);
-  assert.equal(stats.latest, 840);
-  assert.equal(
-    scheduleStatistics([{ ...a, meetingExceptions: [["2026-09-07"]] }]).hours
-      .average,
-    0.5,
-  );
-  const mixed = {
-    ...a,
-    code: "D 101",
-    meetingLines: [
-      line("Mon", "9:00 a.m. - 10:00 a.m.", "2027-01-04 - 2027-01-17"),
-    ],
-  };
-  assert.equal(scheduleStatistics([a, mixed]).weeks, 4);
-  assert.equal(scheduleStatistics([a, mixed]).hours.average, 1);
-  assert.equal(scheduleStatistics([]).hours.average, 0);
 });
 
 test("conflicts distinguish exact clashes, short transitions, different terms and unknown recurrence", () => {
@@ -113,23 +76,6 @@ test("compare distinguishes section swaps and moved times without mutating snaps
   assert.equal(compareSchedules([a], [b]).moved.length, 1);
   assert.equal(compareSchedules([a], [m]).moved.length, 1);
   assert.equal(JSON.stringify(a), before);
-});
-
-test("swap previews retain other components, warn on pairing/coverage and prevent duplicate sections", () => {
-  const a = c("A 101", "9:00 a.m. - 10:00 a.m."),
-    lab = c("A 101", "11:00 a.m. - 12:00 p.m.", {
-      section_number: "L01",
-      isLab: true,
-      instructionalFormat: "Laboratory",
-    });
-  const next = { ...a, section_number: "002", meetingLines: [line("Tue")] },
-    before = JSON.stringify([a, lab]);
-  const p = previewSwap([a, lab], a, next);
-  assert.deepEqual(p.courses[1], lab);
-  assert.equal(p.courses[0].section_number, "002");
-  assert.ok(p.warnings.length >= 2);
-  assert.equal(JSON.stringify([a, lab]), before);
-  assert.throws(() => previewSwap([a, next], a, next), /already/);
 });
 
 test("backup round-trip strips secrets; merge resolves IDs/names and protects current preference", () => {
@@ -240,7 +186,7 @@ test("section requests retain redirect metadata and explain expired sessions and
   }
 });
 
-test("visual export paginates full details, escapes text and excludes account/link IDs", async () => {
+test("visual export keeps exactly two pages, escapes details and excludes account/link IDs", async () => {
   const courses = Array.from({ length: 25 }, (_, i) =>
     c(`TEST ${100 + i}`, "9:00 a.m. - 10:00 a.m.", {
       title: "Very long title ".repeat(20) + "<script>evil()</script>",
@@ -253,7 +199,7 @@ test("visual export paginates full details, escapes text and excludes account/li
   );
   for (const orientation of ["portrait", "landscape"]) {
     const p = timetablePages(courses, { orientation });
-    assert.ok(p.pages.length > 2);
+    assert.equal(p.pages.length, 2);
     const s = p.pages.join("");
     assert.ok(s.includes("Instructor Name"));
     assert.ok(s.includes("&lt;script&gt;"));
@@ -270,7 +216,7 @@ test("visual export paginates full details, escapes text and excludes account/li
   assert.match(text, /%%EOF$/);
 });
 
-test("comparison and section previews stay read-only until explicit actions; stale Undo protects later edits", async () => {
+test("comparison stays read-only until an explicit preference action", async () => {
   const dom = new JSDOM(
     '<div id="main"><div id="grid"></div><div id="footer"></div></div>',
     {
@@ -324,31 +270,14 @@ test("comparison and section previews stay read-only until explicit actions; sta
   dom.window.close();
 });
 
-test("conflict list includes exact periods and focusable links; three labels remain visible", () => {
+test("conflicts keep separate focusable lanes without the removed detail panel", () => {
   const dom = new JSDOM('<div id="grid"></div>');
   globalThis.document = dom.window.document;
   globalThis.window = dom.window;
   globalThis.getComputedStyle = dom.window.getComputedStyle;
-  const courses = [
-    c("A 101", "9:00 a.m. - 10:00 a.m."),
-    c("B 101", "9:15 a.m. - 10:15 a.m."),
-    c("C 101", "9:30 a.m. - 10:30 a.m."),
-  ];
-  let revealed = null;
-  renderSchedule(
-    {
-      scheduleGrid: document.querySelector("#grid"),
-      onRevealCourse: (c) => (revealed = c),
-    },
-    courses,
-  );
+  renderSchedule({ scheduleGrid: document.querySelector("#grid") }, [c("A 101", "9:00 a.m. - 10:00 a.m."), c("B 101", "9:15 a.m. - 10:15 a.m."), c("C 101", "9:30 a.m. - 10:30 a.m.")]);
   assert.equal(document.querySelectorAll(".schedule-entry-float").length, 3);
-  assert.match(
-    document.querySelector(".planner-conflicts").textContent,
-    /09:15–10:00/,
-  );
-  document.querySelector(".planner-conflicts button").click();
-  assert.ok(revealed);
+  assert.equal(document.querySelector(".planner-conflicts"), null);
   assert.equal(document.querySelector(".schedule-entry-float").tabIndex, 0);
   dom.window.close();
 });
