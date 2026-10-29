@@ -8,7 +8,7 @@ Reload the updated extension and refresh Workday. These checks cover visible cha
 | Week controls | Week 1 / Week 2 sit inside the schedule controls, beneath the heading, outside the scrolling timetable. Repeated toggles must not duplicate controls. Weekly classes remain in both; anchored alternating sections switch weeks. |
 | Grade buttons | Supported course-list and Workday registration buttons read **Average: 80.0%** (with the actual latest value), or **Average: N/A** when unavailable. The five-year number stays outside the grade button. Clicking a resolved grade still opens UBCGrades. |
 | Info control styling | The control to the right uses the Google Material Symbols **info** icon, theme colors and a two-pixel border. Its cursor stays the normal arrow when hovered. Hover/Tab-focus still shows the five-year average, or N/A, without a details paragraph. |
-| Sync confirmation labels | Expect **Schedule Name:** and **Adding: … · Updating: … · Removing: … · Unchanged: …**. There is no Dates row or older-unscoped-imports warning. |
+| Sync confirmation labels | Expect **Target Calendar: Primary**, **Schedule Name:**, and **Adding**, **Updating**, **Removing**, **Unchanged** each on its own line. There is no Dates row or older-unscoped-imports warning. |
 | Skipped list | A schedule with missing/invalid meeting data lists **Skipped:** followed by the actual course/section and reason for each skipped meeting. A schedule with no skips says **Skipped: None**. Long lists should scroll within the dialog. |
 | Confirmation spacing and safety | A blank line separates the holiday sentence from the preceding summary/warnings. Cancel still makes no calendar changes. Old events without schedule IDs remain preserved even though their warning is hidden. |
 

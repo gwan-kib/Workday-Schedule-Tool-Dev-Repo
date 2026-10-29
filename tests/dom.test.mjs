@@ -269,7 +269,7 @@ test("packaged content saves all five courses after search and reports failed wr
   assert.match(s.querySelector("#schedule-modal-message").textContent, /Schedule Name: Complete plan/);
   assert.match(
     s.querySelector("#schedule-modal-message").textContent,
-    /Adding: 0 · Updating: 0 · Removing: 0 · Unchanged: 5/,
+    /Adding: 0\nUpdating: 0\nRemoving: 0\nUnchanged: 5/,
   );
   assert.match(s.querySelector("#schedule-modal-message").textContent, /Skipped: None/);
   assert.ok(!s.querySelector("#schedule-modal-message").textContent.includes("older unscoped"));

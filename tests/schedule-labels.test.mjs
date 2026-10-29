@@ -38,8 +38,9 @@ test("confirmation uses requested labels, names skipped items, and spaces the ho
     legacy: 13,
   };
   const text = syncPreviewText(preview);
+  assert.match(text, /^Target Calendar: Primary\n/);
   assert.match(text, /Schedule Name: Fall Plan/);
-  assert.match(text, /Adding: 14 · Updating: 0 · Removing: 0 · Unchanged: 0/);
+  assert.match(text, /Adding: 14\nUpdating: 0\nRemoving: 0\nUnchanged: 0/);
   assert.match(text, /Skipped:\n• TEST 202 001: No meeting times supplied\./);
   assert.ok(!text.includes("older unscoped"));
   assert.ok(!text.includes("Skipped meetings:"));

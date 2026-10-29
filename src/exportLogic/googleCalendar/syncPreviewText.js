@@ -3,9 +3,12 @@ export function syncPreviewText(preview) {
     ? `Skipped:\n${preview.skippedItems.map((item) => `• ${item}`).join("\n")}`
     : "Skipped: None";
   const lines = [
-    "Target: primary Google Calendar",
+    "Target Calendar: Primary",
     `Schedule Name: ${preview.planName}`,
-    `Adding: ${preview.additions} · Updating: ${preview.updates} · Removing: ${preview.removals} · Unchanged: ${preview.unchanged}`,
+    `Adding: ${preview.additions}`,
+    `Updating: ${preview.updates}`,
+    `Removing: ${preview.removals}`,
+    `Unchanged: ${preview.unchanged}`,
     skipped,
   ];
   if (preview.removals) lines.push("WARNING: Confirming removes the listed managed events.");
