@@ -34,6 +34,7 @@ export async function loadMainPanel(shadowRoot) {
     "colors/floating-button-colors.css",
     "colors/hover-tooltip-colors.css",
     "colors/settings-colors.css",
+    "formatting/planner.css",
   ];
 
   const [html, ...cssParts] = await Promise.all([
@@ -78,6 +79,8 @@ export async function loadMainPanel(shadowRoot) {
     saveAsNewButton: shadowRoot.querySelector("#widget-save-as-new"),
     scheduleStatusChips: shadowRoot.querySelectorAll(".schedule-status-chip"),
     clearButton: shadowRoot.querySelector("#widget-clear"),
+    undoButton: shadowRoot.querySelector("#widget-undo"),
+    redoButton: shadowRoot.querySelector("#widget-redo"),
 
     exportDropdown: shadowRoot.querySelector("#widget-export"),
     exportButton: shadowRoot.querySelector("#widget-export-button"),

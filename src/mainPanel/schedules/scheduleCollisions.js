@@ -47,12 +47,15 @@ export function detectScheduleConflicts(eventsByDay) {
             endIdx: overlapEnd,
             baseCodes: new Set(),
             codes: new Set(),
+            eventIds: new Set(),
           };
           blockMap.set(key, block);
           conflictBlocks.push(block);
         }
 
         const codeA = a.code || a.title || "";
+        block.eventIds.add(a.id);
+        block.eventIds.add(b.id);
         const codeB = b.code || b.title || "";
         const labelA = formatConflictLabel(a);
         const labelB = formatConflictLabel(b);
@@ -73,6 +76,7 @@ export function detectScheduleConflicts(eventsByDay) {
 
   const codes = Array.from(conflictCodes).sort((a, b) => a.localeCompare(b));
   conflictBlocks.forEach((block) => {
+    block.eventIds = Array.from(block.eventIds);
     block.baseCodes = Array.from(block.baseCodes || []).sort((a, b) => a.localeCompare(b));
     block.codes = Array.from(block.codes || []).sort((a, b) => a.localeCompare(b));
   });

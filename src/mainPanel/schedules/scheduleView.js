@@ -1,3 +1,6 @@
+import { renderPlannerOverview } from "./plannerOverview.js";
+import { eventLanes } from "../../core/planner.js";
+import { courseIdentity } from "../../core/meetings.js";
 import { renderScheduleHeading } from "./scheduleHeading.js";
 import { scheduleLayout } from "../../core/scheduleLayout.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
@@ -72,7 +75,7 @@ function buildScheduleTable(timeFormat, layout) {
   return wrap;
 }
 // Renders overlay blocks for events. Input: wrapper element, events-by-day Map. Output: none.
-function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat = "24h") {
+function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat = "24h", changedIds = new Set()) {
   const DAYS = Array.from(eventsByDay.keys());
   const overlay = wrap.querySelector(".schedule-overlay");
   overlay.innerHTML = "";
@@ -94,8 +97,10 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
   const borderY = (borderTop + borderBottom) / 2.0;
   DAYS.forEach((day, dayIndex) => {
     const events = eventsByDay.get(day) || [];
+    const lanes = eventLanes(events);
     events.forEach((ev) => {
-      const left = timeColWidth + dayIndex * dayColWidth;
+      const { lane, count } = lanes.get(ev.id);
+      const left = timeColWidth + dayIndex * dayColWidth + lane * dayColWidth / count;
       const top = headerHeight + ev.rowStart * rowHeight;
       const height = ev.rowSpan * rowHeight;
       const block = document.createElement("div");
@@ -110,7 +115,7 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
       block.className = `schedule-entry-float${colorClass}${subClass}`;
       block.style.left = `${left + borderLeft}px`;
       block.style.top = `${top + borderTop}px`;
-      block.style.width = `${dayColWidth - borderX - 0.1}px`;
+      block.style.width = `${dayColWidth / count - borderX - 1}px`;
       block.style.height = `${height - borderY}px`;
       const overlapLayer = document.createElement("div");
       overlapLayer.className = "schedule-entry-overlap-layer";
@@ -120,11 +125,19 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
       const codeMatch = String(ev.code || "").match(/^([A-Z_]+)\s*(\d+)$/);
       const formattedCode = codeMatch ? `${codeMatch[1]} ${codeMatch[2]}` : ev.code || "";
       const title = formattedCode || ev.title;
-      const titleLabel = ev.label ? `${title} ${ev.label}` : title;
+      const titleLabel = [title, ev.course?.section_number, ev.label].filter(Boolean).join(" ");
+      const isChanged = changedIds.has(courseIdentity(ev.course));
+      block.classList.toggle('is-changed', isChanged);
+      const isConflict = conflictBlocks.some(c => c.eventIds?.includes(ev.id));
+      block.classList.toggle("has-conflict", isConflict);
+      block.tabIndex = 0;
+      const description = `${isChanged ? "Changed section: " : ""}${isConflict ? "Clash: " : ""}${titleLabel}; ${ev.title}; ${formatTimeRange(ev.startMinutes, ev.endMinutes, timeFormat)}; ${ev.location}; ${ev.dates[0]} to ${ev.dates.at(-1)}`;
+      block.setAttribute("aria-label", description);
+      block.title = description;
       const timeLabel = formatTimeRange(ev.startMinutes, ev.endMinutes, timeFormat);
       const titleNode = document.createElement("div");
       titleNode.className = "schedule-entry-title";
-      titleNode.textContent = titleLabel;
+      titleNode.textContent = (isChanged ? "Δ " : "") + (isConflict ? "! " : "") + titleLabel;
       const timeNode = document.createElement("div");
       timeNode.className = "schedule-entry-time";
       timeNode.textContent = timeLabel;
@@ -133,31 +146,8 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
       overlay.appendChild(block);
     });
   });
-  (conflictBlocks || []).forEach((conflict) => {
-    const dayIndex = DAYS.indexOf(conflict.day);
-    if (dayIndex === -1) return;
-    const left = timeColWidth + dayIndex * dayColWidth;
-    const top = headerHeight + conflict.rowStart * rowHeight;
-    const height = conflict.rowSpan * rowHeight;
-    if (height <= 0) return;
-    const block = document.createElement("div");
-    block.className = "schedule-conflict-float wd-hover-tooltip";
-    block.style.left = `${left + borderLeft}px`;
-    block.style.top = `${top + borderTop}px`;
-    block.style.width = `${dayColWidth - borderX}px`;
-    block.style.height = `${height - borderY}px`;
-    const symbol = document.createElement("div");
-    symbol.className = "schedule-conflict-symbol";
-    symbol.textContent = "\u2757";
-    block.appendChild(symbol);
-    if (conflict.codes?.length) {
-      const tooltipText = `Classes in conflict:\n[${conflict.codes.join(", ")}]`;
-      block.dataset.tooltip = tooltipText;
-      block.tabIndex = 0;
-    }
-    overlay.appendChild(block);
-  });
 }
+
 function buildConflictPartnerLookup(conflictBlocks = []) {
   const partnersByCode = new Map();
   (conflictBlocks || []).forEach((block) => {
@@ -245,6 +235,7 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
     button.dataset.week = String(week);
     button.setAttribute("aria-pressed", String(layout.selectedWeek === week));
     button.addEventListener("click", () => {
+      if (ui.onScheduleWeekChange) { ui.onScheduleWeekChange(week); return; }
       ui.selectedScheduleWeek = week;
       renderSchedule(ui, courses, null, ui.scheduleTimeFormat || timeFormat);
     });
@@ -257,9 +248,22 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
   weekNote.textContent = "(Incase course sections are biweekly)";
   weekControls.append(weekToggle, weekNote);
   (controls || host).appendChild(weekControls);
+  if (!ui.scheduleOverviewHost || ui.scheduleOverviewHost.parentNode !== host.parentNode) {
+    ui.scheduleOverviewHost = document.createElement("div");
+    ui.scheduleOverviewHost.className = "planner-overview-host";
+    host.before(ui.scheduleOverviewHost);
+  }
+  const wasOpen = ui.scheduleOverviewHost.querySelector("details")?.open || false;
+  ui.scheduleOverviewHost.replaceChildren();
+  renderPlannerOverview(ui.scheduleOverviewHost, courses);
+  ui.scheduleOverviewHost.querySelector("details").open = wasOpen;
   const tableWrap = buildScheduleTable(timeFormat, layout);
+  const maxConcurrent = Math.max(1, ...[...layout.eventsByDay.values()].flatMap(events => [...eventLanes(events).values()].map(l => l.count)));
+  const tableWidth = `${Math.max(660, 64 + layout.days.length * 100 * maxConcurrent)}px`;
+  tableWrap.querySelector('table').style.minWidth = tableWidth;
+  tableWrap.querySelector('table').style.width = tableWidth;
   host.appendChild(tableWrap);
-  const draw = () => renderOverlayBlocks(tableWrap, layout.eventsByDay, conflictBlocks, timeFormat);
+  const draw = () => renderOverlayBlocks(tableWrap, layout.eventsByDay, conflictBlocks, timeFormat, ui.highlightCourseIds);
   draw();
   ui.scheduleResizeObserver?.disconnect();
   if (typeof ResizeObserver !== "undefined") {
