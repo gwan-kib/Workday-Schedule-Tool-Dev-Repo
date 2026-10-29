@@ -1,8 +1,13 @@
-import { on, debounce } from "./utilities/dom.js";
+import { getScheduleSaveState } from "./core/scheduleSaveState.js";
+import { renderScheduleHeading } from "./mainPanel/schedules/scheduleHeading.js";
+import { syncPreviewText } from "./exportLogic/googleCalendar/syncPreviewText.js";
+import { hydrateCourseLookups } from "./mainPanel/courses/courseLookupController.js";
+import { courseIdentity, stableId } from "./core/meetings.js";
+import { createScheduleStore } from "./core/scheduleStore.js";
+import { on as attachEvent, debounce } from "./utilities/dom.js";
 import { STATE } from "./core/state.js";
 import { ensureMount } from "./utilities/shadowMount.js";
 import { debugFor, debugLog } from "./utilities/debugTool.js";
-
 import { extractCoursesData } from "./extraction/extractCourses.js";
 import {
   extractWorkdayCourseIdFromElement,
@@ -14,11 +19,11 @@ import {
 import { setupRegistrationAverageButtons } from "./api/averageGrades/registrationAverageButtons.js";
 import { exportICS } from "./exportLogic/exportIcs.js";
 import {
-  buildCalendarViewUrl,
   requestCalendarAuthState,
   requestDisconnectCalendar,
   requestSignInCalendar,
   requestSyncCoursesToCalendar,
+  requestPreviewCoursesToCalendar,
 } from "./exportLogic/googleCalendar/calendarIntegration.js";
 import { loadMainPanel } from "./mainPanel/shell/loadMainPanel.js";
 import { createFooterNoteController } from "./mainPanel/shell/footerNoteController.js";
@@ -26,55 +31,88 @@ import { createCourseColorController } from "./mainPanel/settings/courseColorCon
 import { initializeHoverTooltipController } from "./mainPanel/settings/hoverTooltipController.js";
 import { createPanelViewController } from "./mainPanel/shell/panelViewController.js";
 import { createScheduleModalController } from "./mainPanel/schedules/scheduleModals.js";
-import { filterCourses, sortCourses, wireTableSorting } from "./mainPanel/courses/courseViewSorting.js";
+import { filterCourses, applyCourseSort, wireTableSorting } from "./mainPanel/courses/courseViewSorting.js";
 import { renderCourseObjects } from "./mainPanel/courses/renderCourseObjects.js";
 import { renderSchedule } from "./mainPanel/schedules/scheduleView.js";
 import {
   canSaveMoreSchedules,
   createScheduleSnapshot,
   getMaxScheduleCount,
+  getScheduleNameError,
   loadSavedSchedules,
   persistSavedSchedules,
   renderSavedSchedules,
   togglePreferredSchedule,
 } from "./mainPanel/schedules/scheduleStorage.js";
-
 const debug = debugFor("content");
 debugLog({ local: { content: false } });
-
 // Bootstraps the content script UI and event wiring. Input: none. Output: none.
 (() => {
   async function boot() {
     debug.log({ id: "boot.start" }, "Booting content script");
-
     // Mount the extension UI, then hand feature-specific responsibilities off to the
     // smaller controllers so this file mostly stays as the top-level coordinator.
     const shadowRoot = ensureMount();
+    if (shadowRoot.host.dataset.wstBooted) return;
+    shadowRoot.host.dataset.wstBooted = "true";
     const ui = await loadMainPanel(shadowRoot);
     ui.footerNotes = createFooterNoteController(ui.footerAlert);
+    const store = createScheduleStore(STATE);
+    let storageReady = false;
+    let saveInProgress = false;
+    const on = (el, type, handler, options) =>
+      attachEvent(
+        el,
+        type,
+        (...args) => {
+          try {
+            Promise.resolve(handler(...args)).catch(showActionError);
+          } catch (error) {
+            showActionError(error);
+          }
+        },
+        options,
+      );
+    const showActionError = (error) =>
+      ui.footerNotes.showTemporary(error.message || "Action failed. Please retry.", {
+        tone: "warn",
+        durationMs: 10000,
+      });
+    const updateSavedSchedules = async (next) => {
+      if (!storageReady)
+        throw new Error(
+          "Saved data could not be loaded. Reload the extension and retry before changing saved schedules.",
+        );
+      await persistSavedSchedules(next);
+      STATE.savedSchedules = next;
+    };
     const courseColorController = await createCourseColorController(ui);
     await initializeHoverTooltipController(ui, STATE.view);
     const { setActiveView, toggleMainPanel } = createPanelViewController(ui, STATE.view);
     const { openScheduleModal } = createScheduleModalController(ui);
-
     // Rebuild the visual views from shared STATE whenever schedule data or view settings change.
-    const updateScheduleView = () => {
-      renderSchedule(ui, STATE.filtered, STATE.view.semester, STATE.view.timeFormat);
-
-      const toggleButton = ui.scheduleGrid?.querySelector(".schedule-time-toggle");
-      if (toggleButton) {
-        toggleButton.textContent = STATE.view.timeFormat === "am/pm" ? "AM/PM" : "24H";
-        toggleButton.setAttribute("aria-pressed", String(STATE.view.timeFormat === "am/pm"));
-        on(toggleButton, "click", () => {
-          STATE.view.timeFormat = STATE.view.timeFormat === "am/pm" ? "24h" : "am/pm";
-          updateScheduleView();
-        });
-      }
+    const renderSaveState = () => {
+      const saveState = getScheduleSaveState(STATE);
+      ui.scheduleStatusChips.forEach((chip) => {
+        chip.textContent = saveState.label;
+        chip.dataset.status = saveState.status;
+      });
+      ui.quickSaveButton.disabled = saveInProgress || !storageReady || !saveState.saved;
+      ui.saveAsNewButton.disabled = saveInProgress || !storageReady || !STATE.courses.length;
+      return saveState;
     };
-
+    const updateScheduleView = () => {
+      const { saved } = renderSaveState();
+      ui.scheduleName = saved?.name || "Working Schedule";
+      renderScheduleHeading(ui.courseScheduleHeading, ui.scheduleName, STATE.courses);
+      renderSchedule(ui, STATE.courses, STATE.view.semester, STATE.view.timeFormat);
+      ui.onTimeFormatChange = (next) => {
+        STATE.view.timeFormat = next;
+      };
+    };
     // Render all main data-driven UI surfaces together so list/schedule views stay in sync.
     const renderAll = () => {
-      if (STATE.sort?.key) sortCourses(STATE.sort.key);
+      applyCourseSort();
       updateScheduleView();
       renderCourseObjects(ui, STATE.filtered, {
         hasLoadedSchedule: STATE.courses.length > 0,
@@ -83,13 +121,11 @@ debugLog({ local: { content: false } });
         courseColorPalettes: courseColorController.getPalettes(),
         allCourses: STATE.courses,
       });
+      hydrateCourseLookups(ui, STATE.filtered);
     };
-
     const loadingOverlayStack = [];
-
     const renderLoadingOverlay = () => {
       if (!ui.loadingModal) return;
-
       const active = loadingOverlayStack[loadingOverlayStack.length - 1];
       if (active) {
         if (ui.loadingText) ui.loadingText.textContent = active.message;
@@ -98,45 +134,84 @@ debugLog({ local: { content: false } });
         ui.loadingModal.setAttribute("aria-hidden", "false");
         return;
       }
-
       ui.loadingModal.classList.add("is-hidden");
       ui.loadingModal.classList.remove("is-open");
       ui.loadingModal.setAttribute("aria-hidden", "true");
     };
-
     const showLoadingOverlay = (message = "Loading...") => {
       const token = Symbol("loading-overlay");
       loadingOverlayStack.push({ token, message });
       renderLoadingOverlay();
-
       return () => {
         const index = loadingOverlayStack.findIndex((entry) => entry.token === token);
         if (index >= 0) loadingOverlayStack.splice(index, 1);
         renderLoadingOverlay();
       };
     };
-
     // Extract the current page's schedule data from Workday, normalize it into STATE,
     // and preserve the current UI when requested.
     const loadCoursesFromPage = async ({ preserveExisting = false } = {}) => {
       debug.log({ id: "loadCoursesFromPage.start" }, "Loading courses from page", { preserveExisting });
-      const closeLoadingOverlay = showLoadingOverlay(preserveExisting ? "Refreshing schedule..." : "Loading schedule...");
+      let closeLoadingOverlay = showLoadingOverlay(preserveExisting ? "Refreshing schedule..." : "Loading schedule...");
       try {
-        const extractedCourses = await extractCoursesData();
-
-        if (extractedCourses === null) {
-          debug.warn({ id: "loadCoursesFromPage.noCourses" }, "No courses were extracted", { preserveExisting });
-          if (!preserveExisting) {
-            STATE.courses = [];
-            STATE.filtered = [];
-            STATE.currentSavedScheduleId = null;
-            STATE.currentScheduleName = null;
-            renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
-          }
+        let result = await extractCoursesData();
+        closeLoadingOverlay();
+        if (["unsupported", "logged-out"].includes(result.status)) {
+          if (result.status === "logged-out")
+            ui.footerNotes.setPersistent(
+              "import-status",
+              "Sign into Workday, open your course schedule, then refresh.",
+              { tone: "warn" },
+            );
+          else ui.footerNotes.removePersistent("import-status");
           return false;
         }
-
-        STATE.courses = extractedCourses;
+        const accumulated = [...result.courses];
+        while (result.failures.length) {
+          const retry = await openScheduleModal({
+            title: "Incomplete import",
+            message: `${accumulated.length} of ${result.requestedCount} course sections loaded. ${result.failures.length} failed. Your working schedule has been preserved. Retry failed sections?`,
+            confirmLabel: "Retry failed sections",
+            showCancel: true,
+            showInput: false,
+          });
+          if (!retry) {
+            if (!accumulated.length) return false;
+            const accept = await openScheduleModal({
+              title: "Use incomplete schedule?",
+              message: `${accumulated.length} section(s) loaded; ${result.failures.length} are missing. This replaces the current working schedule only if you accept.`,
+              confirmLabel: "Use incomplete schedule",
+              showCancel: true,
+              showInput: false,
+            });
+            if (!accept) return false;
+            ui.footerNotes.setPersistent(
+              "import-status",
+              `Incomplete import: ${result.failures.length} section(s) missing. Refresh to retry.`,
+              { tone: "warn" },
+            );
+            break;
+          }
+          closeLoadingOverlay = showLoadingOverlay("Retrying failed course sections...");
+          const retryResult = await extractCoursesData({ entries: result.failures });
+          closeLoadingOverlay();
+          accumulated.push(...retryResult.courses);
+          result = { ...retryResult, requestedCount: result.requestedCount };
+        }
+        if (!result.failures.length) ui.footerNotes.removePersistent("import-status");
+        if (result.status === "empty" && STATE.courses.length) {
+          const acceptEmpty = await openScheduleModal({
+            title: "Empty Workday schedule",
+            message: "Workday shows no rows. Clear the extension working schedule? Saved schedules are preserved.",
+            confirmLabel: "Use empty schedule",
+            showInput: false,
+            showCancel: true,
+          });
+          if (!acceptEmpty) return false;
+        }
+        store.load(accumulated);
+        STATE.syncPlanId = stableId(`working|${accumulated.map(courseIdentity).sort().join("|")}`);
+        STATE.syncPlanName = "Working Schedule";
         courseColorController.assignCourseColors(STATE.courses);
         STATE.currentSavedScheduleId = null;
         STATE.currentScheduleName = null;
@@ -150,7 +225,6 @@ debugLog({ local: { content: false } });
         closeLoadingOverlay();
       }
     };
-
     // Tab buttons only switch between the already-mounted views; they do not rebuild the UI shell.
     ui.viewTabs.forEach((button) => {
       on(button, "click", () => {
@@ -158,7 +232,6 @@ debugLog({ local: { content: false } });
         if (button.dataset.panel === "schedule-panel") updateScheduleView();
       });
     });
-
     // Export behaves like a small dropdown menu, so these handlers keep its open/close state in sync.
     const setExportOpen = (isOpen) => {
       if (!ui.exportDropdown || !ui.exportButton) return;
@@ -166,49 +239,42 @@ debugLog({ local: { content: false } });
       ui.exportDropdown.classList.toggle("is-open", isOpen);
       ui.exportButton.setAttribute("aria-expanded", String(isOpen));
     };
-
     on(ui.exportButton, "click", () => {
       const isOpen = ui.exportDropdown.classList.contains("is-open");
       setExportOpen(!isOpen);
     });
-
     on(document, "click", (event) => {
       const path = event.composedPath ? event.composedPath() : [];
-
       if (ui.exportDropdown?.classList.contains("is-open") && !path.includes(ui.exportDropdown)) {
         setExportOpen(false);
       }
-
       if (ui.savedDropdown?.open && !path.includes(ui.savedDropdown)) {
         ui.savedDropdown.open = false;
       }
     });
-
     // These controls manage the live schedule currently loaded from the page.
     on(ui.refreshButton, "click", async () => {
       ui.refreshButton.classList.remove("rotate");
       void ui.refreshButton.offsetWidth;
       ui.refreshButton.classList.add("rotate");
-
       const loaded = await loadCoursesFromPage({ preserveExisting: true });
       if (loaded) renderAll();
     });
-
     on(ui.clearButton, "click", () => {
-      STATE.courses = [];
-      STATE.filtered = [];
+      store.load([]);
+      STATE.syncPlanId = crypto.randomUUID();
+      STATE.syncPlanName = "Working Schedule";
       STATE.currentSavedScheduleId = null;
       STATE.currentScheduleName = null;
       ui.searchInput.value = "";
+      filterCourses("");
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     });
-
     // Posts a transient status message into the widget footer without disturbing persistent notes.
     const showFooterAlert = (text, { tone = "info", durationMs = 4000 } = {}) => {
       return ui.footerNotes?.showTemporary(text, { tone, durationMs });
     };
-
     const getCourseIdentityKey = (course) =>
       (course?.workdayCourseId ? [`id:${course.workdayCourseId}`] : [course?.code, course?.section_number])
         .map((part) =>
@@ -218,55 +284,31 @@ debugLog({ local: { content: false } });
             .toLowerCase(),
         )
         .join("|");
-
     const addSingleCourseToSchedule = (course) => {
       if (!course?.code || !course?.section_number) {
         showFooterAlert("Could not add the course because its section details were incomplete.", { tone: "warn" });
         return false;
       }
-
       const courseKey = getCourseIdentityKey(course);
       if (STATE.courses.some((existing) => getCourseIdentityKey(existing) === courseKey)) {
         showFooterAlert(`${course.code} ${course.section_number} is already in the extension.`, { tone: "info" });
         return false;
       }
-
       // Add the course through the same state path used by full schedule imports so rendering,
       // colors, conflict detection, search filtering, and exports stay consistent.
-      STATE.courses = [...STATE.courses, course];
+      store.add(course);
+      STATE.syncPlanId ||= crypto.randomUUID();
       courseColorController.assignCourseColors(STATE.courses);
-      STATE.currentSavedScheduleId = null;
-      STATE.currentScheduleName = null;
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       filterCourses(ui.searchInput.value);
       renderAll();
       showFooterAlert(`${course.code} ${course.section_number} added to the extension.`, { tone: "success" });
       return true;
     };
-
     const removeCourseFromSchedule = (course) => {
-      const courseKey = getCourseIdentityKey(course);
       const initialCount = STATE.courses.length;
-      let removed = false;
-
-      STATE.courses = STATE.courses.filter((existing) => {
-        if (existing === course && !removed) {
-          removed = true;
-          return false;
-        }
-
-        if (!removed && courseKey && getCourseIdentityKey(existing) === courseKey) {
-          removed = true;
-          return false;
-        }
-
-        return true;
-      });
-
+      store.remove(course);
       if (STATE.courses.length === initialCount) return;
-
-      STATE.currentSavedScheduleId = null;
-      STATE.currentScheduleName = null;
       filterCourses(ui.searchInput.value);
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
@@ -274,25 +316,19 @@ debugLog({ local: { content: false } });
         tone: "warn",
       });
     };
-
     const changeCourseGroupColor = (course, colorIndex) => {
       const changed = courseColorController.assignManualCourseGroupColor(STATE.courses, course, colorIndex);
       if (!changed) return;
-
       courseColorController.assignCourseColors(STATE.courses);
-      STATE.currentSavedScheduleId = null;
-      STATE.currentScheduleName = null;
       filterCourses(ui.searchInput.value);
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     };
-
     const getManualCourseImportFailureMessage = (error) => {
       const message = String(error?.message || error || "Unknown error");
       if (message === WRONG_COURSE_LINK_ERROR) return "Could not add course: Wrong course link";
       return `Could not add that course: ${message}`;
     };
-
     const importCourseFromRegistrationCard = async ({ row, link }) => {
       const courseId = extractWorkdayCourseIdFromElement(row);
       if (courseId) {
@@ -313,7 +349,6 @@ debugLog({ local: { content: false } });
           closeLoadingOverlay();
         }
       }
-
       if (link) {
         const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
         try {
@@ -329,13 +364,11 @@ debugLog({ local: { content: false } });
           closeLoadingOverlay();
         }
       }
-
       showFooterAlert("Could not find a Workday course ID for that course card.", {
         tone: "warn",
       });
       return false;
     };
-
     const importCourseFromManualLink = async () => {
       const link = await openScheduleModal({
         title: "Add A Course",
@@ -347,7 +380,6 @@ debugLog({ local: { content: false } });
         inputPlaceholder: "Paste Workday course URL here",
       });
       if (!link) return;
-
       const validation = validateWorkdayCourseLink(link);
       if (!validation.ok) {
         const message =
@@ -357,7 +389,6 @@ debugLog({ local: { content: false } });
         showFooterAlert(message, { tone: "warn" });
         return;
       }
-
       if (ui.addCourseButton) ui.addCourseButton.disabled = true;
       const loadingNoteId = showFooterAlert("Loading course from Workday...", { tone: "info", durationMs: 0 });
       const closeLoadingOverlay = showLoadingOverlay("Loading course from Workday...");
@@ -373,14 +404,10 @@ debugLog({ local: { content: false } });
         if (ui.addCourseButton) ui.addCourseButton.disabled = false;
       }
     };
-
     on(ui.addCourseButton, "click", importCourseFromManualLink);
-
     let googleCalendarSignedIn = false;
-
     const renderGoogleAccountControls = () => {
       if (!ui.googleSignInButton || !ui.googleSignOutButton) return;
-
       if (googleCalendarSignedIn) {
         const checkIcon = document.createElement("span");
         checkIcon.className = "material-symbols-rounded";
@@ -398,14 +425,12 @@ debugLog({ local: { content: false } });
       ui.googleSignInButton.setAttribute("aria-pressed", String(googleCalendarSignedIn));
       ui.googleSignOutButton.classList.toggle("is-hidden", !googleCalendarSignedIn);
     };
-
     const refreshGoogleAccountState = async () => {
       const { signedIn } = await requestCalendarAuthState();
       googleCalendarSignedIn = signedIn;
       renderGoogleAccountControls();
       return signedIn;
     };
-
     const requireGoogleSignInForSync = async () => {
       let signedIn = false;
       try {
@@ -414,51 +439,100 @@ debugLog({ local: { content: false } });
         showFooterAlert(`Could not check Google sign-in: ${error.message}`, { tone: "warn" });
         return false;
       }
-
       if (signedIn) return true;
-
       showFooterAlert("Go to Settings and sign into Google first.", { tone: "warn" });
       return false;
     };
-
     const handleExport = async (type) => {
       debug.log({ id: "handleExport" }, "Handling export action", { type });
-      if (type === "ics") return exportICS(STATE.currentScheduleName);
-
+      if (type === "ics") {
+        const result = exportICS(STATE.currentScheduleName);
+        showFooterAlert(
+          `Exported ${result.exported} meeting(s); ${result.skipped} unknown/invalid meeting(s) skipped. Only verified Workday exceptions are excluded; other holidays and breaks are not inferred.`,
+          { tone: result.skipped ? "warn" : "info", durationMs: 10000 },
+        );
+        return;
+      }
       if (type === "gcal-sync") {
         if (!(await requireGoogleSignInForSync())) return;
-
-        if (!STATE.filtered?.length) {
+        if (!STATE.courses?.length) {
           showFooterAlert("No courses to sync.", { tone: "warn" });
           return;
         }
-        const syncingNoteId = showFooterAlert("Syncing to Google Calendar…", { tone: "info", durationMs: 0 });
-        const closeLoadingOverlay = showLoadingOverlay("Syncing to Google Calendar...");
+        if (ui.googleSyncButton.disabled) return;
+        ui.googleSyncButton.disabled = true;
+        const courses = store.snapshot();
+        const fingerprint = JSON.stringify(courses);
+        const options = {
+          planId:
+            STATE.syncPlanId ||
+            STATE.currentSavedScheduleId ||
+            stableId(`working|${courses.map(courseIdentity).sort().join("|")}`),
+          planName: STATE.currentScheduleName || STATE.syncPlanName || "Working Schedule",
+        };
+        let closeLoading = showLoadingOverlay("Preparing Google Calendar preview...");
         try {
-          const summary = await requestSyncCoursesToCalendar(STATE.filtered);
-          const tone = summary.failed || summary.deleteFailed ? "warn" : "info";
-          const parts = [`Synced ${summary.added} event(s) to Google Calendar`];
-          if (summary.removed) parts.push(`replaced ${summary.removed} previous`);
-          if (summary.failed) parts.push(`${summary.failed} failed`);
-          if (summary.deleteFailed) parts.push(`${summary.deleteFailed} old not removed`);
-          if (summary.skipped) parts.push(`${summary.skipped} unparseable line(s) skipped`);
-          showFooterAlert(parts.join(" • "), { tone });
-
-          if (summary.added > 0) {
-            window.open(buildCalendarViewUrl(STATE.filtered), "_blank", "noopener");
+          let preview = await requestPreviewCoursesToCalendar(courses, options);
+          closeLoading();
+          if (preview.previousPlan) {
+            const choice = await openScheduleModal({
+              title: "Sync a different plan",
+              message: `The last selected plan is "${preview.previousPlan.name}". Keep Both preserves it; Replace Previous removes only its managed events. Keeping overlapping plans may create overlapping calendar entries.`,
+              confirmLabel: "Continue to preview",
+              showInput: false,
+              showCancel: true,
+              choices: [
+                { value: "keep", label: "Keep Both" },
+                { value: "replace", label: "Replace Previous" },
+              ],
+            });
+            if (!choice) return;
+            if (choice === "replace") {
+              closeLoading = showLoadingOverlay("Preparing replacement preview...");
+              preview = await requestPreviewCoursesToCalendar(courses, {
+                ...options,
+                replacePlanId: preview.previousPlan.id,
+              });
+              closeLoading();
+            }
           }
+          const confirmed = await openScheduleModal({
+            title: "Confirm Google Calendar sync",
+            confirmLabel: "Confirm sync",
+            showInput: false,
+            showCancel: true,
+            message: syncPreviewText(preview),
+          });
+          if (!confirmed) return;
+          if (
+            fingerprint !== JSON.stringify(store.snapshot()) ||
+            options.planId !==
+              (STATE.syncPlanId ||
+                STATE.currentSavedScheduleId ||
+                stableId(`working|${STATE.courses.map(courseIdentity).sort().join("|")}`))
+          )
+            throw new Error("The working schedule changed. Open a fresh preview before syncing.");
+          closeLoading = showLoadingOverlay("Applying confirmed Google Calendar changes...");
+          const summary = await requestSyncCoursesToCalendar(preview.previewId);
+          const parts = [
+            `Google Calendar: ${summary.added} added, ${summary.updated} updated, ${summary.removed} removed, ${summary.unchanged} unchanged`,
+          ];
+          if (summary.failed) parts.push(`${summary.failed} failed; old events preserved. Preview again to retry`);
+          if (summary.deleteFailed) parts.push(`${summary.deleteFailed} removals failed. Preview again to retry`);
+          if (summary.skipped) parts.push(`${summary.skipped} meetings skipped`);
+          showFooterAlert(parts.join(" • "), {
+            tone: summary.failed || summary.deleteFailed || summary.skipped ? "warn" : "info",
+            durationMs: 10000,
+          });
         } catch (error) {
-          debug.error("Calendar sync failed", error);
-          showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn" });
+          showFooterAlert(`Could not sync to Google Calendar: ${error.message}`, { tone: "warn", durationMs: 10000 });
         } finally {
-          closeLoadingOverlay();
-          ui.footerNotes?.removeTemporary(syncingNoteId);
+          closeLoading();
+          ui.googleSyncButton.disabled = false;
         }
       }
     };
-
     renderGoogleAccountControls();
-
     on(ui.googleSignInButton, "click", async () => {
       ui.googleSignInButton.disabled = true;
       ui.googleSignOutButton.disabled = true;
@@ -478,7 +552,6 @@ debugLog({ local: { content: false } });
         if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
       }
     });
-
     on(ui.googleSignOutButton, "click", async () => {
       ui.googleSignInButton.disabled = true;
       ui.googleSignOutButton.disabled = true;
@@ -500,15 +573,12 @@ debugLog({ local: { content: false } });
         if (!googleCalendarSignedIn) ui.googleSignInButton.disabled = false;
       }
     });
-
     on(ui.exportMenu, "click", async (event) => {
       const action = event.target.closest("[data-export]");
       if (!action) return;
-
       setExportOpen(false);
       await handleExport(action.dataset.export);
     });
-
     // Settings/help live inside the same shell as the main views, so this helper swaps
     // into those utility panels and back out to the last main panel when toggled again.
     const showUtilityPanel = (panelKey) => {
@@ -518,25 +588,52 @@ debugLog({ local: { content: false } });
       });
       ui.mainPanel.classList.remove("is-hidden");
       ui.floatingButton.classList.remove("is-collapsed");
-
       if (STATE.view.panel === panelKey) {
         const backTo = STATE.view.lastMainPanel || "course-list-panel";
         setActiveView(backTo);
         if (backTo === "schedule-panel") updateScheduleView();
         return;
       }
-
       setActiveView(panelKey);
     };
-
-    // Saved schedule actions persist snapshots of the currently filtered schedule and restore them later.
-    on(ui.saveScheduleButton, "click", async () => {
-      debug.log({ id: "saveSchedule.click" }, "Save schedule button clicked");
-      if (!STATE.courses?.length) {
-        showFooterAlert("No schedule loaded - load a schedule before saving it.", { tone: "warn" });
-        return;
+    // Keep the source ID through edits; replace it only after a successful Save As New.
+    const runSave = async (action) => {
+      if (saveInProgress) return;
+      saveInProgress = true;
+      renderSaveState();
+      try {
+        await action();
+      } finally {
+        saveInProgress = false;
+        updateScheduleView();
       }
-
+    };
+    on(ui.quickSaveButton, "click", () => runSave(async () => {
+      const { saved } = getScheduleSaveState(STATE);
+      if (!saved) return;
+      const confirmed = await openScheduleModal({
+        title: "Update saved schedule?",
+        message: `Replace the saved courses in "${saved.name}" with your current schedule?`,
+        confirmLabel: "Update",
+        showInput: false,
+        showCancel: true,
+      });
+      if (!confirmed) return;
+      // A deleted source must never be recreated by an outstanding confirmation.
+      const current = getScheduleSaveState(STATE).saved;
+      if (current?.id !== saved.id)
+        throw new Error("This saved schedule is no longer available. Use Save As New.");
+      const snapshot = { ...current, courses: store.snapshot(), savedAt: new Date().toISOString() };
+      await updateSavedSchedules(STATE.savedSchedules.map((schedule) =>
+        schedule.id === snapshot.id ? snapshot : schedule,
+      ));
+      STATE.currentScheduleName = snapshot.name;
+      STATE.syncPlanName = snapshot.name;
+      renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      showFooterAlert(`Updated "${snapshot.name}".`, { tone: "success" });
+    }));
+    on(ui.saveAsNewButton, "click", () => runSave(async () => {
+      if (!STATE.courses.length) return;
       if (!canSaveMoreSchedules(STATE.savedSchedules)) {
         await openScheduleModal({
           title: "Schedule limit reached",
@@ -547,49 +644,42 @@ debugLog({ local: { content: false } });
         });
         return;
       }
-
       const name = await openScheduleModal({
-        title: "Save schedule",
+        title: "Save As New",
         message: "Name this schedule so you can find it later.",
         confirmLabel: "Save",
         showInput: true,
         showCancel: true,
+        validateInput: (value) => getScheduleNameError(value, STATE.savedSchedules),
       });
-
       if (!name) return;
-
-      const snapshot = createScheduleSnapshot(name, STATE.filtered, null);
+      if (!canSaveMoreSchedules(STATE.savedSchedules))
+        throw new Error("Schedule limit reached. Delete a saved schedule and retry.");
+      const snapshot = createScheduleSnapshot(name, store.snapshot(), null);
       if (!STATE.savedSchedules.length) snapshot.isFavorite = true;
-      STATE.savedSchedules = [snapshot, ...STATE.savedSchedules];
-      debug.log({ id: "saveSchedule.saved" }, "Saved schedule snapshot", {
-        scheduleName: name,
-        scheduleCount: STATE.savedSchedules.length,
-      });
-
-      await persistSavedSchedules(STATE.savedSchedules);
+      await updateSavedSchedules([snapshot, ...STATE.savedSchedules]);
+      STATE.currentSavedScheduleId = snapshot.id;
+      STATE.currentScheduleName = snapshot.name;
+      STATE.syncPlanId = snapshot.id;
+      STATE.syncPlanName = snapshot.name;
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
-
       if (ui.savedDropdown) ui.savedDropdown.open = true;
-    });
-
+    }));
     on(ui.savedMenu, "click", async (event) => {
+      if (saveInProgress) return;
       const actionButton = event.target.closest("[data-action]");
       const card = event.target.closest(".schedule-saved-card");
       const scheduleId = card?.dataset.id;
       if (!scheduleId) return;
-
       const selected = STATE.savedSchedules.find((s) => s.id === scheduleId);
       if (!selected) return;
-
       if (actionButton?.dataset.action === "favorite") {
         event.stopPropagation();
-        STATE.savedSchedules = togglePreferredSchedule(STATE.savedSchedules, scheduleId);
-        await persistSavedSchedules(STATE.savedSchedules);
+        await updateSavedSchedules(togglePreferredSchedule(STATE.savedSchedules, scheduleId));
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         if (ui.savedDropdown) ui.savedDropdown.open = true;
         return;
       }
-
       if (actionButton?.dataset.action === "rename") {
         event.stopPropagation();
         const nextName = await openScheduleModal({
@@ -601,24 +691,25 @@ debugLog({ local: { content: false } });
           inputLabel: "Schedule name",
           inputPlaceholder: "e.g. Fall semester plan",
           inputValue: selected.name,
+          validateInput: (value) => getScheduleNameError(value, STATE.savedSchedules, scheduleId),
         });
         if (!nextName || nextName === selected.name) {
           if (ui.savedDropdown) ui.savedDropdown.open = true;
           return;
         }
-
-        STATE.savedSchedules = STATE.savedSchedules.map((schedule) =>
-          schedule.id === scheduleId ? { ...schedule, name: nextName } : schedule,
+        await updateSavedSchedules(
+          STATE.savedSchedules.map((schedule) =>
+            schedule.id === scheduleId ? { ...schedule, name: nextName } : schedule,
+          ),
         );
         if (STATE.currentSavedScheduleId === scheduleId) STATE.currentScheduleName = nextName;
-
-        await persistSavedSchedules(STATE.savedSchedules);
+        if (STATE.syncPlanId === scheduleId) STATE.syncPlanName = nextName;
+        updateScheduleView();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         showFooterAlert(`Renamed schedule to "${nextName}".`, { tone: "success" });
         if (ui.savedDropdown) ui.savedDropdown.open = true;
         return;
       }
-
       if (actionButton?.dataset.action === "delete") {
         event.stopPropagation();
         debug.log({ id: "savedMenu.delete" }, "Deleting saved schedule", { scheduleId, scheduleName: selected.name });
@@ -630,48 +721,47 @@ debugLog({ local: { content: false } });
           showCancel: true,
         });
         if (!confirmed) return;
-
-        STATE.savedSchedules = STATE.savedSchedules.filter((s) => s.id !== scheduleId);
-        if (STATE.currentSavedScheduleId === scheduleId) STATE.currentSavedScheduleId = null;
-        await persistSavedSchedules(STATE.savedSchedules);
+        await updateSavedSchedules(STATE.savedSchedules.filter((s) => s.id !== scheduleId));
+        if (STATE.currentSavedScheduleId === scheduleId) {
+          STATE.currentSavedScheduleId = null;
+          STATE.currentScheduleName = null;
+          STATE.syncPlanId = crypto.randomUUID();
+          STATE.syncPlanName = "Working Schedule";
+        }
+        updateScheduleView();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         return;
       }
-
       STATE.currentSavedScheduleId = scheduleId;
       STATE.currentScheduleName = selected.name;
+      STATE.syncPlanId = selected.id;
+      STATE.syncPlanName = selected.name;
       debug.log({ id: "savedMenu.load" }, "Loading saved schedule", { scheduleId, scheduleName: selected.name });
-      STATE.courses = [...selected.courses];
+      store.load(selected.courses);
       courseColorController.assignCourseColors(STATE.courses);
       STATE.filtered = [...STATE.courses];
       ui.searchInput.value = "";
-
+      filterCourses("");
       renderAll();
       renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       setActiveView("course-list-panel");
       if (ui.savedDropdown) ui.savedDropdown.open = false;
     });
-
     on(ui.savedMenu, "keydown", (event) => {
       const card = event.target.closest(".schedule-saved-card");
       if (!card) return;
-
       if (event.key !== "Enter" && event.key !== " ") return;
       if (event.target.closest("[data-action]")) return;
-
       event.preventDefault();
       card.click();
     });
-
     // Settings/help buttons are thin wrappers around the shared panel-switching helper above.
     on(ui.settingsButton, "click", () => {
       showUtilityPanel("settings-panel");
     });
-
     on(ui.helpButton, "click", () => {
       showUtilityPanel("help-panel");
     });
-
     on(
       ui.searchInput,
       "input",
@@ -680,36 +770,76 @@ debugLog({ local: { content: false } });
         renderAll();
       }, 100),
     );
-
     // Initial startup restores saved state, loads the current page's schedule, and then
     // enables the extra page-level average buttons that live outside the panel UI.
     await refreshGoogleAccountState().catch((error) => {
       debug.warn({ id: "googleAuth.initialState" }, "Could not load Google sign-in state", error);
     });
-
     wireTableSorting(ui);
-
-    STATE.savedSchedules = await loadSavedSchedules();
+    try {
+      STATE.savedSchedules = await loadSavedSchedules();
+      storageReady = true;
+    } catch (error) {
+      ui.footerNotes.setPersistent("storage-error", `${error.message} Reload to retry.`, { tone: "warn" });
+    }
     debug.log({ id: "boot.savedSchedulesLoaded" }, "Loaded saved schedules", {
       scheduleCount: STATE.savedSchedules.length,
     });
     renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
-
     await loadCoursesFromPage();
-
     renderAll();
-
     setActiveView(STATE.view.panel);
+    // The popup or another Workday tab can rename, update or delete this source.
+    const onSavedSchedulesChanged = async (changes, area) => {
+      if (area !== "local" || !changes.wdSavedSchedules) return;
+      try {
+        STATE.savedSchedules = await loadSavedSchedules();
+        storageReady = true;
+        const { saved } = getScheduleSaveState(STATE);
+        if (STATE.currentSavedScheduleId && !saved) {
+          STATE.currentSavedScheduleId = null;
+          STATE.currentScheduleName = null;
+          STATE.syncPlanId = crypto.randomUUID();
+          STATE.syncPlanName = "Working Schedule";
+        } else if (saved) {
+          STATE.currentScheduleName = saved.name;
+          STATE.syncPlanName = saved.name;
+        }
+        updateScheduleView();
+        renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+      } catch (error) {
+        storageReady = false;
+        renderSaveState();
+        showActionError(error);
+      }
+    };
+    const storageEvents = globalThis.chrome?.storage?.onChanged;
+    storageEvents?.addListener(onSavedSchedulesChanged);
+    const host = shadowRoot.host;
+    const navigationObserver = new MutationObserver(
+      debounce(() => {
+        if (!host.isConnected) document.documentElement.appendChild(host);
+      }, 100),
+    );
+    navigationObserver.observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener(
+      "pagehide",
+      () => {
+        navigationObserver.disconnect();
+        storageEvents?.removeListener(onSavedSchedulesChanged);
+        ui.scheduleResizeObserver?.disconnect();
+      },
+      { once: true },
+    );
     const cleanupAverageButtons = setupRegistrationAverageButtons({ onAddCourse: importCourseFromRegistrationCard });
     if (typeof cleanupAverageButtons === "function") {
       debug.log({ id: "boot.averageButtonsReady" }, "Average button observer initialized");
       window.addEventListener("beforeunload", cleanupAverageButtons, { once: true });
     }
   }
-
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
+    document.addEventListener("DOMContentLoaded", () => void boot().catch(console.error), { once: true });
   } else {
-    boot();
+    void boot().catch(console.error);
   }
 })();

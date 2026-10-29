@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run build:shared && node --test",
     "build": "npm run build:chrome",
     "build:shared": "vite build -c vite.background.config.js && vite build -c vite.content.config.js && vite build -c vite.popup.config.js",
     "package:chrome": "node scripts/package-extension.js chrome",
@@ -26,6 +26,8 @@
   "homepage": "https://github.com/gwan-kib/Workday-Extension#readme",
   "description": "",
   "devDependencies": {
+    "ical.js": "^2.2.1",
+    "jsdom": "^29.1.1",
     "vite": "^7.3.0",
     "vite-plugin-static-copy": "^3.1.4"
   }

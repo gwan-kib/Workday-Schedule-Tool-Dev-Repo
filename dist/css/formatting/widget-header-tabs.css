@@ -13,6 +13,12 @@
   border-top-right-radius: inherit;
 }
 
+#widget-logo {
+  flex-shrink: 0;
+  object-fit: contain;
+  margin-right: 4px;
+}
+
 #widget-title {
   font-weight: 700;
   font-size: 25px;
@@ -259,12 +265,4 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-#widget-save-schedule {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  width: 36px;
 }

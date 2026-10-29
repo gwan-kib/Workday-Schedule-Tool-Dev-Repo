@@ -1,46 +1,19 @@
+import { gradeResultText, renderGradeAverageHint } from "./gradeResultView.js";
+import { fetchCourseStatistics } from "./courseStatistics.js";
+import { WORKDAY_SELECTORS } from "../../extraction/workdaySelectors.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
-import { fetchSectionGradesWithFallback, readTermCampus, resolveCourseInfoForAverage } from "./gradesApiCall.js";
+import { readTermCampus, resolveCourseInfoForAverage } from "./gradesApiCall.js";
 import { extractWorkdayCourseIdFromElement } from "../../extraction/singleCourseImport.js";
 
-const registrationCardSelector = 'li[data-automation-id="compositeContainer"]';
+const registrationCardSelector = WORKDAY_SELECTORS.registrationCard;
 const averageButtonSelector = registrationCardSelector;
-const coursePromptSelector = '[data-automation-id="compositeHeader"] div.WPJO.WIIO[data-automation-id="promptOption"]';
-const compositeSubHeaderSelector = '[data-automation-id="compositeSubHeaderOne"]';
+const coursePromptSelector = WORKDAY_SELECTORS.coursePrompt;
+const compositeSubHeaderSelector = WORKDAY_SELECTORS.compositeSubHeader;
 const courseImportButtonSelector = ".registration__course-import-button";
 const courseActionStackSelector = ".registration__course-actions";
 const debug = debugFor("registrationAverageButtons");
 debugLog({ local: { registrationAverageButtons: false } });
 
-const extractAverage = (data) => {
-  if (!data) return null;
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      const average = extractAverage(item);
-      if (average != null) return average;
-    }
-    return null;
-  }
-  if (typeof data !== "object") return null;
-
-  const direct =
-    data.average ?? data.avg ?? data.average_grade ?? data.averagePercent ?? data.avgPercent ?? data.mean ?? null;
-  if (typeof direct === "number") return direct;
-  if (typeof direct === "string" && direct.trim()) return direct.trim();
-
-  const nested = data?.grades?.average ?? data?.grades?.avg ?? data?.summary?.average ?? data?.summary?.avg ?? null;
-  if (typeof nested === "number") return nested;
-  if (typeof nested === "string" && nested.trim()) return nested.trim();
-
-  return null;
-};
-
-const buildAverageLabel = (average) => {
-  if (average == null) return "Average:\nN/A";
-  if (typeof average === "number") return `Average:\n${average.toFixed(1)}%`;
-  return `Average:\n${average}%`;
-};
-
-const hasValidAverage = (data) => extractAverage(data) != null;
 const lectureLike = (text) => /\blecture\b/i.test(String(text || ""));
 const labLike = (text) => /\b(laboratory)\b/i.test(String(text || ""));
 const seminarLike = (text) => /\bseminar\b/i.test(String(text || ""));
@@ -139,6 +112,10 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
       event.stopPropagation();
 
       if (button.dataset.loading === "true") return;
+      if (button.dataset.source && Number(button.dataset.expiresAt) > Date.now()) {
+        window.open(button.dataset.source, "_blank", "noopener,noreferrer");
+        return;
+      }
       button.dataset.loading = "true";
       button.disabled = true;
       button.textContent = "Adding...";
@@ -269,13 +246,17 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
       return button;
     }
 
-    setAverageButtonContent(button, "Class Average\n(past 5 years)");
+    setAverageButtonContent(button, "Course averages");
 
     button.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopPropagation();
 
       if (button.dataset.loading === "true") return;
+      if (button.dataset.source && Number(button.dataset.expiresAt) > Date.now()) {
+        window.open(button.dataset.source, "_blank", "noopener,noreferrer");
+        return;
+      }
       button.dataset.loading = "true";
       button.textContent = "loading...";
       button.disabled = true;
@@ -301,42 +282,33 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
           return;
         }
 
-        const data = await fetchSectionGradesWithFallback(
-          {
-            campus: termCampus.campus,
-            yearsession: termCampus.yearsession,
-            subject: resolvedCourseInfo.subject,
-            course: resolvedCourseInfo.course,
-            section: resolvedCourseInfo.section,
-          },
-          { isValid: hasValidAverage },
-        );
-
-        if (!data) {
-          debug.warn({ id: "setupRegistrationAverageButtons.fetch.noData" }, "No average data returned", {
-            courseInfo: resolvedCourseInfo,
-          });
-          setAverageButtonContent(button, "Average:\nunavailable");
-        } else {
-          const average = extractAverage(data);
-          debug.log({ id: "setupRegistrationAverageButtons.fetch.success" }, "Average data loaded", {
-            courseInfo: resolvedCourseInfo,
-            average,
-          });
-          setAverageButtonContent(button, buildAverageLabel(average));
-        }
+        const result = await fetchCourseStatistics({
+          campus: termCampus.campus,
+          yearsession: termCampus.yearsession,
+          subject: resolvedCourseInfo.subject,
+          course: resolvedCourseInfo.course,
+        });
+        const text = gradeResultText(result);
+        setAverageButtonContent(button, text.summary);
+        renderGradeAverageHint(button, text.tooltip);
+        button.title = `Latest available course average${result.stale ? " (cached)" : ""}. View UBCGrades source.`;
+        button.dataset.source = result.source || "";
+        button.dataset.expiresAt = String(Date.now() + (result.stale ? 60000 : 3600000));
       } catch (error) {
+        delete button.dataset.source;
+        renderGradeAverageHint(button);
         debug.error({ id: "setupRegistrationAverageButtons.fetch.error" }, "Failed to load average data", {
           courseInfo,
           error: String(error),
         });
-        setAverageButtonContent(button, "Average:\nunavailable");
+        setAverageButtonContent(button, "Grades: network error - click to retry");
       } finally {
         button.disabled = false;
         button.dataset.loading = "false";
       }
     });
 
+    queueMicrotask(() => button.click());
     return button;
   };
 

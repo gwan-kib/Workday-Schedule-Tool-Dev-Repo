@@ -49,3 +49,32 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* Save controls sit next to the header; reveal their labels into the panel. */
+.wd-hover-tooltip--below::after,
+.wd-hover-tooltip--below::before {
+  bottom: auto;
+  transform: translateX(-50%) translateY(-4px);
+}
+.wd-hover-tooltip--below::after { top: calc(100% + 8px); }
+.wd-hover-tooltip--below::before {
+  top: calc(100% + 2px);
+  border-width: 0 6px 6px;
+  border-color: transparent transparent var(--wd-hover-tooltip-bg);
+}
+.wd-hover-tooltip--below:hover::after,
+.wd-hover-tooltip--below:hover::before,
+.wd-hover-tooltip--below:focus-visible::after,
+.wd-hover-tooltip--below:focus-visible::before {
+  transform: translateX(-50%) translateY(0);
+}
+/* Keep the rightmost label inside the widget's scrolling body. */
+.course-schedule-actions .wd-hover-tooltip--below::after {
+  left: auto;
+  right: 0;
+  transform: translateY(-4px);
+}
+.course-schedule-actions .wd-hover-tooltip--below:hover::after,
+.course-schedule-actions .wd-hover-tooltip--below:focus-visible::after {
+  transform: translateY(0);
+}

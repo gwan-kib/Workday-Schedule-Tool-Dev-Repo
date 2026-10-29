@@ -40,7 +40,9 @@ npm run build:firefox
 
 Use `npm run build:chrome` when you want to be explicit about the Chrome target, or `npm run build:browsers` to package both targets from the shared source. `npm run dev` is not currently a working full extension dev workflow.
 
-There is no useful automated `npm test` script wired up right now; browser builds are the baseline verification check.
+Run `npm test` for the offline regression suite (Node.js 22+). It builds shared assets first, then uses Node's built-in test runner, synthetic Workday fixtures, mocked browser/network APIs, jsdom for interface interactions, and ICAL.js for independent calendar parsing/occurrence checks. It does not contact Workday, UBCGrades, RMP or Google. Run `npm run build:browsers` for both loadable packages.
+
+See `docs/phases-0-2-testing.md` for the remaining real-browser/account checks and `docs/scheduling-engine.md` for meeting/state ownership.
 
 3. Load the packaged build
 
@@ -159,7 +161,7 @@ Relevant files:
 
 Calendar export supports both `.ics` downloads and direct Google Calendar sync. Google sign-in/sign-out controls live in Settings, while export actions are in the panel export menu.
 
-Chrome currently uses `chrome.identity.getAuthToken()` from the background process. Firefox requires a different OAuth path using `identity.launchWebAuthFlow()` / `identity.getRedirectURL()`; that migration is intentionally handled by the dedicated Firefox OAuth issues rather than by the shared WebExtension API audit.
+Chrome currently uses `chrome.identity.getAuthToken()` from the background process. Firefox intentionally supports ICS export only; direct Firefox Google OAuth/sync is out of scope. Chrome sync always previews a plan against the primary calendar and requires confirmation. Keep Both preserves previous plan sets; Replace Previous deletes only the selected previous managed set, after successful upserts.
 
 Relevant files:
 

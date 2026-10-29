@@ -68,12 +68,15 @@ export async function loadMainPanel(shadowRoot) {
     floatingButton: shadowRoot.querySelector("#floating-button"),
 
     tableBody: shadowRoot.querySelector("#course-list"),
+    courseScheduleHeading: shadowRoot.querySelector("#course-schedule-heading"),
     tableHead: shadowRoot.querySelector("#course-sortbar"),
 
     searchInput: shadowRoot.querySelector("#widget-search"),
     addCourseButton: shadowRoot.querySelector("#widget-add-course"),
     refreshButton: shadowRoot.querySelector("#widget-refresh"),
-    saveScheduleButton: shadowRoot.querySelector("#widget-save-schedule"),
+    quickSaveButton: shadowRoot.querySelector("#widget-quick-save"),
+    saveAsNewButton: shadowRoot.querySelector("#widget-save-as-new"),
+    scheduleStatusChips: shadowRoot.querySelectorAll(".schedule-status-chip"),
     clearButton: shadowRoot.querySelector("#widget-clear"),
 
     exportDropdown: shadowRoot.querySelector("#widget-export"),
@@ -86,6 +89,7 @@ export async function loadMainPanel(shadowRoot) {
 
     scheduleGrid: shadowRoot.querySelector("#schedule-grid"),
     scheduleTermPill: shadowRoot.querySelector("#schedule-term-pill"),
+    scheduleControls: shadowRoot.querySelector(".schedule-controls"),
 
     savedDropdown: shadowRoot.querySelector("#schedule-saved-dropdown"),
     savedMenu: shadowRoot.querySelector("#schedule-saved-menu"),
@@ -117,7 +121,9 @@ export async function loadMainPanel(shadowRoot) {
     googleSignOutButton: shadowRoot.querySelector("#setting-google-sign-out"),
   };
 
-  const googleUnavailableControls = [ui.googleSyncButton, ui.googleSignInButton, ui.googleSignOutButton].filter(Boolean);
+  const googleUnavailableControls = chrome.runtime.getURL("").startsWith("moz-extension://")
+    ? [ui.googleSyncButton, ui.googleSignInButton, ui.googleSignOutButton].filter(Boolean)
+    : [];
   googleUnavailableControls.forEach((control) => {
     control.classList.add("google-unavailable-control");
     control.setAttribute("aria-disabled", "true");
