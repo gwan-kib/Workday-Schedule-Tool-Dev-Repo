@@ -1,5 +1,5 @@
-import { gradeResultText, renderGradeDetails } from "./gradeResultView.js";
-import { fetchCourseStatistics, courseStatisticsLabel } from "./courseStatistics.js";
+import { gradeResultText, renderGradeAverageHint } from "./gradeResultView.js";
+import { fetchCourseStatistics } from "./courseStatistics.js";
 import { WORKDAY_SELECTORS } from "../../extraction/workdaySelectors.js";
 import { debugFor, debugLog } from "../../utilities/debugTool.js";
 import { readTermCampus, resolveCourseInfoForAverage } from "./gradesApiCall.js";
@@ -290,13 +290,13 @@ export function setupRegistrationAverageButtons({ onAddCourse } = {}) {
         });
         const text = gradeResultText(result);
         setAverageButtonContent(button, text.summary);
-        renderGradeDetails(button, { details: text.details, source: result.source });
-        button.title = courseStatisticsLabel(result) + "\n" + (result.source || "");
+        renderGradeAverageHint(button, text.tooltip);
+        button.title = `Latest available course average${result.stale ? " (cached)" : ""}. View UBCGrades source.`;
         button.dataset.source = result.source || "";
         button.dataset.expiresAt = String(Date.now() + (result.stale ? 60000 : 3600000));
       } catch (error) {
         delete button.dataset.source;
-        renderGradeDetails(button);
+        renderGradeAverageHint(button);
         debug.error({ id: "setupRegistrationAverageButtons.fetch.error" }, "Failed to load average data", {
           courseInfo,
           error: String(error),

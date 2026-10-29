@@ -1,33 +1,34 @@
-import { courseStatisticsLabel } from "./courseStatistics.js";
-
+// Keep the primary statistic compact; the secondary average is available on hover/focus.
 export function gradeResultText(result) {
-  const lines = courseStatisticsLabel(result).split("\n");
+  const format = (value) => (Number.isFinite(value) ? `${value.toFixed(1)}%` : "N/A");
   return {
-    summary: lines.filter((line) => /^(Latest year|5-year window)/.test(line)).join("\n"),
-    details: lines.filter((line) => !/^(Latest year|5-year window)/.test(line)).join(" · "),
+    summary: format(result?.latest?.average),
+    tooltip: `5-year average: ${format(result?.fiveYear?.average)}${result?.stale ? " (cached)" : ""}`,
   };
 }
-export function renderGradeDetails(button, { details, source } = {}) {
-  const host = button.closest(".course-card") || button.parentElement;
-  if (!host) return;
-  let note = host.querySelector(".grade-result-details");
-  if (!details) {
-    note?.remove();
-    return;
+
+export function renderGradeAverageHint(button, tooltip = "5-year average: N/A") {
+  if (!button.parentElement) return;
+  let control = button.parentElement;
+  if (!control.classList.contains("grade-average-control")) {
+    control = document.createElement("span");
+    control.className = "grade-average-control";
+    button.before(control);
+    control.appendChild(button);
   }
-  if (!note) {
-    note = document.createElement("p");
-    note.className = "grade-result-details";
-    host.appendChild(note);
+  let hint = control.querySelector(".grade-average-hint");
+  if (!hint) {
+    hint = document.createElement("span");
+    hint.className = "grade-average-hint wd-hover-tooltip";
+    hint.textContent = "ⓘ";
+    hint.tabIndex = 0;
+    hint.setAttribute("role", "note");
+    hint.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    control.appendChild(hint);
   }
-  note.textContent = details + " ";
-  if (source?.startsWith("https://ubcgrades.com/#")) {
-    const link = document.createElement("a");
-    link.href = source;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "View UBCGrades source";
-    link.addEventListener("click", (event) => event.stopPropagation());
-    note.appendChild(link);
-  }
+  hint.dataset.tooltip = tooltip;
+  hint.setAttribute("aria-label", tooltip);
 }

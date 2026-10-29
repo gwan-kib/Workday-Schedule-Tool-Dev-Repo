@@ -1,5 +1,5 @@
-import { gradeResultText, renderGradeDetails } from "../../api/averageGrades/gradeResultView.js";
-import { fetchCourseStatistics, courseStatisticsLabel } from "../../api/averageGrades/courseStatistics.js";
+import { gradeResultText, renderGradeAverageHint } from "../../api/averageGrades/gradeResultView.js";
+import { fetchCourseStatistics } from "../../api/averageGrades/courseStatistics.js";
 import {
   fetchProfRating,
   inferCampusFromCourseCode,
@@ -72,7 +72,7 @@ function applyAverageButtonState(button, state) {
   button.classList.toggle("wd-hover-tooltip", hasLink);
   button.textContent = status === "loading" ? "Loading..." : label;
   button.disabled = status === "loading";
-  renderGradeDetails(button, { details: state.details, source: state.link });
+  renderGradeAverageHint(button, status === "loading" ? "5-year average: loading..." : state.averageHint);
 
   if (hasLink) {
     button.dataset.tooltip = state.tooltip || "Visit UBCGrades ↗";
@@ -248,13 +248,13 @@ async function loadAverageForButton(button, state) {
       const result = await fetchCourseStatistics({ campus, yearsession, subject, course });
       const text = gradeResultText(result);
       state.label = text.summary;
-      state.details = text.details;
+      state.averageHint = text.tooltip;
       state.link = result.source || "";
-      state.tooltip = courseStatisticsLabel(result) + "\nView source";
+      state.tooltip = `Latest available course average${result.stale ? " (cached)" : ""}. View UBCGrades source.`;
       state.expiresAt = Date.now() + (result.stale ? 60000 : 3600000);
     } catch (error) {
       state.label = "Grades: network error - click to retry";
-      state.details = "";
+      state.averageHint = "5-year average: N/A";
       state.expiresAt = 0;
       state.link = "";
       debug.warn({ id: "renderCourseObjects.averageLookupFailed" }, "Failed to load course average", {

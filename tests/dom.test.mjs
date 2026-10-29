@@ -1,3 +1,4 @@
+import { gradeResultText, renderGradeAverageHint } from "../src/api/averageGrades/gradeResultView.js";
 import { loadAverageForButton, getCourseAverageState } from "../src/mainPanel/courses/courseLookupController.js";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -64,24 +65,63 @@ test("untrusted instructor/timetable labels stay literal and rendering does not 
   assert.equal(c.workdayCourseLink, undefined);
   dom.window.close();
 });
-test("unknown meetings and date-window switching remain available in the shared renderer", () => {
+test("week toggle keeps weekly classes and switches opposite-week sections", () => {
   const dom = new JSDOM('<div id="grid"></div>');
   globals(dom);
   const ui = { scheduleGrid: document.querySelector("#grid") };
-  renderSchedule(ui, [
-    course({ meetingLines: [] }),
+  const range = "2026-09-07 - 2026-12-15";
+  const courses = [
+    course({ code: "WEEKLY 101", meetingLines: [line("Mon", undefined, range)] }),
     course({
-      code: "OTHER 102",
-      meetingLines: [line(), line("Sat", "7:00 a.m. - 8:00 a.m.", "2027-01-01 - 2027-04-15")],
+      code: "LABONE 201",
+      isLab: true,
+      meetingLines: [line("Mon (Alternate Weeks)", undefined, range)],
+      meetingAnchors: ["2026-09-07"],
     }),
-  ]);
+    course({
+      code: "LABTWO 202",
+      isLab: true,
+      meetingLines: [line("Mon (Alternate Weeks)", undefined, range)],
+      meetingAnchors: ["2026-09-14"],
+    }),
+    course({ code: "UNKNOWN 203", meetingLines: [] }),
+  ];
+  const before = JSON.stringify(courses);
+  renderSchedule(ui, courses);
+  assert.equal(document.querySelector("select"), null);
   assert.equal(document.querySelector(".schedule-unknown h3").textContent, "Meeting Times Unknown");
-  const select = document.querySelector("select");
-  assert.equal(select.options.length, 3);
-  select.value = "2027-01-01/2027-04-15";
-  select.dispatchEvent(new dom.window.Event("change"));
-  assert.equal(document.querySelectorAll('.schedule-day-head[data-day="Sat"]').length, 1);
-  assert.equal(ui.selectedMeetingWindow, "2027-01-01/2027-04-15");
+  const titles = () => [...document.querySelectorAll(".schedule-entry-title")].map((n) => n.textContent).join(" ");
+  assert.match(titles(), /WEEKLY 101/);
+  assert.match(titles(), /LABONE 201/);
+  assert.ok(!titles().includes("LABTWO 202"));
+  document.querySelector('[data-week="2"]').click();
+  assert.equal(document.querySelector('[data-week="2"]').getAttribute("aria-pressed"), "true");
+  assert.match(titles(), /WEEKLY 101/);
+  assert.match(titles(), /LABTWO 202/);
+  assert.ok(!titles().includes("LABONE 201"));
+  assert.equal(ui.selectedScheduleWeek, 2);
+  document.querySelector(".schedule-time-toggle").click();
+  assert.equal(document.querySelector('[data-week="2"]').getAttribute("aria-pressed"), "true");
+  assert.equal(JSON.stringify(courses), before);
+  dom.window.close();
+});
+
+test("grades show one number and a separate focusable five-year hover control", () => {
+  const dom = new JSDOM('<div id="actions"><button id="average"></button></div>');
+  globals(dom);
+  const button = document.querySelector("#average");
+  const text = gradeResultText({ latest: { average: 80 }, fiveYear: { average: 75.5 } });
+  button.textContent = text.summary;
+  renderGradeAverageHint(button, text.tooltip);
+  assert.equal(button.textContent, "80.0%");
+  const hint = button.nextElementSibling;
+  assert.equal(hint.classList.contains("grade-average-hint"), true);
+  assert.equal(hint.dataset.tooltip, "5-year average: 75.5%");
+  assert.equal(hint.tabIndex, 0);
+  renderGradeAverageHint(button, "5-year average: N/A");
+  assert.equal(document.querySelectorAll(".grade-average-hint").length, 1);
+  assert.equal(document.querySelector(".grade-result-details"), null);
+  assert.equal(gradeResultText({ latest: null, fiveYear: { average: null } }).summary, "N/A");
   dom.window.close();
 });
 
@@ -211,6 +251,12 @@ test("packaged content saves all five courses after search and reports failed wr
   s.querySelector('[data-export="gcal-sync"]').click();
   await waitFor(() => s.querySelector("#schedule-modal-title").textContent === "Confirm Google Calendar sync");
   assert.equal(calendarMessages.find((m) => m.type === "PREVIEW_GCAL").payload.courses.length, 5);
+  assert.ok(!s.querySelector("#schedule-modal-message").textContent.includes("Dates:"));
+  assert.ok(
+    s
+      .querySelector("#schedule-modal-message")
+      .textContent.includes("Holidays and reading breaks supplied by Workday are automatically excluded."),
+  );
   assert.equal(calendarMessages.filter((m) => m.type === "SYNC_GCAL").length, 0);
   s.querySelector(".schedule-modal-cancel").click();
   await new Promise((r) => setTimeout(r, 10));
@@ -229,6 +275,11 @@ test("packaged content saves all five courses after search and reports failed wr
   // Repeated execution must not duplicate shell/listeners after SPA activity.
   w.eval(await readFile(new URL("dist/content.js", root), "utf8"));
   assert.equal(w.document.querySelectorAll('[id="UBC Workday - Schedule Tool"]').length, 1);
+  [...w.document.querySelectorAll('[data-automation-id^="selectedItem_15194$"]')].forEach((node) => node.remove());
+  s.querySelector("#widget-refresh").click();
+  await waitFor(() => s.querySelector("#schedule-loading-modal").classList.contains("is-hidden"));
+  assert.ok(!s.querySelector("#schedule-footer-notes").textContent.includes("No supported course sections found"));
+  assert.equal(s.querySelectorAll(".course-card").length, 5);
   dom.window.close();
 });
 
@@ -261,6 +312,8 @@ test("grade buttons recover from a failed session request when clicked to retry"
   button.click();
   await waitFor(() => button.textContent.includes("80.0%"));
   assert.ok(!button.textContent.includes("network error"));
-  assert.match(ui.tableBody.querySelector(".grade-result-details").textContent, /Samples: latest 100/);
+  assert.equal(button.textContent, "80.0%");
+  assert.equal(ui.tableBody.querySelector(".grade-result-details"), null);
+  assert.match(button.nextElementSibling.dataset.tooltip, /5-year average: 80.0%/);
   assert.equal(urls.filter((url) => url.includes("yearsessions")).length, 2);
 });

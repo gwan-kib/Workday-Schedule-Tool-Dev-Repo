@@ -523,3 +523,22 @@
 .schedule-unknown p {
   margin: 4px 0;
 }
+
+.schedule-week-toggle {
+  display: inline-flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+.schedule-week-toggle button {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 6px 14px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.schedule-week-toggle button[aria-pressed="true"] {
+  font-weight: 700;
+  background: var(--hex-brand-accent-1);
+  outline: 1px solid currentColor;
+}

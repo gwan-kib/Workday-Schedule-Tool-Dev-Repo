@@ -11,7 +11,7 @@
 
 ## Dates and uncertainty
 
-ISO calendar dates remain date-only strings. Date arithmetic does not reinterpret them through the viewer's local UTC offset. Actual meeting ranges, including every line of a multi-window course, determine selectable date windows; the UI does not guess academic term boundaries or merge different years into the same term name.
+ISO calendar dates remain date-only strings. Date arithmetic does not reinterpret them through the viewer's local UTC offset. Actual meeting ranges include every line of a multi-window course. The timetable offers Week 1 / Week 2 rather than a date-window dropdown. Weekly meetings appear in both; anchored alternating meetings follow their actual active dates. Overlapping ranges share a Monday-based cycle anchor, starting with the earliest dated week; separate meeting periods restart their cycle. This is a display selector only: saved plans and exports retain both weeks.
 
 The grid defaults to weekdays, 08:00–21:00. Real weekend meetings add the corresponding columns; real earlier/later meetings extend the hours. Positions and conflicts use exact minutes and intersecting active dates, including recurrence parity and verified exception dates.
 
@@ -39,6 +39,6 @@ Upserts have bounded concurrency and precede removals. Any failed upsert suppres
 
 Grade/RMP lookups hydrate automatically. Requests have a ten-second header/body deadline, up to two retries for transient errors, Retry-After handling, and a four-request limit per execution context. Grade-session requests are bounded to ten per five-year lookup. One-hour caches coalesce duplicate in-flight requests; after failed refresh, any recovered stale values are explicitly labeled. Missing matches, unavailable statistics and network errors have distinct states and retry paths.
 
-Course statistics use UBCGrades course-level rows, preferring an `OVERALL` row to avoid double-counting its sections. `reported` (or legacy `enrolled`) provides sample weights. The latest available year and five-year window are both displayed, with years, missing coverage, sample counts and a source link. Missing weights prevent fabricated pooled averages; a partial window is labeled with its actual coverage. No section/instructor-specific grade feature is introduced.
+Course statistics use UBCGrades course-level rows, preferring an `OVERALL` row to avoid double-counting its sections. `reported` (or legacy `enrolled`) provides sample weights. The grade button displays only the latest available course average and still opens its source. A separate info control to its right shows the five-year average on hover or keyboard focus. Detailed coverage/sample metadata remains internal rather than appearing in the interface. Missing weights prevent fabricated pooled averages; a partial window is labeled with its actual coverage. No section/instructor-specific grade feature is introduced.
 
 Reference sources checked during implementation: [UBCGrades v3](https://ubcgrades.com/api-reference/v3), [UBCGrades response/model definitions](https://github.com/DonneyF/ubcgrades/blob/master/app/models.py), [Calendar event resource](https://developers.google.com/workspace/calendar/api/v3/reference/events), [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545).

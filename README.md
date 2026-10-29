@@ -68,7 +68,8 @@ All snapshots stay on your device.
 ### Class Averages
 
 - See the latest available course-year average and a sample-weighted five-year window in Workday
-- Inspect covered/missing years, sample sizes and a UBCGrades source link; insufficient data is labeled unavailable
+- The grade button shows one latest average; hover or focus the info control beside it for the five-year average
+- Click the grade button to open UBCGrades; missing averages display N/A
 - View averages in the course list and on supported Workday registration cards
 - Open supported results on UBCGrades
 

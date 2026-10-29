@@ -139,13 +139,13 @@ debugLog({ local: { content: false } });
         let result = await extractCoursesData();
         closeLoadingOverlay();
         if (["unsupported", "logged-out"].includes(result.status)) {
-          ui.footerNotes.setPersistent(
-            "import-status",
-            result.status === "logged-out"
-              ? "Sign into Workday, open your course schedule, then refresh."
-              : "No supported course sections found. Open View My Courses or a saved Workday schedule, then refresh.",
-            { tone: "warn" },
-          );
+          if (result.status === "logged-out")
+            ui.footerNotes.setPersistent(
+              "import-status",
+              "Sign into Workday, open your course schedule, then refresh.",
+              { tone: "warn" },
+            );
+          else ui.footerNotes.removePersistent("import-status");
           return false;
         }
         const accumulated = [...result.courses];
@@ -489,7 +489,7 @@ debugLog({ local: { content: false } });
             confirmLabel: "Confirm sync",
             showInput: false,
             showCancel: true,
-            message: `Target: primary Google Calendar\nPlan: ${preview.planName}\nDates: ${preview.windows.join(", ")}\nAdd: ${preview.additions} · Update: ${preview.updates} · Remove: ${preview.removals} · Unchanged: ${preview.unchanged}\nSkipped meetings: ${preview.skipped}\n${preview.removals ? "WARNING: Confirming removes the listed managed events.\n" : ""}${preview.deferredRemovals ? `${preview.deferredRemovals} removal(s) deferred because meeting data is incomplete.\n` : ""}${preview.legacy ? `${preview.legacy} older unscoped import(s) will be preserved. Review/remove those manually in Google Calendar if needed.\n` : ""}${preview.otherPlans ? "Other preserved plans may overlap this plan.\n" : ""}Only verified Workday exceptions are excluded; unknown holidays/breaks remain scheduled. Cancel makes no calendar changes.`,
+            message: `Target: primary Google Calendar\nPlan: ${preview.planName}\nAdd: ${preview.additions} · Update: ${preview.updates} · Remove: ${preview.removals} · Unchanged: ${preview.unchanged}\nSkipped meetings: ${preview.skipped}\n${preview.removals ? "WARNING: Confirming removes the listed managed events.\n" : ""}${preview.deferredRemovals ? `${preview.deferredRemovals} removal(s) deferred because meeting data is incomplete.\n` : ""}${preview.legacy ? `${preview.legacy} older unscoped import(s) will be preserved. Review/remove those manually in Google Calendar if needed.\n` : ""}${preview.otherPlans ? "Other preserved plans may overlap this plan.\n" : ""}Holidays and reading breaks supplied by Workday are automatically excluded.`,
           });
           if (!confirmed) return;
           if (

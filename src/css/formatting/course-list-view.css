@@ -435,17 +435,23 @@
   color: var(--hex-neutral-3);
 }
 
-/* Both course-level statistics remain legible; coverage/source is visible below. */
 .course-card__avg-button {
-  width: 180px;
-  height: auto;
-  min-height: 44px;
-  padding: 6px 10px;
-  white-space: pre-line;
+  width: 100px;
+  height: 40px;
+  padding: 0 10px;
 }
-.grade-result-details {
-  margin: 6px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
+.grade-average-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.grade-average-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 24px;
+  cursor: help;
+  font-size: 17px;
 }

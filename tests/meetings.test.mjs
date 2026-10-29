@@ -46,8 +46,9 @@ test("uses all meeting windows, including summer and year boundaries", () => {
   });
   assert.deepEqual(courseDateRange(c), { startDate: "2026-09-01", endDate: "2027-08-15" });
   const layout = scheduleLayout([c]);
-  assert.equal(layout.windows.length, 3);
-  assert.equal(scheduleLayout([c], layout.windows[1]).meetings.length, 1);
+  assert.equal(layout.meetings.length, 3);
+  assert.equal(scheduleLayout([c], 1).meetings.length, 3);
+  assert.equal(scheduleLayout([c], 2).meetings.length, 3);
 });
 test("unknown and unanchored alternating meetings remain visible with diagnostics", () => {
   const c = course({ meetingLines: [line("Mon (Alternate Weeks)")] });

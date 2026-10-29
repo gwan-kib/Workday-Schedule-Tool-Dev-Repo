@@ -225,31 +225,29 @@ function updateFooterConflictMessage(ui, conflictBlocks) {
 export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
   const host = ui?.scheduleGrid;
   if (!host) return;
-  const layout = scheduleLayout(courses, ui.selectedMeetingWindow || "all");
+  const layout = scheduleLayout(courses, ui.selectedScheduleWeek || 1);
   const { conflictBlocks } = detectScheduleConflicts(layout.eventsByDay);
   const all = scheduleLayout(courses);
   const allConflicts = detectScheduleConflicts(all.eventsByDay).conflictBlocks;
   ui.conflictPartnersByCode = buildConflictPartnerLookup(allConflicts);
   host.replaceChildren();
-  if (layout.windows.length > 1) {
-    const label = document.createElement("label");
-    label.textContent = "Meeting dates: ";
-    const select = document.createElement("select");
-    select.setAttribute("aria-label", "Meeting date window");
-    for (const value of ["all", ...layout.windows]) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value === "all" ? "All dates" : value.replace("/", " – ");
-      select.appendChild(option);
-    }
-    select.value = layout.selected;
-    select.addEventListener("change", () => {
-      ui.selectedMeetingWindow = select.value;
+  const weekToggle = document.createElement("div");
+  weekToggle.className = "schedule-week-toggle";
+  weekToggle.setAttribute("role", "group");
+  weekToggle.setAttribute("aria-label", "Alternating teaching week");
+  for (const week of [1, 2]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = `Week ${week}`;
+    button.dataset.week = String(week);
+    button.setAttribute("aria-pressed", String(layout.selectedWeek === week));
+    button.addEventListener("click", () => {
+      ui.selectedScheduleWeek = week;
       renderSchedule(ui, courses, null, ui.scheduleTimeFormat || timeFormat);
     });
-    label.appendChild(select);
-    host.appendChild(label);
+    weekToggle.appendChild(button);
   }
+  host.appendChild(weekToggle);
   const tableWrap = buildScheduleTable(timeFormat, layout);
   host.appendChild(tableWrap);
   const draw = () => renderOverlayBlocks(tableWrap, layout.eventsByDay, conflictBlocks, timeFormat);
@@ -280,10 +278,8 @@ export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
       { tone: "warn" },
     );
   else footer?.removePersistent("meeting-diagnostics");
-  updateFooterConflictMessage(ui, allConflicts);
-  if (ui.scheduleTermPill)
-    ui.scheduleTermPill.textContent =
-      layout.selected === "all" ? "All meeting dates" : layout.selected.replace("/", " – ");
+  updateFooterConflictMessage(ui, conflictBlocks);
+  if (ui.scheduleTermPill) ui.scheduleTermPill.textContent = `Week ${layout.selectedWeek}`;
   ui.scheduleTimeFormat = timeFormat;
   tableWrap.querySelector(".schedule-time-toggle")?.addEventListener("click", () => {
     const next = timeFormat === "am/pm" ? "24h" : "am/pm";
