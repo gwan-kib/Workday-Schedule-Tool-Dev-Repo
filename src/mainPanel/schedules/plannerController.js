@@ -1,3 +1,4 @@
+import { scheduleItems } from "../../core/personalBlocks.js";
 import { renderSchedule } from "./scheduleView.js";
 import { node } from "./plannerOverview.js";
 import { compareSchedules, sectionLabel } from "../../core/planner.js";
@@ -110,7 +111,7 @@ export function plannerDialog(ui, title, variant = "") {
       if (isButton) { trigger.disabled = false; trigger.removeAttribute("aria-busy"); }
     }
   };
-  const preview = (host, courses, name, highlights = new Set(), week = 1) => {
+  const preview = (host, courses, name, highlights = new Set(), week = 1, personalBlocks = []) => {
     const grid = node("div", null, "planner-preview-grid"),
       controls = node("div"),
       heading = node("div");
@@ -123,6 +124,7 @@ export function plannerDialog(ui, title, variant = "") {
       scheduleName: name,
       highlightCourseIds: highlights,
       selectedScheduleWeek: week,
+      personalBlocks,
     };
     observers.push(previewUi);
     renderSchedule(previewUi, courses, null, "am/pm");
@@ -131,7 +133,7 @@ export function plannerDialog(ui, title, variant = "") {
   return { dialog, content, actions, status, setStatus, run, close, preview, cleanup };
 }
 
-export function mountPlanner(ui, { getState, saveSchedules }) {
+export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
   const error = (e) =>
@@ -141,6 +143,7 @@ export function mountPlanner(ui, { getState, saveSchedules }) {
     });
   const safe = (fn) => () => Promise.resolve().then(fn).catch(error);
   toolbar.append(
+    button("Personal blocks", safe(() => editPersonalBlocks?.())),
     button(
       "Compare saved plans",
       safe(() => openComparison()),
@@ -258,6 +261,7 @@ export function mountPlanner(ui, { getState, saveSchedules }) {
             plan.name,
             new Set(changed.map(courseIdentity)),
             selectedWeek,
+            plan.personalBlocks || [],
           ),
         );
       }
@@ -299,7 +303,7 @@ export function mountPlanner(ui, { getState, saveSchedules }) {
             const state = getState(),
               target = ui.root.host || ui.mainPanel,
               appearance = exportAppearance(target);
-            await exportTimetable(state.courses, format, {
+            await exportTimetable(scheduleItems(state.courses, state.personalBlocks || []), format, {
               name: state.currentScheduleName || "Working Schedule",
               orientation: orientation.input.value,
               ...appearance,
@@ -347,7 +351,7 @@ export function mountPlanner(ui, { getState, saveSchedules }) {
                 ? `${timetableFilename(plans[0].courses, plans[0].name)}.wst.json`
                 : "WST-schedules-backup.json",
             );
-            d.setStatus(plans.length === 1 ? "Schedule file downloaded. It can be imported with Import WST schedule." : "Backup downloaded. To import one schedule later, export that schedule individually.");
+            d.setStatus(plans.length === 1 ? "Schedule file downloaded. It can be imported with Import WST schedule." : "Backup downloaded. To import one schedule later, export that schedule individually. Personal blocks and notes are included; review the file before sharing.");
           }),
         );
       download.className = "planner-primary";

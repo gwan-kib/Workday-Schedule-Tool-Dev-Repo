@@ -1,34 +1,32 @@
 {
   "manifest_version": 3,
   "name": "UBC Workday - Schedule Tool",
-  "version": "3.0.8",
+  "version": "3.0.14",
   "description": "A tool to make planning for your semester easier.",
-
   "browser_specific_settings": {
     "gecko": {
       "id": "ubc-workday-schedule-tool@gwan-kib.github.io",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
-        "required": ["websiteContent"]
+        "required": [
+          "websiteContent"
+        ]
       }
     }
   },
-
-  "permissions": ["storage", "identity"],
-
-  "host_permissions": [
-    "https://*.myworkday.com/*",
-    "https://www.ratemyprofessors.com/*",
-    "https://www.googleapis.com/*"
+  "permissions": [
+    "storage"
   ],
-
+  "host_permissions": [
+    "https://wd10.myworkday.com/ubc/*",
+    "https://www.ratemyprofessors.com/*"
+  ],
   "icons": {
     "16": "icon16.png",
     "32": "icon32.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
-
   "action": {
     "default_title": "UBC Workday - Schedule Tool",
     "default_popup": "dist/popup.html",
@@ -39,16 +37,20 @@
       "128": "icon128.png"
     }
   },
-
   "background": {
-    "scripts": ["dist/background.js"],
+    "scripts": [
+      "dist/background.js"
+    ],
     "type": "module"
   },
-
   "content_scripts": [
     {
-      "matches": ["https://*.myworkday.com/*"],
-      "js": ["dist/content.js"],
+      "matches": [
+        "https://wd10.myworkday.com/ubc/*"
+      ],
+      "js": [
+        "dist/content.js"
+      ],
       "css": [
         "dist/css/colors/theme-tokens.css",
         "dist/css/formatting/average-grade-tooltip.css",
@@ -60,11 +62,15 @@
       "all_frames": true
     }
   ],
-
   "web_accessible_resources": [
     {
-      "resources": ["dist/css/*.css", "dist/panel.html"],
-      "matches": ["https://*.myworkday.com/*"]
+      "resources": [
+        "dist/css/*.css",
+        "dist/panel.html"
+      ],
+      "matches": [
+        "https://wd10.myworkday.com/*"
+      ]
     }
   ]
 }

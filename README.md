@@ -58,7 +58,7 @@ Turns your Workday courses into a calendar-style grid so you can see:
 Save multiple versions locally so you can:
 
 - Compare registration scenarios
-- Try section swaps
+- Plan alternate course combinations
 - Keep backups of past schedules
 
 All snapshots stay on your device.
@@ -69,7 +69,7 @@ All snapshots stay on your device.
 
 - See the latest available course-year average and a sample-weighted five-year window in Workday
 - The grade button shows one latest average; hover or focus the info control beside it for the five-year average
-- Click the grade button to open UBCGrades; missing averages display N/A
+- Click the grade button to open the newest available course-wide UBCGrades OVERALL page; missing averages display N/A
 - View averages in the course list and on supported Workday registration cards
 - Open supported results on UBCGrades
 
@@ -109,17 +109,11 @@ Want to request a feature? Let me know at gwantanak.3@gmail.com
 
 ## Privacy and Security
 
-Your schedule data stays on your device in extension storage.
+Saved plans, notes, personal blocks and display preferences stay in local extension storage. Course cards automatically send course/campus/session identifiers to UBCGrades and instructor names/campus identifiers to Rate My Professors; these lookups have no separate opt-out and use one-hour memory caches. Existing icons load from Google Fonts. No analytics or advertising tracking is included.
 
-- The extension panel runs on `*.myworkday.com`
-- Saved schedule data is stored locally using extension storage
-- Google sign-in state is stored locally and is used only for Calendar sync
-- Uses ubcgrades.com for class averages
-- Uses ratemyprofessors.com for professor ratings
-- Uses Google Calendar APIs only when you sign in and sync a schedule
-- No tracking
-- No third-party analytics
-- No data collection for analytics/advertising
+Chrome sends event details to Google Calendar only after sign-in, preview and confirmation. Personal blocks require explicit inclusion each time. Signing out clears local access state, but does not revoke Google's authorization or delete events. Firefox supports ICS downloads only and has no identity/Google API grants.
+
+The panel runs only on `https://wd10.myworkday.com/ubc/*`. JSON downloads include notes and personal blocks, exclude tokens/account data and omit Workday section IDs/links; review files before sharing. Settings explains these data flows and offers optional session-only redacted diagnostics. Read the [privacy audit and store disclosures](docs/phase-4-privacy.md) for fields, retention, permissions and revoke instructions.
 
 ---
 
@@ -134,10 +128,22 @@ Your schedule data stays on your device in extension storage.
 ## Browser Compatibility
 
 - Chrome: supported
-- Firefox: port in progress; shared non-authentication WebExtension APIs have been audited, while Firefox Google OAuth remains separate migration work
+- Firefox: ICS-only package; actual Firefox runtime/consent smoke tests remain a release check. Direct Google sync is not planned.
 
 ---
 
 ## License
 
 MIT (see `LICENSE.md`)
+
+## Phase 4 personal planning
+
+The original fixed light appearance and timetable spacing are retained. No theme or spacing preferences are exposed.
+
+Use **Add personal block** in Course List or **Personal blocks** in Schedule view. Blocks are added to the schedule currently being edited, including a new unsaved draft; there is no plan selector. They appear as separate personal cards in Course List and dashed items in the timetable, take part in actual-date conflict checks, and use the same Quick Save/Save As New and Undo/Redo workflow as course edits. Block-only schedules can also be saved.
+
+Choose **Save for reuse** to keep a block's current details under **Saved personal blocks**. This button appears only when no reusable copy matches all its details; creating or editing a schedule block does not automatically change the library. After switching schedules, choose **Add to schedule** on an existing copy. Each schedule gets an independent editable instance. Removing a block from a schedule keeps the reusable copy; **Remove saved copy** only removes that library entry. Existing saved-plan blocks are migrated into the library when the updated extension first loads. The popup edits its currently previewed saved plan directly and uses the same library.
+
+Lead Developer and Contributors use larger, equally sized responsive credit cards so their names and social links fit. See [the feature and manual testing guide](docs/phase-4-testing.md).
+
+Saved personal blocks have an **Edit** action for changing the reusable template without changing any existing schedule instances. Help → **Report a problem** gives three short steps: turn on **Record what happens**, try the problem again, then **Download bug report** and attach it when contacting the address in Help. Nothing is uploaded automatically.

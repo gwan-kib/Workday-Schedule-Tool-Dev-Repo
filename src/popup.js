@@ -1,3 +1,5 @@
+import { scheduleItems } from "./core/personalBlocks.js";
+import { openPersonalBlocks } from "./mainPanel/schedules/personalBlocks.js";
 import { openScheduleNotes, createScheduleNotesButton } from "./mainPanel/schedules/scheduleNotes.js";
 import { exportTimetable, exportAppearance } from "./exportLogic/exportTimetable.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
@@ -68,6 +70,7 @@ function queueVisibleScheduleRender(schedule) {
     scheduledRenderFrame = requestAnimationFrame(() => {
       scheduledRenderFrame = 0;
       ui.scheduleName = schedule?.name || "Working Schedule";
+      ui.personalBlocks = schedule?.personalBlocks || [];
       renderSchedule(ui, schedule?.courses, null, popupState.timeFormat);
       wireTimeFormatToggle(schedule);
     });
@@ -236,13 +239,29 @@ async function boot() {
       button.setAttribute("aria-busy", "true");
       try {
         const schedule = popupState.schedules.find(s => s.id === popupState.activeScheduleId);
-        await exportTimetable(schedule?.courses || [], format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
+        await exportTimetable(scheduleItems(schedule?.courses || [],schedule?.personalBlocks || []), format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
         ui.footerNotes.showTemporary(`${format.toUpperCase()} download ready.`, { tone: "success" });
       } catch (error) { ui.footerNotes.showTemporary(error.message, { tone: "warn" }); }
       finally { button.disabled = false; button.removeAttribute("aria-busy"); }
     });
     tools.appendChild(button);
   }
+  const blocksButton=document.createElement("button"); blocksButton.type="button";blocksButton.textContent="Personal blocks";
+  blocksButton.addEventListener("click",()=>{try {
+    openPersonalBlocks(ui,{
+      saveHint:"Changes in the popup are saved directly to this previewed plan.",
+      getCurrent:()=>popupState.schedules.find(s=>s.id===popupState.activeScheduleId),
+      getKnownBlocks:()=>popupState.schedules.flatMap(s=>s.personalBlocks||[]),
+      setBlocks:async (blocks,guard)=>{
+        const latest=await loadSavedSchedules(), current=latest.find(s=>s.id===guard.contextId);
+        if(popupState.activeScheduleId!==guard.contextId || !current) throw new Error("The previewed schedule changed.");
+        if(JSON.stringify(current.personalBlocks||[])!==guard.expected) throw new Error("These personal blocks changed in another window. Reopen them.");
+        const next=latest.map(s=>s.id===current.id?{...s,personalBlocks:blocks}:s);
+        await persistSavedSchedules(next);popupState.schedules=next;renderPicker();renderActiveSchedule();
+      }
+    });
+  }catch(error){ui.footerNotes.showTemporary(error.message,{tone:"warn"});}});
+  tools.prepend(blocksButton);
   ui.scheduleGrid.before(tools);
   renderPicker();
   renderActiveSchedule();
@@ -366,6 +385,12 @@ document.addEventListener("click", (event) => {
 window.addEventListener("resize", () => {
   if (!popupState.activeScheduleId) return;
   renderActiveSchedule();
+});
+
+globalThis.chrome?.storage?.onChanged?.addListener(async (changes, area) => {
+  if (area !== "local" || !changes.wdSavedSchedules) return;
+  try { popupState.schedules = await loadSavedSchedules(); renderPicker(); renderActiveSchedule(); }
+  catch (error) { ui.footerNotes.showTemporary("Could not refresh saved plans. Reload the popup.", {tone:"warn"}); }
 });
 
 void boot().catch((error) => {

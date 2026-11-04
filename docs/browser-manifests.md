@@ -5,7 +5,7 @@ The extension keeps browser-specific manifest source files instead of treating t
 ## Source manifests
 
 - `manifest.chrome.json` is the Chrome Manifest V3 source manifest. It keeps the existing Chrome extension key, Google `oauth2` configuration, and `background.service_worker` entry.
-- `manifest.firefox.json` is the Firefox Manifest V3 source manifest. Shared metadata, permissions, host permissions, icons, action configuration, content scripts, and web-accessible resources should stay aligned with the Chrome manifest.
+- `manifest.firefox.json` is the Firefox Manifest V3 source manifest. Shared metadata, icons, action configuration, content scripts, and web-accessible resources stay aligned with Chrome. Firefox is ICS-only and deliberately omits Chrome identity/Google API grants.
 
 When changing a shared field such as the extension name, version, description, icons, content scripts, or host permissions, update both source manifests in the same change.
 
@@ -29,11 +29,11 @@ This ID belongs only in `manifest.firefox.json` under `browser_specific_settings
 
 Treat the Gecko ID as permanent once Firefox builds are distributed. Changing it later can cause Firefox to treat the build as a different extension and can break update continuity. It also changes the identity used to derive Firefox OAuth redirect handling.
 
-When configuring the Firefox Google OAuth client and redirect URI in issue #22, build/load the Firefox package with this ID and use the redirect returned by `identity.getRedirectURL()`. Do not configure OAuth against a temporary-install ID or a different Gecko ID.
+Firefox direct Google sync is not planned. Keep this ID for temporary installs, signing and update continuity; the Firefox package has no identity permission.
 
 ## Firefox data collection declaration
 
-The Firefox manifest uses Mozilla's built-in data-collection consent system and declares `websiteContent` as required. Workday-derived course/instructor/schedule information can leave the extension through UBCGrades, RateMyProfessors, and Google Calendar features, so declaring `none` would be inaccurate.
+The Firefox manifest uses Mozilla's built-in data-collection consent system and declares `websiteContent` as required. Workday-derived course/instructor information leaves the Firefox extension through automatic UBCGrades and Rate My Professors lookups, so declaring `none` would be inaccurate. Firefox does not sync to Google Calendar.
 
 The Firefox manifest sets `strict_min_version` to `140.0`, the first Firefox desktop release with the built-in data-collection consent experience, rather than allowing installation on older versions without a separate custom consent flow.
 

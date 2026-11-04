@@ -1,3 +1,4 @@
+import { validatePersonalBlocks } from "../../core/personalBlocks.js";
 import { scheduleNotesText } from "../../core/scheduleNotes.js";
 import { createScheduleNotesButton } from "./scheduleNotes.js";
 import { storageGet, storageSet } from "../../utilities/storage.js";
@@ -54,6 +55,7 @@ const sanitizeSchedules = (schedules) => {
       colorAssignments: Array.isArray(s.colorAssignments) ? s.colorAssignments : null,
       isFavorite: Boolean(s.isFavorite),
       notes: scheduleNotesText(s),
+      personalBlocks: validatePersonalBlocks(s.personalBlocks),
     }));
 };
 
@@ -141,6 +143,7 @@ export function createScheduleSnapshot(name, courses, colorAssignments) {
     colorAssignments: Array.isArray(colorAssignments) ? [...colorAssignments] : null,
     isFavorite: false,
     notes: "",
+    personalBlocks: [],
   };
 }
 
@@ -174,7 +177,8 @@ export function formatScheduleMeta(schedule) {
     ? schedule.savedAt
     : savedDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
-  return `${count} courses | Saved ${dateLabel}`;
+  const blocks=schedule.personalBlocks?.length || 0;
+  return `${count} courses${blocks ? ` · ${blocks} personal block${blocks === 1 ? "" : "s"}` : ""} | Saved ${dateLabel}`;
 }
 
 // Renders saved schedule cards into the UI. Input: ui object, schedules array, and optional active schedule id. Output: none.

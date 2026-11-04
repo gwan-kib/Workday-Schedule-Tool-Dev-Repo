@@ -52,10 +52,10 @@ export function buildICSFile(courses, { now = new Date() } = {}) {
   return lines.map(foldIcsLine).join("\r\n") + "\r\n";
 }
 
-export function exportICS(scheduleName) {
-  const normalized = normalizeSchedule(STATE.courses);
+export function exportICS(scheduleName, courses = STATE.courses) {
+  const normalized = normalizeSchedule(courses);
   if (!normalized.meetings.length) throw new Error("No validated timed meetings to export. See Meeting Times Unknown.");
-  const blob = new Blob([buildICSFile(STATE.courses)], { type: "text/calendar;charset=utf-8" });
+  const blob = new Blob([buildICSFile(courses)], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

@@ -1,3 +1,4 @@
+import { validatePersonalBlocks } from "./personalBlocks.js";
 import { MAX_SCHEDULE_NOTES_LENGTH } from "./scheduleNotes.js";
 import { normalizeSchedule, dateNumber } from "./meetings.js";
 import { trustedSectionLink } from "../extraction/trustedWorkday.js";
@@ -161,6 +162,7 @@ export function validateBackup(data) {
       colorAssignments: s.colorAssignments ? [...s.colorAssignments] : null,
       isFavorite: Boolean(s.isFavorite),
       notes: s.notes || "",
+      personalBlocks: validatePersonalBlocks(s.personalBlocks),
     };
   });
   return {
@@ -175,7 +177,7 @@ export function createBackup(schedules, settings) {
     ...validateBackup({
       format: "ubc-workday-schedules",
       version: BACKUP_VERSION,
-      schedules,
+      schedules: schedules.map(s => ({ ...s, courses: s.courses.map(c => { const { workdayCourseId, workdayCourseLink, ...portable } = c; return portable; }) })),
       settings,
     }),
     exportedAt: new Date().toISOString(),

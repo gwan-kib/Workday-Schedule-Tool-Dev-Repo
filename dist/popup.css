@@ -6,6 +6,7 @@
 @import "./css/colors/schedule-view-colors.css";
 @import "./css/colors/hover-tooltip-colors.css";
 @import "./css/formatting/planner.css";
+@import "./css/formatting/personal-blocks.css";
 
 :root {
   color-scheme: light;

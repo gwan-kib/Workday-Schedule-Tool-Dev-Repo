@@ -35,6 +35,7 @@ export async function loadMainPanel(shadowRoot) {
     "colors/hover-tooltip-colors.css",
     "colors/settings-colors.css",
     "formatting/planner.css",
+    "formatting/personal-blocks.css",
   ];
 
   const [html, ...cssParts] = await Promise.all([

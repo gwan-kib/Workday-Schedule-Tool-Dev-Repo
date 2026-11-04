@@ -1,6 +1,8 @@
 export const STATE = {
   courses: [],
 
+  personalBlocks: [],
+
   query: "",
 
   syncPlanId: null,

@@ -268,7 +268,7 @@ export function timetablePages(courses, options = {}) {
         bh = event.rowSpan * rowHeight - 1,
         sub = Boolean(event.label),
         color = event.colorIndex - 1;
-      grid += `<rect class="schedule-entry" x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${esc((sub ? subPalette : palette)[color] || backgrounds[0])}" stroke="${esc(borderPalette[color] || borders[0])}" stroke-width="1"/>`;
+      grid += `<rect class="schedule-entry" x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${esc(event.course.isPersonalBlock ? "#e8edf3" : (sub ? subPalette : palette)[color] || backgrounds[0])}" stroke="${esc(event.course.isPersonalBlock ? event.course.personalColor : borderPalette[color] || borders[0])}" stroke-width="1"${event.course.isPersonalBlock ? ' stroke-dasharray="4 2"' : ""}/>`;
       const label = [event.code, event.course.section_number]
         .filter(Boolean)
         .join(" ");
