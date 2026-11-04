@@ -16,5 +16,5 @@
 .course-list-toolbar__add-course { display:flex; flex-wrap:wrap; gap:6px; }
 .course-list-toolbar { flex-wrap:wrap; }
 .schedule-entry-float.is-personal-block { border:2px dashed var(--personal-color,#64748b); background:#e8edf3; color:#1c2540; }
-.privacy-summary { line-height:1.6; font-size:13px; }
+.bug-report-help { line-height:1.6; font-size:13px; }
 @media(max-width:460px) { .personal-block-form { grid-template-columns:1fr; } }

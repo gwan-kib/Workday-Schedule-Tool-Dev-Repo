@@ -1,6 +1,6 @@
 # Phase 4 privacy and permissions audit
 
-Audited source: version 3.0.12. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
+Audited source: version 3.0.13. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
 
 | Destination | When | Fields sent | Retention in the extension |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ Automatic grade/RMP lookups remain enabled without an API opt-out, as requested.
 
 ## Local data and exports
 
-Saved schedules, notes, per-plan personal blocks, the reusable personal-block library, preferred state and color/tooltip/time preferences stay in extension-local storage. The appearance and spacing feature has been removed; any old appearance preference is ignored and is no longer exported. Working blocks are draft edits alongside courses and require Quick Save or Save As New to update a saved plan. Creating/editing a block separately stores a reusable local template immediately. Templates are never automatic conflicts in other plans: adding one creates an independent per-plan copy. Individual plan deletion removes that plan; removing a template does not change plan instances. Uninstall or clearing extension data removes the extension's saved data. Deleting a plan does not delete files already downloaded or events previously sent to Google. Local storage does not have an automatic retention timer.
+Saved schedules, notes, per-plan personal blocks, the reusable personal-block library, preferred state and color/tooltip/time preferences stay in extension-local storage. The appearance and spacing feature has been removed; any old appearance preference is ignored and is no longer exported. Working blocks are draft edits alongside courses and require Quick Save or Save As New to update a saved plan. A reusable local template is stored only when the user selects Save for reuse; draft creation/editing does not update the library automatically. Templates are never automatic conflicts in other plans: adding one creates an independent per-plan copy. Individual plan deletion removes that plan; removing a template does not change plan instances. Uninstall or clearing extension data removes the extension's saved data. Deleting a plan does not delete files already downloaded or events previously sent to Google. Local storage does not have an automatic retention timer.
 
 The library (up to 500 validated templates) is local in `wdPersonalBlockLibrary`; only blocks attached to selected saved plans are included in schedule files. The library itself is not added to portable shared files. The first updated main-panel startup seeds the library from existing saved-plan blocks, without rewriting those plans. Library entries persist until explicitly removed or extension data is cleared.
 
@@ -33,7 +33,7 @@ Firefox retains required `websiteContent` because automatic lookups transmit cou
 
 ## Diagnostics
 
-Production logging defaults off. Settings → Privacy & diagnostics permits session-only opt-in and a local redacted JSON download. The logger discards free-form messages, Error objects, API/DOM payloads, URLs and arbitrary fields, even in diagnostic mode. The bounded ring contains only code-defined scope/event IDs and severity (up to 100 events), plus format/extension version and enabled state. It contains no times, course names, instructor names, block text, URLs, tokens or account fields. Turning the option off clears the ring; reload resets the option. Developer `debugLog({ global: true })` follows the same sanitization, and a per-call `on: true` cannot bypass a disabled master switch. No report is automatically transmitted.
+Production logging defaults off. Settings → Report a problem permits session-only opt-in and a local redacted JSON download. The logger discards free-form messages, Error objects, API/DOM payloads, URLs and arbitrary fields, even in diagnostic mode. The bounded ring contains only code-defined scope/event IDs and severity (up to 100 events), plus format/extension version and enabled state. It contains no times, course names, instructor names, block text, URLs, tokens or account fields. Turning the option off clears the ring; reload resets the option. Developer `debugLog({ global: true })` follows the same sanitization, and a per-call `on: true` cannot bypass a disabled master switch. No report is automatically transmitted.
 
 ## Ready-to-use store disclosure
 
@@ -48,3 +48,5 @@ This extension reads UBC Workday course information and saves your plans locally
 Real-account Chrome/Firefox network inspection, actual browser-store consent/display, store submission review, and Google sign-in/revoke behavior need manual release checks. No registration or real Google Calendar writes were made during development.
 
 Saved reusable blocks can be edited in place; existing schedule instances remain independent. Diagnostics controls now explain their troubleshooting purpose and the enable → reproduce → download sequence. The download action is disabled until the user opts in for the current page session; it remains a local download with no automatic transmission.
+
+The former in-app Privacy & diagnostics section has been replaced at maintainer request by short problem-report instructions, Record what happens and Download bug report controls. The full data-flow disclosures remain in this document and the README/store-disclosure draft. The simplified UI does not change automatic lookup or calendar behavior.

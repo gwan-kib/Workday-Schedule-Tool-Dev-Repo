@@ -274,4 +274,5 @@
 .diagnostic-toggle { box-sizing:border-box; display:flex; align-items:center; gap:10px; width:100%; max-width:100%; padding:12px; border:1px solid var(--hex-brand-accent-6); border-radius:10px; background:var(--hex-neutral-1); }
 .diagnostic-toggle input { flex:0 0 auto; }
 .diagnostics-state { margin:0; font-size:12px; line-height:1.5; }
-.privacy-purpose { font-weight:600; }
+.bug-report-help ol { padding-left:22px; margin:8px 0; }
+.bug-report-help li { margin:5px 0; }

@@ -7,7 +7,7 @@ import { normalizeSchedule } from "../src/core/meetings.js";
 import { conflictDetails } from "../src/core/planner.js";
 import { createBackup, parseBackup, planScheduleImport } from "../src/core/scheduleBackup.js";
 import { buildICSFile } from "../src/exportLogic/exportIcs.js";
-import { blockSignature, normalizeBlockLibrary, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock, replaceReusableBlock } from "../src/core/personalBlockLibrary.js";
+import { blockSignature, normalizeBlockLibrary, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock, replaceReusableBlock, hasReusableBlock } from "../src/core/personalBlockLibrary.js";
 import { getScheduleSaveState } from "../src/core/scheduleSaveState.js";
 import { createScheduleUndoHistory, captureScheduleChange } from "../src/core/scheduleUndo.js";
 import { renderPersonalBlockCards } from "../src/mainPanel/courses/personalBlockCards.js";
@@ -84,7 +84,7 @@ test("browser packages inject only on the supported UBC tenant; Firefox has no G
   }
 });
 
-test("editor follows the current unsaved draft, saves reusable copies and rejects stale edits",async()=>{
+test("editor follows the unsaved draft, saves reusable copies explicitly and rejects stale edits",async()=>{
   const dom=new JSDOM('<button id="opener">Blocks</button>',{url:"https://fixture.test"});globalThis.window=dom.window;globalThis.document=dom.window.document;
   let current={id:"draft-a",name:"Working Schedule",courses:[course],personalBlocks:[]}, library=[];
   const {openPersonalBlocks}=await import("../src/mainPanel/schedules/personalBlocks.js");
@@ -92,7 +92,8 @@ test("editor follows the current unsaved draft, saves reusable copies and reject
   await d.libraryReady;assert.equal(d.dialog.querySelector('[aria-label="Saved plan for personal blocks"]'),null);
   const click=text=>[...d.dialog.querySelectorAll("button")].find(b=>b.textContent===text).click();const wait=()=>new Promise(r=>setTimeout(r,10));
   click("Create new block");document.querySelector('[name=title]').value="Lunch";document.querySelector('[name=startTime]').value="12:00";document.querySelector('[name=endTime]').value="13:00";
-  click("Save block");await wait();assert.equal(current.personalBlocks.length,1);assert.equal(library.length,1);
+  click("Save block");await wait();assert.equal(current.personalBlocks.length,1);assert.equal(library.length,0);
+  click("Save for reuse");await wait();assert.equal(library.length,1);assert.equal([...d.dialog.querySelectorAll("button")].some(b=>b.textContent==="Save for reuse"),false);
   click("Edit");document.querySelector('[name=title]').value="Edited";current={...current,personalBlocks:[{...current.personalBlocks[0],title:"Newer elsewhere"}]};
   click("Save block");await wait();assert.match(d.status.textContent,/changed/);assert.equal(current.personalBlocks[0].title,"Newer elsewhere");click("Cancel");
   click("Remove from schedule");await wait();assert.equal(current.personalBlocks.length,0);assert.equal(library.length,1);
@@ -186,4 +187,21 @@ test("saved-block Edit uses the reusable editor without changing the working sch
   await d.libraryReady;const edit=d.dialog.querySelector('.saved-personal-blocks .personal-block-card').querySelectorAll('button')[1];assert.equal(edit.textContent,"Edit");edit.click();
   document.querySelector('[name=title]').value="Changed template";[...d.dialog.querySelectorAll('button')].find(b=>b.textContent==="Save reusable block").click();await new Promise(r=>setTimeout(r,10));
   assert.equal(library[0].title,"Changed template");assert.equal(current.personalBlocks[0].title,"Work shift");assert.equal(applied,0);assert.match(d.status.textContent,/Existing schedules are unchanged/);d.close();dom.window.close();
+});
+
+
+test("Save for reuse appears only without an exact content match, regardless of internal id",()=>{
+  const dom=new JSDOM('<div id="list"></div>');globalThis.document=dom.window.document;
+  const b=block(), library=normalizeBlockLibrary([b]);assert.equal(hasReusableBlock({...b,id:"a-different-plan-copy"},library),true);
+  for(const different of [{title:"Changed title"},{startMinutes:571},{endDate:"2026-09-21"},{category:"Different"},{color:"#123456"},{exceptions:["2026-09-14"]}])assert.equal(hasReusableBlock({...b,...different},library),false);
+  const ui={tableBody:document.querySelector('#list'),reusableBlocks:library};
+  const draw=b=>renderPersonalBlockCards(ui,[b],{onSave:()=>{}});
+  draw(b);assert.equal([...ui.tableBody.querySelectorAll('button')].some(n=>n.textContent==="Save for reuse"),false);
+  draw({...b,title:"Changed title"});assert.equal([...ui.tableBody.querySelectorAll('button')].filter(n=>n.textContent==="Save for reuse").length,1);dom.window.close();
+});
+test("problem-report help uses short plain steps and enables a local report only after recording opt-in",async()=>{
+  const dom=new JSDOM('<section class="settings-section--display"></section>');globalThis.document=dom.window.document;
+  const {mountBugReportSettings}=await import("../src/mainPanel/settings/bugReport.js");mountBugReportSettings({root:document});
+  assert.equal(document.querySelector('h3').textContent,"Report a problem");assert.equal(document.querySelectorAll('ol li').length,3);assert.ok(!document.body.textContent.includes("Privacy & diagnostics"));
+  const button=document.querySelector('button'),toggle=document.querySelector('input');assert.equal(button.textContent,"Download bug report");assert.equal(button.disabled,true);toggle.checked=true;toggle.dispatchEvent(new dom.window.Event('change'));assert.equal(button.disabled,false);toggle.checked=false;toggle.dispatchEvent(new dom.window.Event('change'));assert.equal(button.disabled,true);dom.window.close();
 });

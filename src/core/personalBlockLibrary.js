@@ -58,3 +58,8 @@ export async function replaceReusableBlock(original, replacement) {
   await storageSet({ [PERSONAL_BLOCK_LIBRARY_KEY]: next });
   return next;
 }
+
+export function hasReusableBlock(block, library = []) {
+  const signature = blockSignature(block);
+  return library.some(saved => blockSignature(saved) === signature);
+}

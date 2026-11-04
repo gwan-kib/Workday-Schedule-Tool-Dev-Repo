@@ -1,6 +1,6 @@
 import { openScheduleNotes } from "./mainPanel/schedules/scheduleNotes.js";
-import { mountPrivacySettings } from "./mainPanel/settings/privacy.js";
-import { loadReusableBlocks } from "./core/personalBlockLibrary.js";
+import { mountBugReportSettings } from "./mainPanel/settings/bugReport.js";
+import { loadReusableBlocks, rememberReusableBlock } from "./core/personalBlockLibrary.js";
 import { openPersonalBlocks } from "./mainPanel/schedules/personalBlocks.js";
 import { renderPersonalBlockCards } from "./mainPanel/courses/personalBlockCards.js";
 import { validatePersonalBlocks, calendarExportItems } from "./core/personalBlocks.js";
@@ -146,7 +146,7 @@ debugLog({ local: { content: false } });
         courseColorPalettes: courseColorController.getPalettes(),
         allCourses: STATE.courses,
       });
-      renderPersonalBlockCards(ui, STATE.personalBlocks, { query: STATE.query, onEdit: id => editPersonalBlocks(id), onRemove: id => { try { setWorkingBlocks(STATE.personalBlocks.filter(b => b.id !== id)); } catch(error) { showActionError(error); } } });
+      renderPersonalBlockCards(ui, STATE.personalBlocks, { query: STATE.query, onSave: saveBlockForReuse, onEdit: id => editPersonalBlocks(id), onRemove: id => { try { setWorkingBlocks(STATE.personalBlocks.filter(b => b.id !== id)); } catch(error) { showActionError(error); } } });
       hydrateCourseLookups(ui, STATE.filtered);
     };
     const getEditingSchedule = () => ({ id: STATE.currentSavedScheduleId || STATE.syncPlanId || "working", name: STATE.currentScheduleName || "Working Schedule", courses: STATE.courses, personalBlocks: STATE.personalBlocks });
@@ -156,6 +156,12 @@ debugLog({ local: { content: false } });
       if(guard.expected && guard.expected !== JSON.stringify(STATE.personalBlocks)) throw new Error("Personal blocks changed. Reopen the editor before saving.");
       const valid=validatePersonalBlocks(next), before=captureScheduleChange(STATE);
       STATE.personalBlocks=valid;recordChange(before,"Edit personal blocks");renderAll();
+    };
+    const saveBlockForReuse = async id => {
+      const block=STATE.personalBlocks.find(b=>b.id===id);
+      if(!block) throw new Error("This block was removed. Reopen the schedule before saving it.");
+      ui.reusableBlocks=await rememberReusableBlock(structuredClone(block));
+      renderAll();showFooterAlert("This version is saved for reuse.",{tone:"success"});
     };
     const editPersonalBlocks = id => openPersonalBlocks(ui, { getCurrent: getEditingSchedule, setBlocks: setWorkingBlocks, getKnownBlocks: () => STATE.savedSchedules.flatMap(s => s.personalBlocks || []), editBlockId:id });
     ui.root.querySelector("#widget-add-personal-block")?.addEventListener("click",()=>editPersonalBlocks());
@@ -898,7 +904,7 @@ debugLog({ local: { content: false } });
         renderAll();
       }, 100),
     );
-    mountPrivacySettings(ui);
+    mountBugReportSettings(ui);
     mountPlanner(ui, {
       editPersonalBlocks,
       getState: () => STATE,
@@ -929,7 +935,7 @@ debugLog({ local: { content: false } });
     debug.log({ id: "boot.savedSchedulesLoaded" }, "Loaded saved schedules", {
       scheduleCount: STATE.savedSchedules.length,
     });
-    try { await loadReusableBlocks(STATE.savedSchedules.flatMap(s => s.personalBlocks || [])); }
+    try { ui.reusableBlocks=await loadReusableBlocks(STATE.savedSchedules.flatMap(s => s.personalBlocks || [])); }
     catch (error) { showActionError(error); }
     renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     await loadCoursesFromPage();
@@ -937,7 +943,12 @@ debugLog({ local: { content: false } });
     setActiveView(STATE.view.panel);
     // The popup or another Workday tab can rename, update or delete this source.
     const onSavedSchedulesChanged = async (changes, area) => {
-      if (area !== "local" || !changes.wdSavedSchedules) return;
+      if (area !== "local") return;
+      if(changes.wdPersonalBlockLibrary) {
+        try {ui.reusableBlocks=await loadReusableBlocks();renderAll();}
+        catch(error) {showActionError(error);}
+      }
+      if(!changes.wdSavedSchedules) return;
       try {
         const previous = STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId);
         const blocksUnedited = JSON.stringify(STATE.personalBlocks) === JSON.stringify(previous?.personalBlocks || []);

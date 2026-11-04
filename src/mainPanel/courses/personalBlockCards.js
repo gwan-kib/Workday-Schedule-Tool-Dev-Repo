@@ -1,5 +1,6 @@
+import { hasReusableBlock } from "../../core/personalBlockLibrary.js";
 import { node } from "../schedules/plannerOverview.js";
-export function renderPersonalBlockCards(ui, blocks, { query="", onEdit, onRemove } = {}) {
+export function renderPersonalBlockCards(ui, blocks, { query="", onEdit, onRemove, onSave } = {}) {
   ui.tableBody.querySelector(".personal-block-section")?.remove();
   const term=String(query).trim().toLowerCase();
   const visible=blocks.filter(b=>!term || [b.title,b.category,b.days.join(" ")].join(" ").toLowerCase().includes(term));
@@ -15,6 +16,15 @@ export function renderPersonalBlockCards(ui, blocks, { query="", onEdit, onRemov
     card.append(node("p",`${b.days.join(", ")} · ${clock(b.startMinutes)}–${clock(b.endMinutes)} · ${b.startDate} to ${b.endDate}${b.category?` · ${b.category}`:""}`));
     if(conflict.length) card.append(node("p",`Clashes with: ${conflict.join(", ")}`));
     for(const [label,fn] of [["Edit",()=>onEdit?.(b.id)],["Remove",()=>onRemove?.(b.id)]]) {const button=node("button",label);button.type="button";button.addEventListener("click",fn);card.append(button);}
+    if(onSave && Array.isArray(ui.reusableBlocks) && !hasReusableBlock(b,ui.reusableBlocks)) {
+      const save=node("button","Save for reuse");save.type="button";
+      save.addEventListener("click",async()=>{
+        save.disabled=true;
+        try { await onSave(b.id); }
+        catch(error) {ui.footerNotes?.showTemporary(error.message || "Could not save this block for reuse. Try again.",{tone:"warn"});}
+        finally {save.disabled=false;}
+      });card.append(save);
+    }
     list.append(card);
   }
   section.append(list);ui.tableBody.prepend(section);
