@@ -1,7 +1,9 @@
 import { openScheduleNotes } from "./mainPanel/schedules/scheduleNotes.js";
-import { initializeAppearance } from "./mainPanel/settings/appearance.js";
 import { mountPrivacySettings } from "./mainPanel/settings/privacy.js";
-import { calendarExportItems } from "./core/personalBlocks.js";
+import { loadReusableBlocks } from "./core/personalBlockLibrary.js";
+import { openPersonalBlocks } from "./mainPanel/schedules/personalBlocks.js";
+import { renderPersonalBlockCards } from "./mainPanel/courses/personalBlockCards.js";
+import { validatePersonalBlocks, calendarExportItems } from "./core/personalBlocks.js";
 import { mountPlanner } from "./mainPanel/schedules/plannerController.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
 import { getScheduleSaveState } from "./core/scheduleSaveState.js";
@@ -118,14 +120,14 @@ debugLog({ local: { content: false } });
         chip.dataset.status = saveState.status;
       });
       ui.quickSaveButton.disabled = saveInProgress || !storageReady || !saveState.saved;
-      ui.saveAsNewButton.disabled = saveInProgress || !storageReady || !STATE.courses.length;
+      ui.saveAsNewButton.disabled = saveInProgress || !storageReady || (!STATE.courses.length && !STATE.personalBlocks.length);
       renderUndoState();
       return saveState;
     };
     const updateScheduleView = () => {
       const { saved } = renderSaveState();
       ui.scheduleName = saved?.name || "Working Schedule";
-      ui.personalBlocks = saved?.personalBlocks || [];
+      ui.personalBlocks = STATE.personalBlocks;
       renderScheduleHeading(ui.courseScheduleHeading, ui.scheduleName, STATE.courses);
       renderSchedule(ui, STATE.courses, STATE.view.semester, STATE.view.timeFormat);
       ui.onTimeFormatChange = (next) => {
@@ -144,8 +146,19 @@ debugLog({ local: { content: false } });
         courseColorPalettes: courseColorController.getPalettes(),
         allCourses: STATE.courses,
       });
+      renderPersonalBlockCards(ui, STATE.personalBlocks, { query: STATE.query, onEdit: id => editPersonalBlocks(id), onRemove: id => { try { setWorkingBlocks(STATE.personalBlocks.filter(b => b.id !== id)); } catch(error) { showActionError(error); } } });
       hydrateCourseLookups(ui, STATE.filtered);
     };
+    const getEditingSchedule = () => ({ id: STATE.currentSavedScheduleId || STATE.syncPlanId || "working", name: STATE.currentScheduleName || "Working Schedule", courses: STATE.courses, personalBlocks: STATE.personalBlocks });
+    const setWorkingBlocks = (next, guard = {}) => {
+      if(saveInProgress || undoInProgress) throw new Error("Wait for the current schedule action to finish.");
+      if(guard.contextId && getEditingSchedule().id !== guard.contextId) throw new Error("The schedule being edited changed.");
+      if(guard.expected && guard.expected !== JSON.stringify(STATE.personalBlocks)) throw new Error("Personal blocks changed. Reopen the editor before saving.");
+      const valid=validatePersonalBlocks(next), before=captureScheduleChange(STATE);
+      STATE.personalBlocks=valid;recordChange(before,"Edit personal blocks");renderAll();
+    };
+    const editPersonalBlocks = id => openPersonalBlocks(ui, { getCurrent: getEditingSchedule, setBlocks: setWorkingBlocks, getKnownBlocks: () => STATE.savedSchedules.flatMap(s => s.personalBlocks || []), editBlockId:id });
+    ui.root.querySelector("#widget-add-personal-block")?.addEventListener("click",()=>editPersonalBlocks());
     const loadingOverlayStack = [];
     const renderLoadingOverlay = () => {
       if (!ui.loadingModal) return;
@@ -224,7 +237,7 @@ debugLog({ local: { content: false } });
           result = { ...retryResult, requestedCount: result.requestedCount };
         }
         if (!result.failures.length) ui.footerNotes.removePersistent("import-status");
-        if (result.status === "empty" && STATE.courses.length) {
+        if (result.status === "empty" && (STATE.courses.length || STATE.personalBlocks.length)) {
           const acceptEmpty = await openScheduleModal({
             title: "Empty Workday schedule",
             message: "Workday shows no rows. Clear the extension working schedule? Saved schedules are preserved.",
@@ -236,6 +249,7 @@ debugLog({ local: { content: false } });
         }
         const before = preserveExisting ? captureScheduleChange(STATE) : null;
         store.load(accumulated);
+        STATE.personalBlocks = [];
         STATE.syncPlanId = stableId(`working|${accumulated.map(courseIdentity).sort().join("|")}`);
         STATE.syncPlanName = "Working Schedule";
         courseColorController.assignCourseColors(STATE.courses);
@@ -311,6 +325,7 @@ debugLog({ local: { content: false } });
       if (undoInProgress) return;
       const before = captureScheduleChange(STATE);
       store.load([]);
+      STATE.personalBlocks = [];
       STATE.syncPlanId = crypto.randomUUID();
       STATE.syncPlanName = "Working Schedule";
       STATE.currentSavedScheduleId = null;
@@ -531,7 +546,7 @@ debugLog({ local: { content: false } });
     const handleExport = async (type) => {
       debug.log({ id: "handleExport" }, "Handling export action", { type });
       if (type === "ics") {
-        const blocks = STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || [];
+        const blocks = STATE.personalBlocks;
         const choice = blocks.length ? await openScheduleModal({ title: "Export personal blocks?", message: "Personal blocks may include private commitments. Choose whether to include them in this calendar file.", confirmLabel: "Export calendar file", showInput: false, showCancel: true, choices: [{ value: "exclude", label: "Courses only" }, { value: "include", label: "Courses and personal blocks" }] }) : "exclude";
         if (!choice) return;
         const result = exportICS(STATE.currentScheduleName, calendarExportItems(STATE.courses, blocks, choice === "include"));
@@ -543,7 +558,7 @@ debugLog({ local: { content: false } });
       }
       if (type === "gcal-sync") {
         if (!(await requireGoogleSignInForSync())) return;
-        const blocks = STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || [];
+        const blocks = STATE.personalBlocks;
         if (!STATE.courses?.length && !blocks.length) {
           showFooterAlert("No schedule items to sync.", { tone: "warn" });
           return;
@@ -596,7 +611,7 @@ debugLog({ local: { content: false } });
           });
           if (!confirmed) return;
           if (
-            fingerprint !== JSON.stringify({ courses: store.snapshot(), blocks: STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || [] }) ||
+            fingerprint !== JSON.stringify({ courses: store.snapshot(), blocks: STATE.personalBlocks }) ||
             options.planId !==
               (STATE.syncPlanId ||
                 STATE.currentSavedScheduleId ||
@@ -704,7 +719,7 @@ debugLog({ local: { content: false } });
       if (!saved) return;
       const confirmed = await openScheduleModal({
         title: "Update saved schedule?",
-        message: `Replace the saved courses in "${saved.name}" with your current schedule?`,
+        message: `Replace the saved schedule "${saved.name}" with your current schedule?`,
         confirmLabel: "Update",
         showInput: false,
         showCancel: true,
@@ -714,7 +729,7 @@ debugLog({ local: { content: false } });
       const current = getScheduleSaveState(STATE).saved;
       if (current?.id !== saved.id)
         throw new Error("This saved schedule is no longer available. Use Save As New.");
-      const snapshot = { ...current, courses: store.snapshot(), savedAt: new Date().toISOString() };
+      const snapshot = { ...current, courses: store.snapshot(), personalBlocks: structuredClone(STATE.personalBlocks), savedAt: new Date().toISOString() };
       const before = captureScheduleChange(STATE);
       await updateSavedSchedules(STATE.savedSchedules.map((schedule) =>
         schedule.id === snapshot.id ? snapshot : schedule,
@@ -726,7 +741,7 @@ debugLog({ local: { content: false } });
       showFooterAlert(`Updated "${snapshot.name}".`, { tone: "success" });
     }));
     on(ui.saveAsNewButton, "click", () => runSave(async () => {
-      if (!STATE.courses.length) return;
+      if (!STATE.courses.length && !STATE.personalBlocks.length) return;
       if (!canSaveMoreSchedules(STATE.savedSchedules)) {
         await openScheduleModal({
           title: "Schedule limit reached",
@@ -749,7 +764,7 @@ debugLog({ local: { content: false } });
       if (!canSaveMoreSchedules(STATE.savedSchedules))
         throw new Error("Schedule limit reached. Delete a saved schedule and retry.");
       const snapshot = createScheduleSnapshot(name, store.snapshot(), null);
-      snapshot.personalBlocks = structuredClone(STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || []);
+      snapshot.personalBlocks = structuredClone(STATE.personalBlocks);
       const before = captureScheduleChange(STATE);
       if (!STATE.savedSchedules.length) snapshot.isFavorite = true;
       await updateSavedSchedules([snapshot, ...STATE.savedSchedules]);
@@ -812,7 +827,7 @@ debugLog({ local: { content: false } });
         );
         if (STATE.currentSavedScheduleId === scheduleId) STATE.currentScheduleName = nextName;
         if (STATE.syncPlanId === scheduleId) STATE.syncPlanName = nextName;
-        updateScheduleView();
+        renderAll();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         showFooterAlert(`Renamed schedule to "${nextName}".`, { tone: "success" });
         if (ui.savedDropdown) ui.savedDropdown.open = true;
@@ -838,7 +853,7 @@ debugLog({ local: { content: false } });
           STATE.syncPlanName = "Working Schedule";
         }
         recordChange(before, `Delete saved schedule "${selected.name}"`);
-        updateScheduleView();
+        renderAll();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
         return;
       }
@@ -849,6 +864,7 @@ debugLog({ local: { content: false } });
       STATE.syncPlanName = selected.name;
       debug.log({ id: "savedMenu.load" }, "Loading saved schedule", { scheduleId, scheduleName: selected.name });
       store.load(selected.courses);
+      STATE.personalBlocks = structuredClone(selected.personalBlocks || []);
       courseColorController.assignCourseColors(STATE.courses);
       STATE.filtered = [...STATE.courses];
       ui.searchInput.value = "";
@@ -882,9 +898,9 @@ debugLog({ local: { content: false } });
         renderAll();
       }, 100),
     );
-    await initializeAppearance(ui, () => { if (storageReady) renderAll(); });
     mountPrivacySettings(ui);
     mountPlanner(ui, {
+      editPersonalBlocks,
       getState: () => STATE,
       saveSchedules: async (next) => {
         const before = captureScheduleChange(STATE);
@@ -913,6 +929,8 @@ debugLog({ local: { content: false } });
     debug.log({ id: "boot.savedSchedulesLoaded" }, "Loaded saved schedules", {
       scheduleCount: STATE.savedSchedules.length,
     });
+    try { await loadReusableBlocks(STATE.savedSchedules.flatMap(s => s.personalBlocks || [])); }
+    catch (error) { showActionError(error); }
     renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
     await loadCoursesFromPage();
     renderAll();
@@ -921,7 +939,11 @@ debugLog({ local: { content: false } });
     const onSavedSchedulesChanged = async (changes, area) => {
       if (area !== "local" || !changes.wdSavedSchedules) return;
       try {
+        const previous = STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId);
+        const blocksUnedited = JSON.stringify(STATE.personalBlocks) === JSON.stringify(previous?.personalBlocks || []);
         STATE.savedSchedules = await loadSavedSchedules();
+        const latest = STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId);
+        if (blocksUnedited && latest) STATE.personalBlocks = structuredClone(latest.personalBlocks || []);
         storageReady = true;
         const { saved } = getScheduleSaveState(STATE);
         if (STATE.currentSavedScheduleId && !saved) {
@@ -933,7 +955,7 @@ debugLog({ local: { content: false } });
           STATE.currentScheduleName = saved.name;
           STATE.syncPlanName = saved.name;
         }
-        updateScheduleView();
+        renderAll();
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
       } catch (error) {
         storageReady = false;

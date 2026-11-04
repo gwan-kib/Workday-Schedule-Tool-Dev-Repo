@@ -1,6 +1,6 @@
 # Phase 4 privacy and permissions audit
 
-Audited source: version 3.0.9. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
+Audited source: version 3.0.10. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
 
 | Destination | When | Fields sent | Retention in the extension |
 | --- | --- | --- | --- |
@@ -15,7 +15,9 @@ Automatic grade/RMP lookups remain enabled without an API opt-out, as requested.
 
 ## Local data and exports
 
-Saved schedules, notes, per-plan personal blocks, preferred state and appearance/color/tooltip/time preferences stay in extension-local storage. Individual plan deletion removes that plan; uninstall or clearing extension data removes the extension's saved data. Deleting a plan does not delete files already downloaded or events previously sent to Google. Local storage does not have an automatic retention timer.
+Saved schedules, notes, per-plan personal blocks, the reusable personal-block library, preferred state and color/tooltip/time preferences stay in extension-local storage. The appearance and spacing feature has been removed; any old appearance preference is ignored and is no longer exported. Working blocks are draft edits alongside courses and require Quick Save or Save As New to update a saved plan. Creating/editing a block separately stores a reusable local template immediately. Templates are never automatic conflicts in other plans: adding one creates an independent per-plan copy. Individual plan deletion removes that plan; removing a template does not change plan instances. Uninstall or clearing extension data removes the extension's saved data. Deleting a plan does not delete files already downloaded or events previously sent to Google. Local storage does not have an automatic retention timer.
+
+The library (up to 500 validated templates) is local in `wdPersonalBlockLibrary`; only blocks attached to selected saved plans are included in schedule files. The library itself is not added to portable shared files. The first updated main-panel startup seeds the library from existing saved-plan blocks, without rewriting those plans. Library entries persist until explicitly removed or extension data is cleared.
 
 Version-1 WST JSON is a deliberate user-initiated export. It includes selected/all saved plans, course/instructor/meeting fields, notes, personal blocks and allowlisted display settings. The new optional fields remain compatible with old records. Export code strips Workday section IDs/links and ignores unknown properties, account metadata and credentials. Import validates the schema, block occurrences, dates, limits and names before saving. Older files that contain validated section links remain readable. Newly exported portable plans cannot use those omitted section links to reopen Workday; course meetings, colors and notes remain available. Treat the exported personal/course content as private and review it before sharing.
 

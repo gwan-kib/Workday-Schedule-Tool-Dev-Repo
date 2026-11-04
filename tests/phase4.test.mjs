@@ -7,7 +7,10 @@ import { normalizeSchedule } from "../src/core/meetings.js";
 import { conflictDetails } from "../src/core/planner.js";
 import { createBackup, parseBackup, planScheduleImport } from "../src/core/scheduleBackup.js";
 import { buildICSFile } from "../src/exportLogic/exportIcs.js";
-import { normalizeAppearance, resolvedTheme, initializeAppearance } from "../src/mainPanel/settings/appearance.js";
+import { blockSignature, normalizeBlockLibrary, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock } from "../src/core/personalBlockLibrary.js";
+import { getScheduleSaveState } from "../src/core/scheduleSaveState.js";
+import { createScheduleUndoHistory, captureScheduleChange } from "../src/core/scheduleUndo.js";
+import { renderPersonalBlockCards } from "../src/mainPanel/courses/personalBlockCards.js";
 import { debugFor, enableDiagnostics, diagnosticSummary, debugLog } from "../src/utilities/debugTool.js";
 
 const block=(extra={})=>({id:"block-a",title:"Work shift",category:"Work",color:"#64748b",startDate:"2026-09-07",endDate:"2026-09-28",startMinutes:570,endMinutes:630,days:["Mon"],recurrence:"weekly",exceptions:[],...extra});
@@ -37,7 +40,7 @@ test("portable files retain blocks and notes, isolate plans and strip Workday/ac
   const text=JSON.stringify(backup);
   for(const privateValue of ["123456","myworkday.com","secret"]) assert.ok(!text.includes(privateValue));
   const restored=parseBackup(text);assert.equal(restored.schedules[0].personalBlocks[0].title,"Work shift");assert.deepEqual(restored.schedules[1].personalBlocks,[]);
-  assert.deepEqual(restored.settings.wdAppearance,{theme:"dark",density:"compact"});
+  assert.equal(restored.settings.wdAppearance,undefined);
   const imported=planScheduleImport([plan()],restored.schedules[0],()=>"new");assert.equal(imported.imported.personalBlocks.length,1);assert.equal(imported.imported.notes,"Reminder");assert.equal(imported.imported.isFavorite,false);
   const legacy=parseBackup(JSON.stringify({format:"ubc-workday-schedules",version:1,schedules:[{...plan(),personalBlocks:undefined}],settings:{}}));assert.deepEqual(legacy.schedules[0].personalBlocks,[]);
 });
@@ -46,10 +49,6 @@ test("personal commitments are excluded from ICS unless explicitly selected",()=
   assert.ok(!excluded.includes("Work shift"));assert.equal((excluded.match(/BEGIN:VEVENT/g)||[]).length,1);
   const included=buildICSFile(calendarExportItems([course],[block()],true));
   assert.ok(included.includes("Work shift"));assert.ok(included.includes("Personal block"));assert.equal((included.match(/BEGIN:VEVENT/g)||[]).length,2);
-});
-test("appearance defaults follow system with safe fallback and explicit overrides",()=>{
-  assert.deepEqual(normalizeAppearance(null),{theme:"system",density:"comfortable"});
-  assert.equal(resolvedTheme("system",true),"dark");assert.equal(resolvedTheme("system"),"light");assert.equal(resolvedTheme("light",true),"light");assert.equal(resolvedTheme("dark",false),"dark");
 });
 test("diagnostics default off; opt-in cannot expose arbitrary messages, payloads or secrets",()=>{
   enableDiagnostics(false);const logger=debugFor("test");const original=console.log;const printed=[];console.log=(...v)=>printed.push(v);
@@ -81,32 +80,54 @@ test("browser packages inject only on the supported UBC tenant; Firefox has no G
     if(browser==="firefox") {assert.ok(!manifest.permissions.includes("identity"));assert.ok(!manifest.host_permissions.some(p=>p.includes("googleapis")));}
   }
 });
-test("block editor saves explicitly, preserves other metadata and refuses a stale edit",async()=>{
-  const dom=new JSDOM('<button id="opener">Blocks</button>',{url:"https://fixture.test"});
-  globalThis.window=dom.window;globalThis.document=dom.window.document;
-  let plans=[plan()];
-  const {openPersonalBlocks}=await import("../src/mainPanel/schedules/personalBlocks.js");
-  const d=openPersonalBlocks({root:document.body},{scheduleId:"plan-a",getSchedules:()=>plans,saveSchedules:async next=>{plans=next;}});
-  const click=text=>[...d.dialog.querySelectorAll("button")].find(b=>b.textContent===text).click();
-  const wait=()=>new Promise(r=>setTimeout(r,10));
-  click("Add personal block");document.querySelector('[name=title]').value="Lunch";document.querySelector('[name=startTime]').value="12:00";document.querySelector('[name=endTime]').value="13:00";
-  click("Save block");await wait();assert.equal(plans[0].personalBlocks.length,1);assert.equal(plans[0].notes,"Reminder");
-  click("Edit");document.querySelector('[name=title]').value="Edited";
-  plans=[{...plans[0],personalBlocks:[{...plans[0].personalBlocks[0],title:"Newer elsewhere"}]}];
-  click("Save block");await wait();assert.match(d.status.textContent,/changed in another window/);assert.equal(plans[0].personalBlocks[0].title,"Newer elsewhere");
-  click("Cancel");click("Delete");await wait();assert.equal(plans[0].personalBlocks.length,1);click("Confirm delete");await wait();assert.equal(plans[0].personalBlocks.length,0);d.close();dom.window.close();
-});
-test("appearance persists only validated display preferences and tracks system changes",async()=>{
-  const dom=new JSDOM('<section class="settings-section--display"></section>',{url:"https://fixture.test"});globalThis.document=dom.window.document;
-  const listeners=[];const stored={wdAppearance:{theme:"system",density:"comfortable"}};let mediaChanged;
-  globalThis.matchMedia=()=>({matches:true,addEventListener:(_,fn)=>{mediaChanged=fn;},removeEventListener(){}});
-  globalThis.chrome={runtime:{},storage:{local:{get:(keys,cb)=>cb(stored),set:(v,cb)=>{Object.assign(stored,v);cb();}},onChanged:{addListener:fn=>listeners.push(fn),removeListener(){}}}};
-  const cleanup=await initializeAppearance({root:document});assert.equal(document.documentElement.dataset.wstTheme,"dark");
-  const select=document.querySelector('[aria-label=Appearance]');select.value="light";select.dispatchEvent(new dom.window.Event("change"));await new Promise(r=>setTimeout(r,0));
-  assert.equal(stored.wdAppearance.theme,"light");mediaChanged();assert.equal(document.documentElement.dataset.wstTheme,"light");
-  listeners[0]({wdAppearance:{newValue:{theme:"dark",density:"compact"}}},"local");assert.equal(document.documentElement.dataset.wstDensity,"compact");cleanup();dom.window.close();delete globalThis.chrome;delete globalThis.matchMedia;
-});
 
+test("editor follows the current unsaved draft, saves reusable copies and rejects stale edits",async()=>{
+  const dom=new JSDOM('<button id="opener">Blocks</button>',{url:"https://fixture.test"});globalThis.window=dom.window;globalThis.document=dom.window.document;
+  let current={id:"draft-a",name:"Working Schedule",courses:[course],personalBlocks:[]}, library=[];
+  const {openPersonalBlocks}=await import("../src/mainPanel/schedules/personalBlocks.js");
+  const d=openPersonalBlocks({root:document.body},{getCurrent:()=>current,setBlocks:async next=>{current={...current,personalBlocks:next};},loadLibrary:async()=>library,remember:async b=>{library=normalizeBlockLibrary([...library,b]);return library;},forget:async id=>{library=library.filter(b=>b.id!==id);return library;}});
+  await d.libraryReady;assert.equal(d.dialog.querySelector('[aria-label="Saved plan for personal blocks"]'),null);
+  const click=text=>[...d.dialog.querySelectorAll("button")].find(b=>b.textContent===text).click();const wait=()=>new Promise(r=>setTimeout(r,10));
+  click("Create new block");document.querySelector('[name=title]').value="Lunch";document.querySelector('[name=startTime]').value="12:00";document.querySelector('[name=endTime]').value="13:00";
+  click("Save block");await wait();assert.equal(current.personalBlocks.length,1);assert.equal(library.length,1);
+  click("Edit");document.querySelector('[name=title]').value="Edited";current={...current,personalBlocks:[{...current.personalBlocks[0],title:"Newer elsewhere"}]};
+  click("Save block");await wait();assert.match(d.status.textContent,/changed/);assert.equal(current.personalBlocks[0].title,"Newer elsewhere");click("Cancel");
+  click("Remove from schedule");await wait();assert.equal(current.personalBlocks.length,0);assert.equal(library.length,1);
+  click("Add to schedule");await wait();assert.equal(current.personalBlocks[0].title,"Lunch");assert.notEqual(current.personalBlocks[0].id,library[0].id);
+  const snapshot=structuredClone(current);current={...current,id:"draft-b",personalBlocks:[]};click("Create new block");assert.match(d.status.textContent,/changed/);assert.equal(current.personalBlocks.length,0);assert.equal(snapshot.personalBlocks.length,1);
+  d.close();dom.window.close();
+});
+test("reusable library persists across plans, deduplicates content and can remove saved copies independently",async()=>{
+  const stored={};globalThis.chrome={runtime:{},storage:{local:{get:(keys,cb)=>cb(stored),set:(values,cb)=>{Object.assign(stored,structuredClone(values));cb();}}}};
+  try {
+    let library=await loadReusableBlocks([block()]);assert.equal(library.length,1);
+    library=await rememberReusableBlock(block({id:"other-id"}));assert.equal(library.length,1);
+    const copy={...structuredClone(library[0]),id:"copy-in-plan-b"};copy.title="Edited in B";
+    assert.equal((await loadReusableBlocks())[0].title,"Work shift");
+    const first=blockSignature(block());assert.equal(first,blockSignature(block({id:"another"})));
+    await forgetReusableBlock(library[0].id);assert.equal((await loadReusableBlocks([block()])).length,0);assert.equal(copy.title,"Edited in B");
+  } finally {delete globalThis.chrome;}
+});
+test("block-only working schedules can be saved; block edits participate in save status and Undo/Redo",()=>{
+  const state={courses:[],personalBlocks:[],savedSchedules:[],currentSavedScheduleId:null};const history=createScheduleUndoHistory();
+  const before=captureScheduleChange(state);state.personalBlocks=[block()];history.record(before,captureScheduleChange(state),"Add personal block");assert.equal(getScheduleSaveState(state).status,"working");
+  state.savedSchedules=[{...plan([block()]),courses:[]}];state.currentSavedScheduleId="plan-a";assert.equal(getScheduleSaveState(state).status,"saved");
+  state.personalBlocks[0].title="Changed";assert.equal(getScheduleSaveState(state).status,"working");
+  state.currentSavedScheduleId=null;state.savedSchedules=[];state.personalBlocks=[block()];
+  let operation=history.plan(state);Object.assign(state,operation.working);history.commit(operation);assert.deepEqual(state.personalBlocks,[]);
+  operation=history.plan(state,"redo");Object.assign(state,operation.working);history.commit(operation);assert.equal(state.personalBlocks[0].title,"Work shift");
+});
+test("personal block cards appear in course view with edit/remove controls, filtering and conflicts",()=>{
+  const dom=new JSDOM('<div id="list"></div>');globalThis.document=dom.window.document;
+  const ui={tableBody:document.querySelector('#list'),conflictPartnersByCode:new Map([["WORK SHIFT",["COSC_O 310"]]])};let edited,removed;
+  renderPersonalBlockCards(ui,[block()],{onEdit:id=>edited=id,onRemove:id=>removed=id});assert.equal(ui.tableBody.querySelectorAll('.course-personal-block').length,1);assert.match(ui.tableBody.textContent,/Clashes with: COSC_O 310/);
+  ui.tableBody.querySelectorAll('button')[0].click();ui.tableBody.querySelectorAll('button')[1].click();assert.equal(edited,"block-a");assert.equal(removed,"block-a");
+  renderPersonalBlockCards(ui,[block()],{query:"unmatched"});assert.equal(ui.tableBody.querySelectorAll('.course-personal-block').length,0);dom.window.close();
+});
+test("appearance controls are removed and the timetable retains baseline spacing",async()=>{
+  const popup=await readFile(new URL('../src/popup.html',import.meta.url),'utf8');assert.ok(!popup.includes('popup-appearance'));
+  const css=await readFile(new URL('../src/css/formatting/personal-blocks.css',import.meta.url),'utf8');assert.ok(!css.includes('wst-theme'));assert.ok(!css.includes('wst-density'));assert.ok(!css.includes('.schedule-table tbody tr'));
+});
 
 test("source links find an older last offering without pretending it belongs to the five-year window",async()=>{
   const original=globalThis.fetch;
@@ -132,4 +153,13 @@ test("unusable imported block occurrences are rejected before any plan can be sa
 test("visual exports distinguish personal blocks and preserve their descriptive labels",async()=>{
   const {timetablePages}=await import("../src/exportLogic/exportTimetable.js");
   const pages=timetablePages(scheduleItems([course],[block()]));assert.equal(pages.pages.length,2);assert.ok(pages.pages[0].includes('stroke-dasharray="4 2"'));assert.ok(pages.pages[0].includes("Work shift"));assert.ok(!pages.pages[0].includes("personal:block-a"));
+});
+
+
+test("course Undo preserves a later personal-block update from another window",()=>{
+  const state={courses:[structuredClone(course)],personalBlocks:[],savedSchedules:[plan()],currentSavedScheduleId:"plan-a"};
+  const history=createScheduleUndoHistory(),before=captureScheduleChange(state);
+  state.courses=[];history.record(before,captureScheduleChange(state),"Remove course");
+  state.personalBlocks=[block()];state.savedSchedules[0].personalBlocks=[block()];
+  const restore=history.plan(state);assert.equal(restore.working.courses.length,1);assert.equal(restore.working.personalBlocks[0].title,"Work shift");
 });

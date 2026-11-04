@@ -69,9 +69,9 @@ export function exportAppearance(target) {
       read(`--course-color-${i + 1}-border`, v),
     ),
     theme: {
-      main: target?.dataset.wstTheme === "dark" ? "#343e70" : read("--hex-brand-main-1", "#3b45a4"),
-      background: "#f6f7fe",
-      headerText: target?.dataset.wstTheme === "dark" ? "#eff2ff" : read("--hex-brand-accent-3", "#e1e5fb"),
+      main: read("--hex-brand-main-1", "#3b45a4"),
+      background: read("--hex-brand-accent-1", "#f6f7fe"),
+      headerText: read("--hex-brand-accent-3", "#e1e5fb"),
       pill: read("--hex-brand-accent-5", "#8f98e0"),
     },
   };

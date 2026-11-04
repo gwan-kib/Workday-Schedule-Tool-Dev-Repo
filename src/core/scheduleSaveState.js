@@ -21,9 +21,11 @@ const courseFingerprint = (courses) => {
 
 export function getScheduleSaveState(state) {
   const saved = state.savedSchedules.find((schedule) => schedule.id === state.currentSavedScheduleId) || null;
-  const status = !state.courses.length
+  const hasBlocks = (state.personalBlocks || []).length > 0;
+  const sameBlocks = JSON.stringify(state.personalBlocks || []) === JSON.stringify(saved?.personalBlocks || []);
+  const status = !state.courses.length && !hasBlocks
     ? "empty"
-    : saved && courseFingerprint(state.courses) === courseFingerprint(saved.courses)
+    : saved && sameBlocks && courseFingerprint(state.courses) === courseFingerprint(saved.courses)
       ? "saved"
       : "working";
   return {

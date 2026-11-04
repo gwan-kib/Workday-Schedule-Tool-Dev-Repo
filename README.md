@@ -136,8 +136,12 @@ The panel runs only on `https://wd10.myworkday.com/ubc/*`. JSON downloads includ
 
 MIT (see `LICENSE.md`)
 
-## Phase 4 display and personal planning
+## Phase 4 personal planning
 
-Settings → Display offers System (default), Light and Dark appearance plus Comfortable/Compact timetable spacing. The popup offers the same preferences under Display settings. Saved plans can contain personal blocks for work, commuting and commitments, with one-date, weekly or alternate-week recurrence and skipped dates. Personal blocks are distinct from Workday classes and participate in conflicts; they do not change registration. Save a plan first, then use Schedule → Personal blocks (also available in the popup). These edits save directly to that plan; they are separate from the course Undo/Redo history.
+The original fixed light appearance and timetable spacing are retained. No theme or spacing preferences are exposed.
 
-See [the Phase 4 feature and manual testing guide](docs/phase-4-testing.md).
+Use **Add personal block** in Course List or **Personal blocks** in Schedule view. Blocks are added to the schedule currently being edited, including a new unsaved draft; there is no plan selector. They appear as separate personal cards in Course List and dashed items in the timetable, take part in actual-date conflict checks, and use the same Quick Save/Save As New and Undo/Redo workflow as course edits. Block-only schedules can also be saved.
+
+Creating or editing a block automatically keeps a reusable local copy under **Saved personal blocks**. After switching schedules, choose **Add to schedule** on an existing copy. Each schedule gets an independent editable instance. Removing a block from a schedule keeps the reusable copy; **Remove saved copy** only removes that library entry. Existing saved-plan blocks are migrated into the library when the updated extension first loads. The popup edits its currently previewed saved plan directly and uses the same library.
+
+Lead Developer and Contributors retain equally sized original-style credit cards. See [the feature and manual testing guide](docs/phase-4-testing.md).

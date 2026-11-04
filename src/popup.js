@@ -1,4 +1,3 @@
-import { initializeAppearance } from "./mainPanel/settings/appearance.js";
 import { scheduleItems } from "./core/personalBlocks.js";
 import { openPersonalBlocks } from "./mainPanel/schedules/personalBlocks.js";
 import { openScheduleNotes, createScheduleNotesButton } from "./mainPanel/schedules/scheduleNotes.js";
@@ -218,7 +217,6 @@ async function boot() {
   if (["24h", "am/pm"].includes(preferences.wdTimeFormat)) popupState.timeFormat = preferences.wdTimeFormat;
   popupState.activeScheduleId = getPreferredSchedule(popupState.schedules)?.id || null;
 
-  await initializeAppearance(ui, () => renderActiveSchedule());
   const tools = document.createElement("div");
   tools.className = "planner-toolbar";
   const orientationLabel = document.createElement("label");
@@ -249,7 +247,20 @@ async function boot() {
     tools.appendChild(button);
   }
   const blocksButton=document.createElement("button"); blocksButton.type="button";blocksButton.textContent="Personal blocks";
-  blocksButton.addEventListener("click",()=>{try { openPersonalBlocks(ui,{scheduleId:popupState.activeScheduleId,getSchedules:()=>popupState.schedules,saveSchedules:async next=>{await persistSavedSchedules(next);popupState.schedules=next;renderPicker();renderActiveSchedule();}}); } catch(error) { ui.footerNotes.showTemporary(error.message,{tone:"warn"}); }});
+  blocksButton.addEventListener("click",()=>{try {
+    openPersonalBlocks(ui,{
+      saveHint:"Changes in the popup are saved directly to this previewed plan.",
+      getCurrent:()=>popupState.schedules.find(s=>s.id===popupState.activeScheduleId),
+      getKnownBlocks:()=>popupState.schedules.flatMap(s=>s.personalBlocks||[]),
+      setBlocks:async (blocks,guard)=>{
+        const latest=await loadSavedSchedules(), current=latest.find(s=>s.id===guard.contextId);
+        if(popupState.activeScheduleId!==guard.contextId || !current) throw new Error("The previewed schedule changed.");
+        if(JSON.stringify(current.personalBlocks||[])!==guard.expected) throw new Error("These personal blocks changed in another window. Reopen them.");
+        const next=latest.map(s=>s.id===current.id?{...s,personalBlocks:blocks}:s);
+        await persistSavedSchedules(next);popupState.schedules=next;renderPicker();renderActiveSchedule();
+      }
+    });
+  }catch(error){ui.footerNotes.showTemporary(error.message,{tone:"warn"});}});
   tools.prepend(blocksButton);
   ui.scheduleGrid.before(tools);
   renderPicker();

@@ -1,7 +1,7 @@
 import { courseIdentity, stableId } from "./meetings.js";
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const workingKeys = ["courses", "currentSavedScheduleId", "currentScheduleName", "syncPlanId", "syncPlanName"];
-const working = (state) => Object.fromEntries(workingKeys.map((key) => [key, structuredClone(state[key] ?? (key === "courses" ? [] : null))]));
+const workingKeys = ["courses", "personalBlocks", "currentSavedScheduleId", "currentScheduleName", "syncPlanId", "syncPlanName"];
+const working = (state) => Object.fromEntries(workingKeys.map((key) => [key, structuredClone(state[key] ?? (["courses", "personalBlocks"].includes(key) ? [] : null))]));
 
 export function captureScheduleChange(state) {
   return { working: working(state), saved: structuredClone(state.savedSchedules) };
@@ -11,14 +11,14 @@ function changeEntry(before, after, label) {
   const ids = new Set([...before.saved, ...after.saved].map((s) => s.id));
   const saved = [...ids].flatMap((id) => {
     const a = before.saved.find((s) => s.id === id), b = after.saved.find((s) => s.id === id);
-    return (!a || !b || !equal(a.courses, b.courses))
-      ? [{ id, before: a, after: b, index: before.saved.findIndex((s) => s.id === id) }]
+    return (!a || !b || !equal(a.courses, b.courses) || !equal(a.personalBlocks || [], b.personalBlocks || []))
+      ? [{ id, before: a, after: b, blocksChanged: !equal(a?.personalBlocks || [], b?.personalBlocks || []), index: before.saved.findIndex((s) => s.id === id) }]
       : [];
   });
-  const hasWorking = !equal(before.working.courses, after.working.courses) ||
+  const hasWorking = !equal(before.working.courses, after.working.courses) || !equal(before.working.personalBlocks, after.working.personalBlocks) ||
     before.working.currentSavedScheduleId !== after.working.currentSavedScheduleId;
   return saved.length || hasWorking
-    ? structuredClone({ before: before.working, saved, hasWorking, label })
+    ? structuredClone({ before: before.working, saved, hasWorking, restoresBlocks: !equal(before.working.personalBlocks, after.working.personalBlocks) || before.working.currentSavedScheduleId !== after.working.currentSavedScheduleId, label })
     : null;
 }
 
@@ -47,7 +47,7 @@ export function createScheduleUndoHistory(limit = 50) {
       // Validate every affected record before applying any inverse.
       for (const change of entry.saved) {
         const latest = savedSchedules.find((s) => s.id === change.id);
-        if (change.after && (!latest || !equal(latest.courses, change.after.courses)))
+        if (change.after && (!latest || !equal(latest.courses, change.after.courses) || (change.blocksChanged && !equal(latest.personalBlocks || [], change.after.personalBlocks || []))))
           throw new Error(`This saved schedule changed in another window. ${action} was not applied.`);
         if (!change.after && latest)
           throw new Error(`This schedule already exists. ${action} was not applied.`);
@@ -57,7 +57,7 @@ export function createScheduleUndoHistory(limit = 50) {
           savedSchedules = savedSchedules.filter((s) => s.id !== change.id);
         } else if (change.after) {
           savedSchedules = savedSchedules.map((s) => s.id === change.id
-            ? { ...s, courses: structuredClone(change.before.courses), savedAt: change.before.savedAt, colorAssignments: change.before.colorAssignments }
+            ? { ...s, ...(change.blocksChanged ? { personalBlocks: structuredClone(change.before.personalBlocks || []) } : {}), courses: structuredClone(change.before.courses), savedAt: change.before.savedAt, colorAssignments: change.before.colorAssignments }
             : s);
         } else {
           const restored = structuredClone(change.before);
@@ -75,6 +75,7 @@ export function createScheduleUndoHistory(limit = 50) {
       if (savedSchedules.length > 10)
         throw new Error(`Remove a saved schedule to make room before ${action.toLowerCase()} restores this schedule (limit: 10).`);
       const restored = entry.hasWorking ? structuredClone(entry.before) : null;
+      if (restored && !entry.restoresBlocks) restored.personalBlocks = structuredClone(state.personalBlocks || []);
       // Color-only edits are not history actions; keep them on courses that
       // still exist instead of reverting an unrelated choice with Undo.
       restored?.courses.forEach((course) => {

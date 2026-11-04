@@ -177,7 +177,8 @@ export function formatScheduleMeta(schedule) {
     ? schedule.savedAt
     : savedDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
-  return `${count} courses | Saved ${dateLabel}`;
+  const blocks=schedule.personalBlocks?.length || 0;
+  return `${count} courses${blocks ? ` · ${blocks} personal block${blocks === 1 ? "" : "s"}` : ""} | Saved ${dateLabel}`;
 }
 
 // Renders saved schedule cards into the UI. Input: ui object, schedules array, and optional active schedule id. Output: none.

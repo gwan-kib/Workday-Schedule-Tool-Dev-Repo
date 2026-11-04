@@ -1,4 +1,3 @@
-import { openPersonalBlocks } from "./personalBlocks.js";
 import { scheduleItems } from "../../core/personalBlocks.js";
 import { renderSchedule } from "./scheduleView.js";
 import { node } from "./plannerOverview.js";
@@ -134,7 +133,7 @@ export function plannerDialog(ui, title, variant = "") {
   return { dialog, content, actions, status, setStatus, run, close, preview, cleanup };
 }
 
-export function mountPlanner(ui, { getState, saveSchedules }) {
+export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
   const error = (e) =>
@@ -144,7 +143,7 @@ export function mountPlanner(ui, { getState, saveSchedules }) {
     });
   const safe = (fn) => () => Promise.resolve().then(fn).catch(error);
   toolbar.append(
-    button("Personal blocks", safe(() => openPersonalBlocks(ui, { getSchedules: () => getState().savedSchedules, saveSchedules, scheduleId: getState().currentSavedScheduleId }))),
+    button("Personal blocks", safe(() => editPersonalBlocks?.())),
     button(
       "Compare saved plans",
       safe(() => openComparison()),
@@ -304,7 +303,7 @@ export function mountPlanner(ui, { getState, saveSchedules }) {
             const state = getState(),
               target = ui.root.host || ui.mainPanel,
               appearance = exportAppearance(target);
-            await exportTimetable(scheduleItems(state.courses, state.savedSchedules.find(s => s.id === state.currentSavedScheduleId)?.personalBlocks || []), format, {
+            await exportTimetable(scheduleItems(state.courses, state.personalBlocks || []), format, {
               name: state.currentScheduleName || "Working Schedule",
               orientation: orientation.input.value,
               ...appearance,

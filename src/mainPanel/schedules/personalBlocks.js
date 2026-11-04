@@ -1,3 +1,4 @@
+import { blockSignature, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock } from "../../core/personalBlockLibrary.js";
 import { DAYS } from "../../core/meetings.js";
 import { validatePersonalBlocks, personalBlockCourses } from "../../core/personalBlocks.js";
 import { plannerDialog } from "./plannerController.js";
@@ -5,46 +6,71 @@ import { node } from "./plannerOverview.js";
 
 const clock = n => `${String(Math.floor(n/60)).padStart(2,"0")}:${String(n%60).padStart(2,"0")}`;
 const action = (text,fn) => {const b=node("button",text);b.type="button";b.addEventListener("click",fn);return b;};
-export function openPersonalBlocks(ui,{getSchedules,saveSchedules,scheduleId}) {
-  if(!getSchedules().length) throw new Error("Save a schedule first, then add personal blocks to that plan.");
-  const d=plannerDialog(ui,"Personal blocks");
-  let selected=scheduleId || getSchedules()[0].id;
-  const current=()=>getSchedules().find(s=>s.id===selected);
-  async function persist(next) {
-    const latest=getSchedules();
-    if(!latest.some(s=>s.id===selected)) throw new Error("This saved schedule was deleted. Close and reopen Personal blocks.");
-    validatePersonalBlocks(next);personalBlockCourses(next);
-    await saveSchedules(latest.map(s=>s.id===selected?{...s,personalBlocks:next}:s));
+
+export function openPersonalBlocks(ui, {
+  getCurrent, setBlocks, getKnownBlocks = () => [], editBlockId = null,
+  saveHint = "Use Quick Save or Save As New in the main panel to keep the edited schedule.",
+  loadLibrary = () => loadReusableBlocks(getKnownBlocks()),
+  remember = block => rememberReusableBlock(block, getKnownBlocks()),
+  forget = forgetReusableBlock,
+}) {
+  const initial = getCurrent();
+  if (!initial) throw new Error("Open a schedule before editing personal blocks.");
+  const contextId = initial.id;
+  const d = plannerDialog(ui, "Personal blocks");
+  let library = [], editing = false;
+  const current = () => { const s=getCurrent(); return s?.id === contextId ? s : null; };
+  async function persist(next, expected) {
+    if (!current()) throw new Error("The schedule being edited changed. Close and reopen Personal blocks.");
+    const valid=validatePersonalBlocks(next);
+    await setBlocks(valid, { contextId, expected });
+  }
+  const describe = b => `${b.recurrence === "once" ? "One date" : b.recurrence === "alternate" ? "Every other week" : "Weekly"} · ${b.days.join(", ")} · ${clock(b.startMinutes)}–${clock(b.endMinutes)} · ${b.startDate} to ${b.endDate}${b.category ? ` · ${b.category}` : ""}${b.exceptions.length ? ` · ${b.exceptions.length} skipped date(s)` : ""}`;
+  function card(b) {
+    const el=node("section",null,"personal-block-card");el.style.setProperty("--personal-color",b.color);
+    el.append(node("strong",b.title),node("p",describe(b)));return el;
   }
   function show() {
-    d.content.replaceChildren(); d.actions.replaceChildren();
-    const label=node("label",null,"planner-field"), picker=node("select");picker.setAttribute("aria-label","Saved plan for personal blocks");
-    for(const s of getSchedules()) {const o=node("option",s.name);o.value=s.id;picker.append(o);} picker.value=selected;
-    picker.addEventListener("change",()=>{selected=picker.value;d.setStatus("");show();});
-    label.append(node("span","Saved plan","planner-field-label"),picker); d.content.append(label);
-    d.content.append(node("p","Personal blocks are saved directly to this plan. They appear in its timetable and conflicts, but are excluded from calendar exports unless you explicitly include them.","planner-hint"));
-    const s=current();if(!s){d.setStatus("This schedule is no longer available.","error");return;}
-    const list=node("div",null,"personal-block-list");
+    editing=false; d.content.replaceChildren(); d.actions.replaceChildren();
+    const s=current();
+    if(!s) {d.setStatus("The schedule being edited changed. Close and reopen Personal blocks.","error");return;}
+    d.content.append(node("p",`Editing ${s.name || "Working Schedule"}. Block changes follow this schedule. ${saveHint}`,"planner-hint"));
+    const active=node("div",null,"personal-block-list");active.append(node("h3","In this schedule"));
     for(const b of s.personalBlocks||[]) {
-      const card=node("section",null,"personal-block-card");card.style.setProperty("--personal-color",b.color);
-      card.append(node("strong",b.title),node("p",`${b.recurrence === "once"?"One date":b.recurrence === "alternate"?"Every other week":"Weekly"} · ${b.days.join(", ")} · ${clock(b.startMinutes)}–${clock(b.endMinutes)} · ${b.startDate} to ${b.endDate}${b.category?` · ${b.category}`:""}${b.exceptions.length?` · ${b.exceptions.length} skipped date(s)`:""}`));
-      card.append(action("Edit",()=>edit(b)));
-      let confirming=false;
-      const remove=action("Delete",d.run(async()=>{
-        if(!confirming) {confirming=true;remove.textContent="Confirm delete";return;}
-        const latest=current();if(!latest) throw new Error("This schedule was deleted.");
-        const now=latest.personalBlocks?.find(x=>x.id===b.id);
-        if(JSON.stringify(now)!==JSON.stringify(b)) throw new Error("This block changed in another window. Reopen it before deleting.");
-        await persist(latest.personalBlocks.filter(x=>x.id!==b.id));show();d.setStatus("Personal block deleted.","success");
-      }));
-      card.append(remove);list.append(card);
+      const el=card(b);el.append(action("Edit",()=>edit(b)));
+      el.append(action("Remove from schedule",d.run(async()=>{
+        const latest=current();if(!latest) throw new Error("The schedule being edited changed.");
+        const blocks=latest.personalBlocks||[];
+        if(JSON.stringify(blocks.find(x=>x.id===b.id))!==JSON.stringify(b)) throw new Error("This block changed. Reopen it before removing.");
+        await persist(blocks.filter(x=>x.id!==b.id),JSON.stringify(blocks));show();d.setStatus("Removed from this schedule. Its saved reusable copy is still available.","success");
+      })));active.append(el);
     }
-    if(!s.personalBlocks?.length) list.append(node("p","No personal blocks in this plan yet.","planner-hint"));
-    d.content.append(list);d.actions.append(action("Add personal block",()=>edit()));
+    if(!s.personalBlocks?.length) active.append(node("p","No personal blocks in this schedule yet.","planner-hint"));
+    d.content.prepend(action("Create new block",()=>edit()));
+    d.content.append(active);
+    const saved=node("div",null,"personal-block-list saved-personal-blocks");saved.append(node("h3","Saved personal blocks"));
+    saved.append(node("p","Add a saved block to this schedule without creating it again. Each schedule gets its own editable copy.","planner-hint"));
+    for(const b of library) {
+      const el=card(b), already=(s.personalBlocks||[]).some(x=>blockSignature(x)===blockSignature(b));
+      const add=action(already?"Already added":"Add to schedule",d.run(async()=>{
+        const latest=current();if(!latest) throw new Error("The schedule being edited changed.");
+        const blocks=latest.personalBlocks||[];
+        if(blocks.some(x=>blockSignature(x)===blockSignature(b))) {show();return;}
+        await persist([...blocks,{...structuredClone(b),id:crypto.randomUUID()}],JSON.stringify(blocks));
+        show();d.setStatus("Saved block added to this schedule.","success");
+      }));add.disabled=already;el.append(add);
+      let confirming=false;
+      const remove=action("Remove saved copy",d.run(async()=>{
+        if(!confirming) {confirming=true;remove.textContent="Confirm remove saved copy";return;}
+        library=await forget(b.id);show();d.setStatus("Saved copy removed. Blocks already in schedules are unchanged.","success");
+      }));el.append(remove);saved.append(el);
+    }
+    if(!library.length) saved.append(node("p","Blocks you create are saved here automatically for reuse.","planner-hint"));
+    d.content.append(saved);
   }
   function edit(original) {
-    d.content.replaceChildren();d.actions.replaceChildren();d.setStatus("");
-    const s=current();if(!s){d.setStatus("This schedule was deleted.","error");return;}
+    editing=true;d.content.replaceChildren();d.actions.replaceChildren();d.setStatus("");
+    const s=current();if(!s){d.setStatus("The schedule being edited changed.","error");return;}
     const form=node("form",null,"personal-block-form");
     const fields={};
     const input=(name,title,type,value)=>{
@@ -76,15 +102,20 @@ export function openPersonalBlocks(ui,{getSchedules,saveSchedules,scheduleId}) {
       // One-date day comes from the date, not the disabled weekday checkboxes.
       if(block.recurrence==="once" && !block.days.length) block.days=["Mon"];
       const [validated]=validatePersonalBlocks([block]);personalBlockCourses([validated]);
-      const latest=current();if(!latest) throw new Error("This schedule was deleted.");
+      const latest=current();if(!latest) throw new Error("The schedule being edited changed.");
       const blocks=latest.personalBlocks||[];
       if(original && JSON.stringify(blocks.find(b=>b.id===original.id))!==JSON.stringify(original)) throw new Error("This block changed in another window. Cancel and reopen it to keep the newer changes.");
-      await persist(original?blocks.map(b=>b.id===original.id?validated:b):[...blocks,validated]);
-      show();d.setStatus("Personal block saved.","success");
+      library=await remember(validated);
+      if(!current()) throw new Error("The schedule being edited changed.");
+      await persist(original?blocks.map(b=>b.id===original.id?validated:b):[...blocks,validated],JSON.stringify(blocks));
+      show();d.setStatus(original ? "Personal block updated in this schedule and saved for reuse." : "Personal block added to this schedule and saved for reuse.","success");
     });
     form.addEventListener("submit",e=>{e.preventDefault();});
     d.content.append(node("h3",original?"Edit personal block":"Add personal block"),form);
     d.actions.append(action("Cancel",show),action("Save block",save));fields.title.focus();
   }
-  show();return d;
+  show();
+  if(editBlockId) { const block=current()?.personalBlocks?.find(b=>b.id===editBlockId);if(block) edit(block); }
+  d.libraryReady=loadLibrary().then(items=>{library=items;if(!editing && d.dialog.isConnected) show();}).catch(error=>d.setStatus(error.message,"error"));
+  return d;
 }

@@ -7,7 +7,6 @@ export const BACKUP_SETTINGS = [
   "wdCourseColorAssignments",
   "wdHoverTooltipsEnabled",
   "wdTimeFormat",
-  "wdAppearance",
 ];
 const fail = (message) => {
   throw new Error(`Invalid backup: ${message}`);
@@ -112,10 +111,6 @@ export function cleanSettings(settings = {}) {
   if (settings.wdTimeFormat != null) {
     if (!["24h", "am/pm"].includes(settings.wdTimeFormat)) fail("time format.");
     out.wdTimeFormat = settings.wdTimeFormat;
-  }
-  if (settings.wdAppearance != null) {
-    if (!object(settings.wdAppearance) || !["system","light","dark"].includes(settings.wdAppearance.theme) || !["compact","comfortable"].includes(settings.wdAppearance.density)) fail("appearance preferences.");
-    out.wdAppearance = { theme: settings.wdAppearance.theme, density: settings.wdAppearance.density };
   }
   return out;
 }
