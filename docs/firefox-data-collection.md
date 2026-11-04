@@ -1,37 +1,9 @@
 # Firefox data collection declaration
 
-The Firefox build declares Mozilla's built-in data collection permission in `manifest.firefox.json`:
+Version 3.0.9 retains `browser_specific_settings.gecko.data_collection_permissions.required: ["websiteContent"]`, Firefox 140 minimum and the existing Gecko ID.
 
-```json
-"data_collection_permissions": {
-  "required": ["websiteContent"]
-}
-```
+Firefox is ICS-only: the manifest no longer requests `identity` or a Google API host grant. Automatic UBCGrades requests send course/campus/session identifiers, and Rate My Professors requests send instructor names and UBC campus identifiers. The extension cannot truthfully declare `none`. Personal blocks, notes, preferences and saved plans are local; explicit downloads may include those fields. There is no automatic telemetry upload.
 
-Firefox 140+ uses this manifest declaration to disclose extension data collection/transmission during installation. The Firefox manifest therefore sets `browser_specific_settings.gecko.strict_min_version` to `140.0` rather than supporting older Firefox versions that do not provide the built-in consent flow.
+See [the complete data-flow/permission audit and store disclosure](phase-4-privacy.md). This replaces older descriptions of a planned Firefox Google OAuth path; no such path is shipped. Review the manifest declaration before introducing any new external destination or data category.
 
-## Why `websiteContent` is required
-
-Mozilla defines `websiteContent` broadly as information visible on or embedded in a website. The extension reads course information from Workday and may transmit parts of that website-derived information to external services used by extension features:
-
-- **UBCGrades:** course/campus/year-session identifiers derived from Workday course data are included in grade API requests.
-- **RateMyProfessors:** instructor names and the inferred UBC campus are sent to the RateMyProfessors lookup endpoint.
-- **Google Calendar:** when Calendar sync is available and the user chooses to sync, course names, meeting dates/times, locations, and related schedule information are sent to Google Calendar to create events.
-
-Because the extension has features that transmit website-derived data outside the extension/local browser, it must not declare `none`.
-
-## Data that does not require an additional declaration today
-
-- Saved schedules, preferred-schedule state, course-colour settings, hover-tooltip settings, and Google sign-in state are stored locally with extension storage. Local-only storage is not transmission outside the extension/browser.
-- The extension does not send telemetry, crash reports, usage analytics, device/browser properties, or interaction metrics, so `technicalAndInteraction` is not declared.
-- It does not transmit browsing history, search terms, bookmarks, health, financial, location, or personal communications data.
-- The current Firefox build does not yet implement the Firefox Google OAuth flow. Before that flow is distributed, its token/credential handling must be re-audited to determine whether `authenticationInfo` also needs to be declared.
-
-## Maintenance rule
-
-Treat this declaration as part of the extension's data contract. Before adding a new external API, analytics service, telemetry, account system, or new type of Workday-derived transmission, review Mozilla's current data-collection taxonomy and update `manifest.firefox.json` if the new behavior falls into another category.
-
-The source-of-truth Mozilla references are:
-
-- MDN's `browser_specific_settings.gecko.data_collection_permissions` documentation.
-- Mozilla Extension Workshop's **Firefox built-in consent for data collection and transmission** guide.
+Mozilla references: [built-in consent and data types](https://extensionworkshop.com/documentation/develop/firefox-builtin-data-consent/) and [MDN browser_specific_settings](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/browser_specific_settings).

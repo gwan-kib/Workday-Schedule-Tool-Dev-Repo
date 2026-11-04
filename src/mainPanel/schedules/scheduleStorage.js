@@ -1,3 +1,4 @@
+import { validatePersonalBlocks } from "../../core/personalBlocks.js";
 import { scheduleNotesText } from "../../core/scheduleNotes.js";
 import { createScheduleNotesButton } from "./scheduleNotes.js";
 import { storageGet, storageSet } from "../../utilities/storage.js";
@@ -54,6 +55,7 @@ const sanitizeSchedules = (schedules) => {
       colorAssignments: Array.isArray(s.colorAssignments) ? s.colorAssignments : null,
       isFavorite: Boolean(s.isFavorite),
       notes: scheduleNotesText(s),
+      personalBlocks: validatePersonalBlocks(s.personalBlocks),
     }));
 };
 
@@ -141,6 +143,7 @@ export function createScheduleSnapshot(name, courses, colorAssignments) {
     colorAssignments: Array.isArray(colorAssignments) ? [...colorAssignments] : null,
     isFavorite: false,
     notes: "",
+    personalBlocks: [],
   };
 }
 

@@ -1,3 +1,4 @@
+import { scheduleItems } from "../../core/personalBlocks.js";
 import { renderPlannerOverview } from "./plannerOverview.js";
 import { eventLanes } from "../../core/planner.js";
 import { courseIdentity } from "../../core/meetings.js";
@@ -113,6 +114,7 @@ function renderOverlayBlocks(wrap, eventsByDay, conflictBlocks = [], timeFormat 
           ? " schedule-entry--sub"
           : "";
       block.className = `schedule-entry-float${colorClass}${subClass}`;
+      if (ev.course?.isPersonalBlock) { block.classList.add("is-personal-block"); block.style.setProperty("--personal-color", ev.course.personalColor); }
       block.style.left = `${left + borderLeft}px`;
       block.style.top = `${top + borderTop}px`;
       block.style.width = `${dayColWidth / count - borderX - 1}px`;
@@ -208,7 +210,7 @@ function updateFooterConflictMessage(ui, conflictBlocks) {
   }
   footerNotes?.setPersistent(
     CONFLICT_FOOTER_NOTE_ID,
-    `🚩 The following classes are in conflict: (${codes.join(", ")})`,
+    `🚩 The following schedule items are in conflict: (${codes.join(", ")})`,
     { tone: "warn" },
   );
 }
@@ -216,9 +218,10 @@ function updateFooterConflictMessage(ui, conflictBlocks) {
 export function renderSchedule(ui, courses = [], semester, timeFormat = "24h") {
   const host = ui?.scheduleGrid;
   if (!host) return;
-  const layout = scheduleLayout(courses, ui.selectedScheduleWeek || 1);
+  const items = scheduleItems(courses, ui.personalBlocks || []);
+  const layout = scheduleLayout(items, ui.selectedScheduleWeek || 1);
   const { conflictBlocks } = detectScheduleConflicts(layout.eventsByDay);
-  const all = scheduleLayout(courses);
+  const all = scheduleLayout(items);
   const allConflicts = detectScheduleConflicts(all.eventsByDay).conflictBlocks;
   ui.conflictPartnersByCode = buildConflictPartnerLookup(allConflicts);
   host.replaceChildren();

@@ -82,7 +82,7 @@ export async function fetchCourseStatistics({ campus, subject, course, yearsessi
   course = String(course).toUpperCase();
   if (!/^(UBCO|UBCV)$/.test(campus) || !/^[A-Z0-9]+$/.test(subject) || !/^\d{3}[A-Z]?$/.test(course))
     throw new Error("Unsupported course for grade lookup.");
-  const requestYear = Number(String(yearsession).slice(0, 4));
+  const requestYear = new Date().getFullYear();
   const available = await json(buildYearsessionsUrl({ campus }));
   const sessions = [...new Set((Array.isArray(available) ? available : available?.yearsessions || []).map(String))]
     .filter((s) => /^\d{4}[WS]$/.test(s) && +s.slice(0, 4) <= requestYear)
@@ -99,7 +99,7 @@ export async function fetchCourseStatistics({ campus, subject, course, yearsessi
       .map(async (session) => {
         try {
           const data = await json(`https://ubcgrades.com/api/v3/grades/${campus}/${session}/${subject}/${course}`);
-          return { year: +session.slice(0, 4), session, stats: aggregateGradeRows(data) };
+          return { year: +session.slice(0, 4), session, hasData: Array.isArray(data) ? data.length > 0 : Boolean(data && typeof data === "object"), stats: aggregateGradeRows(data) };
         } catch (error) {
           if (error.status === 404) return null; // No offering in this session.
           throw error;
@@ -108,10 +108,23 @@ export async function fetchCourseStatistics({ campus, subject, course, yearsessi
   );
   const result = summarizeCourseYears(records.filter(Boolean), window);
   result.stale ||= Boolean(available.stale);
-  const latestSession = records
-    .filter((r) => r && r.year === result.latest?.year && r.stats?.average != null)
+  const sources = records.filter(Boolean);
+  if (!sources.some(r => r.hasData)) {
+    for (const session of sessions.filter(s => !window.includes(+s.slice(0,4)))) {
+      try {
+        const data = await json(`https://ubcgrades.com/api/v3/grades/${campus}/${session}/${subject}/${course}`);
+        if (!(Array.isArray(data) ? data.length : data && typeof data === "object")) continue;
+        const stats = aggregateGradeRows(data);
+        sources.push({ session, hasData: true });
+        if (stats?.average != null) result.latest = { ...stats, year: +session.slice(0,4) };
+        break;
+      } catch (error) { if (error.status !== 404) throw error; }
+    }
+  }
+  const latestSession = sources
+    .filter((r) => r?.hasData)
     .sort((a, b) => b.session.localeCompare(a.session))[0]?.session;
-  result.source = buildUbcGradesCourseUrl({ campus, subject, course, yearsession: latestSession || `${end}W` });
+  result.source = latestSession ? buildUbcGradesCourseUrl({ campus, subject, course, yearsession: latestSession, section: "OVERALL" }) : "";
   return result;
 }
 

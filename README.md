@@ -58,7 +58,7 @@ Turns your Workday courses into a calendar-style grid so you can see:
 Save multiple versions locally so you can:
 
 - Compare registration scenarios
-- Try section swaps
+- Plan alternate course combinations
 - Keep backups of past schedules
 
 All snapshots stay on your device.
@@ -69,7 +69,7 @@ All snapshots stay on your device.
 
 - See the latest available course-year average and a sample-weighted five-year window in Workday
 - The grade button shows one latest average; hover or focus the info control beside it for the five-year average
-- Click the grade button to open UBCGrades; missing averages display N/A
+- Click the grade button to open the newest available course-wide UBCGrades OVERALL page; missing averages display N/A
 - View averages in the course list and on supported Workday registration cards
 - Open supported results on UBCGrades
 
@@ -109,17 +109,11 @@ Want to request a feature? Let me know at gwantanak.3@gmail.com
 
 ## Privacy and Security
 
-Your schedule data stays on your device in extension storage.
+Saved plans, notes, personal blocks and display preferences stay in local extension storage. Course cards automatically send course/campus/session identifiers to UBCGrades and instructor names/campus identifiers to Rate My Professors; these lookups have no separate opt-out and use one-hour memory caches. Existing icons load from Google Fonts. No analytics or advertising tracking is included.
 
-- The extension panel runs on `*.myworkday.com`
-- Saved schedule data is stored locally using extension storage
-- Google sign-in state is stored locally and is used only for Calendar sync
-- Uses ubcgrades.com for class averages
-- Uses ratemyprofessors.com for professor ratings
-- Uses Google Calendar APIs only when you sign in and sync a schedule
-- No tracking
-- No third-party analytics
-- No data collection for analytics/advertising
+Chrome sends event details to Google Calendar only after sign-in, preview and confirmation. Personal blocks require explicit inclusion each time. Signing out clears local access state, but does not revoke Google's authorization or delete events. Firefox supports ICS downloads only and has no identity/Google API grants.
+
+The panel runs only on `https://wd10.myworkday.com/ubc/*`. JSON downloads include notes and personal blocks, exclude tokens/account data and omit Workday section IDs/links; review files before sharing. Settings explains these data flows and offers optional session-only redacted diagnostics. Read the [privacy audit and store disclosures](docs/phase-4-privacy.md) for fields, retention, permissions and revoke instructions.
 
 ---
 
@@ -134,10 +128,16 @@ Your schedule data stays on your device in extension storage.
 ## Browser Compatibility
 
 - Chrome: supported
-- Firefox: port in progress; shared non-authentication WebExtension APIs have been audited, while Firefox Google OAuth remains separate migration work
+- Firefox: ICS-only package; actual Firefox runtime/consent smoke tests remain a release check. Direct Google sync is not planned.
 
 ---
 
 ## License
 
 MIT (see `LICENSE.md`)
+
+## Phase 4 display and personal planning
+
+Settings → Display offers System (default), Light and Dark appearance plus Comfortable/Compact timetable spacing. The popup offers the same preferences under Display settings. Saved plans can contain personal blocks for work, commuting and commitments, with one-date, weekly or alternate-week recurrence and skipped dates. Personal blocks are distinct from Workday classes and participate in conflicts; they do not change registration. Save a plan first, then use Schedule → Personal blocks (also available in the popup). These edits save directly to that plan; they are separate from the course Undo/Redo history.
+
+See [the Phase 4 feature and manual testing guide](docs/phase-4-testing.md).

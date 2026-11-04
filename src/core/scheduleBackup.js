@@ -1,3 +1,4 @@
+import { validatePersonalBlocks } from "./personalBlocks.js";
 import { MAX_SCHEDULE_NOTES_LENGTH } from "./scheduleNotes.js";
 import { normalizeSchedule, dateNumber } from "./meetings.js";
 import { trustedSectionLink } from "../extraction/trustedWorkday.js";
@@ -6,6 +7,7 @@ export const BACKUP_SETTINGS = [
   "wdCourseColorAssignments",
   "wdHoverTooltipsEnabled",
   "wdTimeFormat",
+  "wdAppearance",
 ];
 const fail = (message) => {
   throw new Error(`Invalid backup: ${message}`);
@@ -111,6 +113,10 @@ export function cleanSettings(settings = {}) {
     if (!["24h", "am/pm"].includes(settings.wdTimeFormat)) fail("time format.");
     out.wdTimeFormat = settings.wdTimeFormat;
   }
+  if (settings.wdAppearance != null) {
+    if (!object(settings.wdAppearance) || !["system","light","dark"].includes(settings.wdAppearance.theme) || !["compact","comfortable"].includes(settings.wdAppearance.density)) fail("appearance preferences.");
+    out.wdAppearance = { theme: settings.wdAppearance.theme, density: settings.wdAppearance.density };
+  }
   return out;
 }
 export function validateBackup(data) {
@@ -161,6 +167,7 @@ export function validateBackup(data) {
       colorAssignments: s.colorAssignments ? [...s.colorAssignments] : null,
       isFavorite: Boolean(s.isFavorite),
       notes: s.notes || "",
+      personalBlocks: validatePersonalBlocks(s.personalBlocks),
     };
   });
   return {
@@ -175,7 +182,7 @@ export function createBackup(schedules, settings) {
     ...validateBackup({
       format: "ubc-workday-schedules",
       version: BACKUP_VERSION,
-      schedules,
+      schedules: schedules.map(s => ({ ...s, courses: s.courses.map(c => { const { workdayCourseId, workdayCourseLink, ...portable } = c; return portable; }) })),
       settings,
     }),
     exportedAt: new Date().toISOString(),

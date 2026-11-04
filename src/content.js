@@ -1,4 +1,7 @@
 import { openScheduleNotes } from "./mainPanel/schedules/scheduleNotes.js";
+import { initializeAppearance } from "./mainPanel/settings/appearance.js";
+import { mountPrivacySettings } from "./mainPanel/settings/privacy.js";
+import { calendarExportItems } from "./core/personalBlocks.js";
 import { mountPlanner } from "./mainPanel/schedules/plannerController.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
 import { getScheduleSaveState } from "./core/scheduleSaveState.js";
@@ -122,6 +125,7 @@ debugLog({ local: { content: false } });
     const updateScheduleView = () => {
       const { saved } = renderSaveState();
       ui.scheduleName = saved?.name || "Working Schedule";
+      ui.personalBlocks = saved?.personalBlocks || [];
       renderScheduleHeading(ui.courseScheduleHeading, ui.scheduleName, STATE.courses);
       renderSchedule(ui, STATE.courses, STATE.view.semester, STATE.view.timeFormat);
       ui.onTimeFormatChange = (next) => {
@@ -527,7 +531,10 @@ debugLog({ local: { content: false } });
     const handleExport = async (type) => {
       debug.log({ id: "handleExport" }, "Handling export action", { type });
       if (type === "ics") {
-        const result = exportICS(STATE.currentScheduleName);
+        const blocks = STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || [];
+        const choice = blocks.length ? await openScheduleModal({ title: "Export personal blocks?", message: "Personal blocks may include private commitments. Choose whether to include them in this calendar file.", confirmLabel: "Export calendar file", showInput: false, showCancel: true, choices: [{ value: "exclude", label: "Courses only" }, { value: "include", label: "Courses and personal blocks" }] }) : "exclude";
+        if (!choice) return;
+        const result = exportICS(STATE.currentScheduleName, calendarExportItems(STATE.courses, blocks, choice === "include"));
         showFooterAlert(
           `Exported ${result.exported} meeting(s); ${result.skipped} unknown/invalid meeting(s) skipped. Only verified Workday exceptions are excluded; other holidays and breaks are not inferred.`,
           { tone: result.skipped ? "warn" : "info", durationMs: 10000 },
@@ -536,14 +543,17 @@ debugLog({ local: { content: false } });
       }
       if (type === "gcal-sync") {
         if (!(await requireGoogleSignInForSync())) return;
-        if (!STATE.courses?.length) {
-          showFooterAlert("No courses to sync.", { tone: "warn" });
+        const blocks = STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || [];
+        if (!STATE.courses?.length && !blocks.length) {
+          showFooterAlert("No schedule items to sync.", { tone: "warn" });
           return;
         }
         if (ui.googleSyncButton.disabled) return;
         ui.googleSyncButton.disabled = true;
-        const courses = store.snapshot();
-        const fingerprint = JSON.stringify(courses);
+        const choice = blocks.length ? await openScheduleModal({ title: "Sync personal blocks?", message: "Choose whether to send personal commitments to Google Calendar. You can review all changes before confirming.", confirmLabel: "Continue to preview", showInput: false, showCancel: true, choices: [{ value: "exclude", label: "Courses only" }, { value: "include", label: "Courses and personal blocks" }] }) : "exclude";
+        if (!choice) { ui.googleSyncButton.disabled = false; return; }
+        const courses = calendarExportItems(store.snapshot(), blocks, choice === "include");
+        const fingerprint = JSON.stringify({ courses: store.snapshot(), blocks });
         const options = {
           planId:
             STATE.syncPlanId ||
@@ -586,7 +596,7 @@ debugLog({ local: { content: false } });
           });
           if (!confirmed) return;
           if (
-            fingerprint !== JSON.stringify(store.snapshot()) ||
+            fingerprint !== JSON.stringify({ courses: store.snapshot(), blocks: STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || [] }) ||
             options.planId !==
               (STATE.syncPlanId ||
                 STATE.currentSavedScheduleId ||
@@ -739,6 +749,7 @@ debugLog({ local: { content: false } });
       if (!canSaveMoreSchedules(STATE.savedSchedules))
         throw new Error("Schedule limit reached. Delete a saved schedule and retry.");
       const snapshot = createScheduleSnapshot(name, store.snapshot(), null);
+      snapshot.personalBlocks = structuredClone(STATE.savedSchedules.find(s => s.id === STATE.currentSavedScheduleId)?.personalBlocks || []);
       const before = captureScheduleChange(STATE);
       if (!STATE.savedSchedules.length) snapshot.isFavorite = true;
       await updateSavedSchedules([snapshot, ...STATE.savedSchedules]);
@@ -871,6 +882,8 @@ debugLog({ local: { content: false } });
         renderAll();
       }, 100),
     );
+    await initializeAppearance(ui, () => { if (storageReady) renderAll(); });
+    mountPrivacySettings(ui);
     mountPlanner(ui, {
       getState: () => STATE,
       saveSchedules: async (next) => {
@@ -878,7 +891,7 @@ debugLog({ local: { content: false } });
         await updateSavedSchedules(next);
         recordChange(before, "Import or update saved schedules");
         renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
-        renderSaveState();
+        renderAll();
       },
     });
     try {
@@ -953,8 +966,8 @@ debugLog({ local: { content: false } });
     }
   }
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => void boot().catch(console.error), { once: true });
+    document.addEventListener("DOMContentLoaded", () => void boot().catch(error => debug.error({ id: "boot.failed" }, error)), { once: true });
   } else {
-    void boot().catch(console.error);
+    void boot().catch(error => debug.error({ id: "boot.failed" }, error));
   }
 })();

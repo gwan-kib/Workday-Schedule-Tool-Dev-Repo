@@ -6,9 +6,10 @@
 @import "./css/colors/schedule-view-colors.css";
 @import "./css/colors/hover-tooltip-colors.css";
 @import "./css/formatting/planner.css";
+@import "./css/formatting/appearance.css";
 
 :root {
-  color-scheme: light;
+  color-scheme: normal;
   font-family:
     "Inter",
     system-ui,

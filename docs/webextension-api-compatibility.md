@@ -63,11 +63,7 @@ No `chrome.tabs.*` or `chrome.windows.*` use was found in the source during this
 
 `src/exportLogic/googleCalendar/calendarIntegration.js` still uses Chrome's `identity.getAuthToken()` and `identity.removeCachedAuthToken()` path. Firefox's identity flow is different: it uses `identity.launchWebAuthFlow()` and `identity.getRedirectURL()`.
 
-That OAuth implementation is intentionally not part of this audit. It is tracked by the dedicated Firefox OAuth issues. Until that work lands:
-
-- Chrome continues to use the existing `getAuthToken()` path.
-- Firefox reports a Firefox-specific "not available in this build yet" message instead of telling the user to open `chrome://extensions`.
-- The stable Gecko extension ID must remain unchanged because it participates in Firefox redirect URL handling.
+Firefox ships ICS-only; the old Firefox OAuth issues were closed as not planned. Chrome retains `getAuthToken()` and cached-token removal. Firefox has no identity/Google API grants and reports that direct sync is unavailable. Keep its stable Gecko ID for signing and update continuity. Phase 4's shared appearance/blocks use storage and media-query APIs without a Firefox-specific OAuth implementation.
 
 Do not scatter browser checks into schedule storage, RMP, popup/content messaging, or panel resource loading to compensate for the OAuth difference.
 

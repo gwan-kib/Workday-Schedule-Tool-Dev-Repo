@@ -69,9 +69,9 @@ export function exportAppearance(target) {
       read(`--course-color-${i + 1}-border`, v),
     ),
     theme: {
-      main: read("--hex-brand-main-1", "#3b45a4"),
-      background: read("--hex-brand-accent-1", "#f6f7fe"),
-      headerText: read("--hex-brand-accent-3", "#e1e5fb"),
+      main: target?.dataset.wstTheme === "dark" ? "#343e70" : read("--hex-brand-main-1", "#3b45a4"),
+      background: "#f6f7fe",
+      headerText: target?.dataset.wstTheme === "dark" ? "#eff2ff" : read("--hex-brand-accent-3", "#e1e5fb"),
       pill: read("--hex-brand-accent-5", "#8f98e0"),
     },
   };
@@ -268,7 +268,7 @@ export function timetablePages(courses, options = {}) {
         bh = event.rowSpan * rowHeight - 1,
         sub = Boolean(event.label),
         color = event.colorIndex - 1;
-      grid += `<rect class="schedule-entry" x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${esc((sub ? subPalette : palette)[color] || backgrounds[0])}" stroke="${esc(borderPalette[color] || borders[0])}" stroke-width="1"/>`;
+      grid += `<rect class="schedule-entry" x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${esc(event.course.isPersonalBlock ? "#e8edf3" : (sub ? subPalette : palette)[color] || backgrounds[0])}" stroke="${esc(event.course.isPersonalBlock ? event.course.personalColor : borderPalette[color] || borders[0])}" stroke-width="1"${event.course.isPersonalBlock ? ' stroke-dasharray="4 2"' : ""}/>`;
       const label = [event.code, event.course.section_number]
         .filter(Boolean)
         .join(" ");

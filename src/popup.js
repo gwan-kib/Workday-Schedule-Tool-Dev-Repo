@@ -1,3 +1,6 @@
+import { initializeAppearance } from "./mainPanel/settings/appearance.js";
+import { scheduleItems } from "./core/personalBlocks.js";
+import { openPersonalBlocks } from "./mainPanel/schedules/personalBlocks.js";
 import { openScheduleNotes, createScheduleNotesButton } from "./mainPanel/schedules/scheduleNotes.js";
 import { exportTimetable, exportAppearance } from "./exportLogic/exportTimetable.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
@@ -68,6 +71,7 @@ function queueVisibleScheduleRender(schedule) {
     scheduledRenderFrame = requestAnimationFrame(() => {
       scheduledRenderFrame = 0;
       ui.scheduleName = schedule?.name || "Working Schedule";
+      ui.personalBlocks = schedule?.personalBlocks || [];
       renderSchedule(ui, schedule?.courses, null, popupState.timeFormat);
       wireTimeFormatToggle(schedule);
     });
@@ -214,6 +218,7 @@ async function boot() {
   if (["24h", "am/pm"].includes(preferences.wdTimeFormat)) popupState.timeFormat = preferences.wdTimeFormat;
   popupState.activeScheduleId = getPreferredSchedule(popupState.schedules)?.id || null;
 
+  await initializeAppearance(ui, () => renderActiveSchedule());
   const tools = document.createElement("div");
   tools.className = "planner-toolbar";
   const orientationLabel = document.createElement("label");
@@ -236,13 +241,16 @@ async function boot() {
       button.setAttribute("aria-busy", "true");
       try {
         const schedule = popupState.schedules.find(s => s.id === popupState.activeScheduleId);
-        await exportTimetable(schedule?.courses || [], format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
+        await exportTimetable(scheduleItems(schedule?.courses || [],schedule?.personalBlocks || []), format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
         ui.footerNotes.showTemporary(`${format.toUpperCase()} download ready.`, { tone: "success" });
       } catch (error) { ui.footerNotes.showTemporary(error.message, { tone: "warn" }); }
       finally { button.disabled = false; button.removeAttribute("aria-busy"); }
     });
     tools.appendChild(button);
   }
+  const blocksButton=document.createElement("button"); blocksButton.type="button";blocksButton.textContent="Personal blocks";
+  blocksButton.addEventListener("click",()=>{try { openPersonalBlocks(ui,{scheduleId:popupState.activeScheduleId,getSchedules:()=>popupState.schedules,saveSchedules:async next=>{await persistSavedSchedules(next);popupState.schedules=next;renderPicker();renderActiveSchedule();}}); } catch(error) { ui.footerNotes.showTemporary(error.message,{tone:"warn"}); }});
+  tools.prepend(blocksButton);
   ui.scheduleGrid.before(tools);
   renderPicker();
   renderActiveSchedule();
@@ -366,6 +374,12 @@ document.addEventListener("click", (event) => {
 window.addEventListener("resize", () => {
   if (!popupState.activeScheduleId) return;
   renderActiveSchedule();
+});
+
+globalThis.chrome?.storage?.onChanged?.addListener(async (changes, area) => {
+  if (area !== "local" || !changes.wdSavedSchedules) return;
+  try { popupState.schedules = await loadSavedSchedules(); renderPicker(); renderActiveSchedule(); }
+  catch (error) { ui.footerNotes.showTemporary("Could not refresh saved plans. Reload the popup.", {tone:"warn"}); }
 });
 
 void boot().catch((error) => {
