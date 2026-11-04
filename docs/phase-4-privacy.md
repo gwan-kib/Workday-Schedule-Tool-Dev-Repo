@@ -1,6 +1,6 @@
 # Phase 4 privacy and permissions audit
 
-Audited source: version 3.0.11. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
+Audited source: version 3.0.12. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
 
 | Destination | When | Fields sent | Retention in the extension |
 | --- | --- | --- | --- |
@@ -46,3 +46,5 @@ This extension reads UBC Workday course information and saves your plans locally
 - [Mozilla built-in data consent](https://extensionworkshop.com/documentation/develop/firefox-builtin-data-consent/).
 
 Real-account Chrome/Firefox network inspection, actual browser-store consent/display, store submission review, and Google sign-in/revoke behavior need manual release checks. No registration or real Google Calendar writes were made during development.
+
+Saved reusable blocks can be edited in place; existing schedule instances remain independent. Diagnostics controls now explain their troubleshooting purpose and the enable → reproduce → download sequence. The download action is disabled until the user opts in for the current page session; it remains a local download with no automatic transmission.

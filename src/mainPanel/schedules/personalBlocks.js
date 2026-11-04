@@ -1,4 +1,4 @@
-import { blockSignature, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock } from "../../core/personalBlockLibrary.js";
+import { blockSignature, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock, replaceReusableBlock } from "../../core/personalBlockLibrary.js";
 import { DAYS } from "../../core/meetings.js";
 import { validatePersonalBlocks, personalBlockCourses } from "../../core/personalBlocks.js";
 import { plannerDialog } from "./plannerController.js";
@@ -13,6 +13,7 @@ export function openPersonalBlocks(ui, {
   loadLibrary = () => loadReusableBlocks(getKnownBlocks()),
   remember = block => rememberReusableBlock(block, getKnownBlocks()),
   forget = forgetReusableBlock,
+  replaceSaved = replaceReusableBlock,
 }) {
   const initial = getCurrent();
   if (!initial) throw new Error("Open a schedule before editing personal blocks.");
@@ -58,7 +59,7 @@ export function openPersonalBlocks(ui, {
         if(blocks.some(x=>blockSignature(x)===blockSignature(b))) {show();return;}
         await persist([...blocks,{...structuredClone(b),id:crypto.randomUUID()}],JSON.stringify(blocks));
         show();d.setStatus("Saved block added to this schedule.","success");
-      }));add.disabled=already;el.append(add);
+      }));add.disabled=already;el.append(add,action("Edit",()=>edit(b,true)));
       let confirming=false;
       const remove=action("Remove saved copy",d.run(async()=>{
         if(!confirming) {confirming=true;remove.textContent="Confirm remove saved copy";return;}
@@ -68,7 +69,7 @@ export function openPersonalBlocks(ui, {
     if(!library.length) saved.append(node("p","Blocks you create are saved here automatically for reuse.","planner-hint"));
     d.content.append(saved);
   }
-  function edit(original) {
+  function edit(original, libraryOnly = false) {
     editing=true;d.content.replaceChildren();d.actions.replaceChildren();d.setStatus("");
     const s=current();if(!s){d.setStatus("The schedule being edited changed.","error");return;}
     const form=node("form",null,"personal-block-form");
@@ -102,6 +103,11 @@ export function openPersonalBlocks(ui, {
       // One-date day comes from the date, not the disabled weekday checkboxes.
       if(block.recurrence==="once" && !block.days.length) block.days=["Mon"];
       const [validated]=validatePersonalBlocks([block]);personalBlockCourses([validated]);
+      if(libraryOnly) {
+        library=await replaceSaved(original,validated);
+        show();d.setStatus("Saved personal block updated. Existing schedules are unchanged.","success");
+        return;
+      }
       const latest=current();if(!latest) throw new Error("The schedule being edited changed.");
       const blocks=latest.personalBlocks||[];
       if(original && JSON.stringify(blocks.find(b=>b.id===original.id))!==JSON.stringify(original)) throw new Error("This block changed in another window. Cancel and reopen it to keep the newer changes.");
@@ -111,8 +117,10 @@ export function openPersonalBlocks(ui, {
       show();d.setStatus(original ? "Personal block updated in this schedule and saved for reuse." : "Personal block added to this schedule and saved for reuse.","success");
     });
     form.addEventListener("submit",e=>{e.preventDefault();});
-    d.content.append(node("h3",original?"Edit personal block":"Add personal block"),form);
-    d.actions.append(action("Cancel",show),action("Save block",save));fields.title.focus();
+    d.content.append(node("h3",libraryOnly?"Edit saved personal block":original?"Edit personal block":"Add personal block"));
+    if(libraryOnly) d.content.append(node("p","This edits the reusable saved copy only. Blocks already added to schedules keep their current details. Use Add to schedule to add the edited version.","planner-hint"));
+    d.content.append(form);
+    d.actions.append(action("Cancel",show),action(libraryOnly?"Save reusable block":"Save block",save));fields.title.focus();
   }
   show();
   if(editBlockId) { const block=current()?.personalBlocks?.find(b=>b.id===editBlockId);if(block) edit(block); }

@@ -7,7 +7,7 @@ import { normalizeSchedule } from "../src/core/meetings.js";
 import { conflictDetails } from "../src/core/planner.js";
 import { createBackup, parseBackup, planScheduleImport } from "../src/core/scheduleBackup.js";
 import { buildICSFile } from "../src/exportLogic/exportIcs.js";
-import { blockSignature, normalizeBlockLibrary, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock } from "../src/core/personalBlockLibrary.js";
+import { blockSignature, normalizeBlockLibrary, loadReusableBlocks, rememberReusableBlock, forgetReusableBlock, replaceReusableBlock } from "../src/core/personalBlockLibrary.js";
 import { getScheduleSaveState } from "../src/core/scheduleSaveState.js";
 import { createScheduleUndoHistory, captureScheduleChange } from "../src/core/scheduleUndo.js";
 import { renderPersonalBlockCards } from "../src/mainPanel/courses/personalBlockCards.js";
@@ -165,4 +165,25 @@ test("course Undo preserves a later personal-block update from another window",(
   state.courses=[];history.record(before,captureScheduleChange(state),"Remove course");
   state.personalBlocks=[block()];state.savedSchedules[0].personalBlocks=[block()];
   const restore=history.plan(state);assert.equal(restore.working.courses.length,1);assert.equal(restore.working.personalBlocks[0].title,"Work shift");
+});
+
+
+test("editing a saved reusable block replaces that template, preserves plan copies and rejects stale writes",async()=>{
+  const stored={};globalThis.chrome={runtime:{},storage:{local:{get:(keys,cb)=>cb(stored),set:(values,cb)=>{Object.assign(stored,structuredClone(values));cb();}}}};
+  try {
+    const original=(await loadReusableBlocks([block()]))[0], planCopy=structuredClone(original);
+    const updated=await replaceReusableBlock(original,{...original,title:"New work shift",startMinutes:600,endMinutes:660});
+    assert.equal(updated.length,1);assert.equal(updated[0].title,"New work shift");assert.notEqual(updated[0].id,original.id);assert.equal(planCopy.title,"Work shift");
+    await assert.rejects(()=>replaceReusableBlock(original,{...original,title:"Stale overwrite"}),/changed or was removed/);
+    assert.equal((await loadReusableBlocks())[0].title,"New work shift");
+  }finally{delete globalThis.chrome;}
+});
+test("saved-block Edit uses the reusable editor without changing the working schedule",async()=>{
+  const dom=new JSDOM('<div></div>');globalThis.window=dom.window;globalThis.document=dom.window.document;
+  const current={...plan([block()]),id:"active-plan"};let library=normalizeBlockLibrary([block()]),applied=0;
+  const {openPersonalBlocks}=await import("../src/mainPanel/schedules/personalBlocks.js");
+  const d=openPersonalBlocks({root:document.body},{getCurrent:()=>current,setBlocks:async()=>applied++,loadLibrary:async()=>library,replaceSaved:async(original,next)=>{library=normalizeBlockLibrary(library.map(b=>b.id===original.id?next:b));return library;}});
+  await d.libraryReady;const edit=d.dialog.querySelector('.saved-personal-blocks .personal-block-card').querySelectorAll('button')[1];assert.equal(edit.textContent,"Edit");edit.click();
+  document.querySelector('[name=title]').value="Changed template";[...d.dialog.querySelectorAll('button')].find(b=>b.textContent==="Save reusable block").click();await new Promise(r=>setTimeout(r,10));
+  assert.equal(library[0].title,"Changed template");assert.equal(current.personalBlocks[0].title,"Work shift");assert.equal(applied,0);assert.match(d.status.textContent,/Existing schedules are unchanged/);d.close();dom.window.close();
 });

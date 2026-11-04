@@ -47,3 +47,14 @@ export async function forgetReusableBlock(id) {
   await storageSet({ [PERSONAL_BLOCK_LIBRARY_KEY]: next });
   return next;
 }
+
+// Replace one reusable template only. Plan instances remain independent copies.
+export async function replaceReusableBlock(original, replacement) {
+  const library = await loadReusableBlocks();
+  const stored = library.find(block => block.id === original.id);
+  if (!stored || blockSignature(stored) !== blockSignature(original))
+    throw new Error("This saved block changed or was removed in another window. Cancel and reopen it before editing.");
+  const next = normalizeBlockLibrary(library.map(block => block.id === original.id ? replacement : block));
+  await storageSet({ [PERSONAL_BLOCK_LIBRARY_KEY]: next });
+  return next;
+}

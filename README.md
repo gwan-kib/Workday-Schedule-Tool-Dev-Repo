@@ -144,4 +144,6 @@ Use **Add personal block** in Course List or **Personal blocks** in Schedule vie
 
 Creating or editing a block automatically keeps a reusable local copy under **Saved personal blocks**. After switching schedules, choose **Add to schedule** on an existing copy. Each schedule gets an independent editable instance. Removing a block from a schedule keeps the reusable copy; **Remove saved copy** only removes that library entry. Existing saved-plan blocks are migrated into the library when the updated extension first loads. The popup edits its currently previewed saved plan directly and uses the same library.
 
-Lead Developer and Contributors retain equally sized original-style credit cards. See [the feature and manual testing guide](docs/phase-4-testing.md).
+Lead Developer and Contributors use larger, equally sized responsive credit cards so their names and social links fit. See [the feature and manual testing guide](docs/phase-4-testing.md).
+
+Saved personal blocks have an **Edit** action for changing the reusable template without changing any existing schedule instances. Settings explains the optional diagnostics flow: enable for this page session, reproduce a problem, and download a locally saved redacted report. Nothing is uploaded automatically.
