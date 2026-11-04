@@ -5,6 +5,7 @@
 @import "./css/colors/saved-schedules-colors.css";
 @import "./css/colors/schedule-view-colors.css";
 @import "./css/colors/hover-tooltip-colors.css";
+@import "./css/formatting/planner.css";
 
 :root {
   color-scheme: light;
@@ -28,7 +29,7 @@
 html,
 body {
   margin: 0;
-  width: 670px;
+  width: min(670px, 100vw);
   min-height: 600px;
 }
 
@@ -67,7 +68,7 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 400px;
+  width: min(400px, calc(100vw - 20px));
   padding: 10px 0px 10px 0px;
   transform: translateX(-50%);
 
@@ -336,3 +337,8 @@ h3 {
 .is-hidden {
   display: none !important;
 }
+
+.popup-content > .planner-overview-host .planner-overview { margin: 10px 0; }
+.popup-content > .planner-toolbar { margin: 10px 0; width: 100%; justify-content: center; }
+.popup-content > .planner-toolbar .planner-field { flex: 1 1 100%; text-align: left; }
+.popup-content > .planner-toolbar .planner-field select { width: 100%; }

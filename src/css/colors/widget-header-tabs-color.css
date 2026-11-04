@@ -94,6 +94,20 @@
 }
 
 /* export dropdown */
+.export-summary {
+  background: var(--hex-brand-main-3);
+  color: var(--hex-brand-accent-2);
+  opacity: 0.5;
+}
+
+.export-summary:hover {
+  opacity: 0.75;
+}
+
+.export-summary .text {
+  color: var(--hex-brand-accent-2);
+}
+
 .export-menu {
   background: var(--hex-brand-accent-1);
   border-color: var(--hex-brand-main-2);
@@ -106,7 +120,7 @@
 
 .export-option:hover,
 .export-option:focus-visible {
-  background: var(--hex-brand-accent-6);
-  color: var(--hex-brand-accent-1);
+  background: var(--hex-brand-accent-3);
+  color: var(--hex-brand-main-1);
 }
 

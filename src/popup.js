@@ -1,3 +1,6 @@
+import { openScheduleNotes, createScheduleNotesButton } from "./mainPanel/schedules/scheduleNotes.js";
+import { exportTimetable, exportAppearance } from "./exportLogic/exportTimetable.js";
+import { storageGet, storageSet } from "./utilities/storage.js";
 import {
   applyCourseColorAssignments,
   captureCourseColorPalettes,
@@ -74,6 +77,7 @@ function queueVisibleScheduleRender(schedule) {
 function wireTimeFormatToggle() {
   ui.onTimeFormatChange = (next) => {
     popupState.timeFormat = next;
+    void storageSet({ wdTimeFormat: next }).catch(error => ui.footerNotes.showTemporary(error.message, { tone: "warn" }));
   };
 }
 
@@ -168,13 +172,14 @@ function renderPicker() {
 
     actions.appendChild(favoriteButton);
     actions.appendChild(renameButton);
+    actions.appendChild(createScheduleNotesButton(schedule));
     actions.appendChild(deleteButton);
     card.appendChild(header);
     card.appendChild(actions);
     ui.savedMenu.appendChild(card);
   });
 
-  ui.pickerWrap?.classList.toggle("is-hidden", popupState.schedules.length <= 1);
+  ui.pickerWrap?.classList.toggle("is-hidden", popupState.schedules.length === 0);
 }
 
 // Renders the active saved schedule preview, falling back to the preferred schedule when needed.
@@ -205,8 +210,40 @@ function renderActiveSchedule() {
 async function boot() {
   popupState.basePalettes = captureCourseColorPalettes(document.documentElement);
   popupState.schedules = await loadSavedSchedules();
+  const preferences = await storageGet(["wdTimeFormat"]);
+  if (["24h", "am/pm"].includes(preferences.wdTimeFormat)) popupState.timeFormat = preferences.wdTimeFormat;
   popupState.activeScheduleId = getPreferredSchedule(popupState.schedules)?.id || null;
 
+  const tools = document.createElement("div");
+  tools.className = "planner-toolbar";
+  const orientationLabel = document.createElement("label");
+  orientationLabel.className = "planner-field";
+  const orientationText = document.createElement("span");
+  orientationText.className = "planner-field-label";
+  orientationText.textContent = "Download layout";
+  const orientation = document.createElement("select");
+  orientation.setAttribute("aria-label", "Export orientation");
+  for (const value of ["landscape", "portrait"]) {
+    const option = document.createElement("option"); option.value = value; option.textContent = value === "landscape" ? "Landscape" : "Portrait";
+    orientation.appendChild(option);
+  }
+  orientationLabel.append(orientationText, orientation);
+  tools.appendChild(orientationLabel);
+  for (const format of ["png", "pdf"]) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = `Download ${format.toUpperCase()}`;
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      try {
+        const schedule = popupState.schedules.find(s => s.id === popupState.activeScheduleId);
+        await exportTimetable(schedule?.courses || [], format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
+        ui.footerNotes.showTemporary(`${format.toUpperCase()} download ready.`, { tone: "success" });
+      } catch (error) { ui.footerNotes.showTemporary(error.message, { tone: "warn" }); }
+      finally { button.disabled = false; button.removeAttribute("aria-busy"); }
+    });
+    tools.appendChild(button);
+  }
+  ui.scheduleGrid.before(tools);
   renderPicker();
   renderActiveSchedule();
 }
@@ -217,6 +254,20 @@ ui.savedMenu?.addEventListener("click", async (event) => {
     const card = event.target.closest(".schedule-saved-card");
     const scheduleId = card?.dataset.id;
     if (!scheduleId) return;
+
+    if (actionButton?.dataset.action === "notes") {
+      event.stopPropagation();
+      openScheduleNotes(ui, {
+        scheduleId,
+        getSchedules: () => popupState.schedules,
+        saveSchedules: async next => {
+          await persistSavedSchedules(next);
+          popupState.schedules = next;
+          renderPicker();
+        },
+      });
+      return;
+    }
 
     if (actionButton?.dataset.action === "favorite") {
       event.stopPropagation();

@@ -21,7 +21,8 @@
 
 #widget-title {
   font-weight: 700;
-  font-size: 25px;
+  font-size: 23px;
+  white-space: nowrap;
 
   color: rgb(var(--rgb-brand-accent-6));
 }
@@ -94,7 +95,8 @@
 
 .export-summary {
   height: 36px;
-  width: 115px;
+  width: 160px;
+  white-space: nowrap;
 
   display: flex;
   justify-content: center;
@@ -112,9 +114,11 @@
 
   display: none;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 
-  min-width: 190px;
+  min-width: 250px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 12px 28px #242b5e33;
 
   padding: 8px;
   border-radius: 12px;
@@ -130,8 +134,9 @@
 .export-option {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 8px 10px;
+  gap: 10px;
+  padding: 10px 12px;
+  min-height: 40px;
   border-radius: 10px;
   border: none;
 
@@ -147,7 +152,7 @@
 }
 
 .export-option .material-symbols-rounded {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1;
 }
 
@@ -170,6 +175,8 @@
   display: flex;
   gap: 3px;
 }
+
+.widget-header .help.symbolOnly { padding: 0; flex: 0 0 36px; }
 
 /* -------------------------------------------------------------------------- */
 /* TABS ROW (Course List / Schedule View / Search / Actions)                   */
@@ -245,7 +252,7 @@
   font-weight: 600;
 }
 
-/* Refresh button */
+/* Search page button */
 #widget-refresh {
   display: flex;
   align-items: center;
@@ -254,15 +261,15 @@
   width: 36px;
 }
 
-#widget-refresh.rotate .refresh-icon {
-  animation: spin360 0.4s ease-in-out;
+:is(#widget-undo, #widget-redo):disabled { opacity: 0.25; cursor: default; }
+:is(#widget-undo, #widget-redo):focus-visible { outline: 2px solid var(--hex-brand-accent-2); outline-offset: 2px; }
+:is(#widget-undo, #widget-redo).wd-hover-tooltip::after {
+  left: auto; right: 0; width: max-content; max-width: 280px; white-space: normal; text-align: left;
+  transform: translateY(2px);
 }
+:is(#widget-undo, #widget-redo).wd-hover-tooltip:hover::after,
+:is(#widget-undo, #widget-redo).wd-hover-tooltip:focus-visible::after { transform: translateY(0); }
 
-@keyframes spin360 {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* Phase 3 Import / Export only; existing shell controls retain their baseline. */
+.export-menu-label { padding: 6px 12px 4px; color: var(--hex-brand-main-1); font-size: 11px; font-weight: 700; }
+.export-menu-label--divider { border-top: 1px solid var(--hex-brand-accent-3); margin-top: 6px; padding-top: 12px; }

@@ -1,3 +1,5 @@
+import { courseWorkdayLink } from "../../extraction/trustedWorkday.js";
+import { courseIdentity } from "../../core/meetings.js";
 import {
   getCourseAverageState,
   getCourseRmpState,
@@ -57,49 +59,10 @@ const isExperientialCourse = (course) =>
 const colorSwatchStyle = (colorIndex) =>
   `background: var(--course-color-${colorIndex}-bg); border-color: var(--course-color-${colorIndex}-border);`;
 
-function getTenantPath(url) {
-  try {
-    return new URL(url).pathname.split("/").filter(Boolean)[0] || "ubc";
-  } catch (error) {
-    return "ubc";
-  }
-}
-
-function normalizeWorkdayPageLink(value) {
-  if (!value) return "";
-
-  try {
-    const parsed = new URL(value);
-    if (parsed.protocol !== "https:" || !/(^|\.)myworkday\.com$/i.test(parsed.hostname)) return "";
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    const instIndex = parts.indexOf("inst");
-    if (instIndex !== -1 && parts[instIndex - 1] !== "d") {
-      parts.splice(instIndex, 0, "d");
-      parsed.pathname = `/${parts.join("/")}`;
-    }
-    return parsed.href;
-  } catch (error) {
-    return "";
-  }
-}
-
-function buildWorkdayPageLinkFromId(courseId) {
-  const id = String(courseId || "").trim();
-  if (!id) return "";
-
-  try {
-    const base = new URL(window.location.href);
-    const tenant = getTenantPath(base.href);
-    return `${base.origin}/${tenant}/d/inst/1$15194/15194$${id}.htmld`;
-  } catch (error) {
-    return "";
-  }
-}
-
 function getCourseWorkdayLink(course) {
   if (!course || typeof course !== "object") return "";
 
-  const link = normalizeWorkdayPageLink(course.workdayCourseLink) || buildWorkdayPageLinkFromId(course.workdayCourseId);
+  const link = courseWorkdayLink(course, window.location.href);
   return link;
 }
 
@@ -199,8 +162,8 @@ export function renderCourseObjects(
     emptyState.className = "course-list-empty";
     emptyState.innerHTML = `
       <span class="course-list-empty__copy">
-        <span class="material-symbols-rounded course-list-empty__icon" aria-hidden="true">refresh</span>
-        <span class="course-list-empty__text">Click the refresh button to load in a schedule.</span>
+        <span class="material-symbols-rounded course-list-empty__icon" aria-hidden="true">search</span>
+        <span class="course-list-empty__text">Click the search button to find courses on this page.</span>
         <span class="course-list-empty__hint">You need to be on a page with a schedule table</span>
         <span class="course-list-empty__hint">(e.g. the 'View My Courses' page or a 'Saved Schedule')</span>
       </span>
@@ -234,6 +197,7 @@ export function renderCourseObjects(
 
     const card = document.createElement("div");
     card.dataset.courseRenderKey = getCourseRenderKey(course);
+    card.dataset.courseId = courseIdentity(course);
     const colorIndex = isValidCourseColorIndex(course?.colorIndex)
       ? course.colorIndex
       : (index % COURSE_COLOR_COUNT) + 1;
@@ -420,7 +384,10 @@ export function renderCourseObjects(
         event.stopPropagation();
 
         const link = linkButton.dataset.courseLink || "";
-        if (link) window.open(link, "_blank", "noopener,noreferrer");
+        if (link) {
+          window.open(link, "_blank", "noopener,noreferrer");
+          ui.footerNotes?.showTemporary("Opened the section in a new tab. If asked, sign in there. If unavailable, search Workday and paste the current Section link.", { durationMs: 10000 });
+        }
       });
     }
 
@@ -470,6 +437,11 @@ export function renderCourseObjects(
       });
     }
 
+    if (!courseWorkdayLink) {
+      const note = document.createElement("small");
+      note.textContent = "Workday section link unavailable or untrusted. Open Workday and copy the current Section link.";
+      card.appendChild(note);
+    }
     frag.appendChild(card);
   });
 

@@ -1,3 +1,4 @@
+import { trustedSectionLink } from "./trustedWorkday.js";
 import { fetchReliable } from "../utilities/network.js";
 import { WORKDAY_SELECTORS, sectionId } from "./workdaySelectors.js";
 import { courseDateRange } from "../core/meetings.js";
@@ -7,8 +8,6 @@ import { extractStartDate, formatMeetingLineForPanel, normalizeMeetingPatternsTe
 const debug = debugFor("singleCourseImport");
 debugLog({ local: { singleCourseImport: false } });
 
-const WORKDAY_HOST_RE = /(^|\.)myworkday\.com$/i;
-const WORKDAY_COURSE_SECTION_SEGMENT_RE = /^15194\$\d+\.htmld$/i;
 export const WRONG_COURSE_LINK_ERROR = "Wrong course link: Copy the link in the 'Section' column.";
 const WORKDAY_JSON_LABELS = new Set([
   "Course",
@@ -184,6 +183,7 @@ function createCourseObject({
     instructionalFormat: format,
     ...courseDateRange({ meetingLines: uniqueMeetingLines }),
     meetingLines: uniqueMeetingLines,
+    isOnline,
     isLab,
     isSeminar,
     isDiscussion,
@@ -264,14 +264,9 @@ export function validateWorkdayCourseLink(value) {
     return { ok: false, error: "That does not look like a valid URL." };
   }
 
-  if (!/^https?:$/i.test(url.protocol) || !WORKDAY_HOST_RE.test(url.hostname)) {
-    return { ok: false, error: "Use a Workday link from a myworkday.com page." };
-  }
-
-  const pathParts = url.pathname.split("/").filter(Boolean);
-  if (pathParts.includes("inst") && !WORKDAY_COURSE_SECTION_SEGMENT_RE.test(pathParts[pathParts.length - 1] || "")) {
-    return { ok: false, error: WRONG_COURSE_LINK_ERROR };
-  }
+  const trusted = trustedSectionLink(url.href);
+  if (!trusted) return { ok: false, error: "Use an HTTPS UBC Workday Section link (tenant /ubc/). " + WRONG_COURSE_LINK_ERROR };
+  url = new URL(trusted);
 
   return { ok: true, url: normalizeWorkdayJsonUrl(url.href), pageUrl: buildWorkdayPageUrlFromUrl(url.href) };
 }
@@ -282,14 +277,23 @@ export async function fetchCourseFromWorkdayLink(link) {
   if (!validation.ok) throw new Error(validation.error);
 
   debug.log({ id: "fetchCourseFromWorkdayLink.start" }, "Fetching Workday course JSON link", { url: validation.url });
-  const response = await fetchReliable(validation.url, { credentials: "include" });
-  if (!response.ok) throw new Error(`Workday returned ${response.status} for that course link.`);
+  let response;
+  try { response = await fetchReliable(validation.url, { credentials: "include" }); }
+  catch (error) {
+    if ([401, 403].includes(error.status)) throw Object.assign(new Error("Sign into UBC Workday in this tab, then retry the section link."), { status: error.status });
+    if (error.status === 404) throw Object.assign(new Error("This section is no longer available. Find its current Section link in Workday."), { status: error.status });
+    throw error;
+  }
+  if (response.status === 401 || response.status === 403) throw new Error("Sign into UBC Workday in this tab, then retry the section link.");
+  if (response.status === 404) throw new Error("This section is no longer available. Find its current Section link in Workday.");
+  if (!response.ok) throw new Error(`Workday returned ${response.status}. Retry after signing in.`);
+  if (response.url && !trustedSectionLink(response.url)) throw new Error("Workday redirected away from the section. Sign in and copy its current Section link.");
 
   let data;
   try {
     data = await response.json();
   } catch (error) {
-    throw new Error("Workday did not return course JSON. Use the URL copied from the course title.");
+    throw new Error("Workday did not return section data. Sign in, open the section, and copy its current Section link.");
   }
 
   const course = extractCourseFromWorkdayJson(data, { sourceUrl: validation.url, courseLink: validation.pageUrl });
