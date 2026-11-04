@@ -10,7 +10,7 @@ The overview contains only Scheduled hours/week and Busiest day. It has no date,
 
 ## Saved plans, notes and import
 
-`plannerController.js` retains read-only, main-panel saved-plan comparison and explicit Set as Preferred. Back up schedules and Import WST schedule are distinct entries under Import / Export. The header uses swap_vert; export entries have download icons and import has upload, matching Google Calendar's sync icon style. The page-course reader uses the pageview icon and Search page tooltip.
+`plannerController.js` retains read-only, main-panel saved-plan comparison and explicit Set as Preferred. Export WST schedule (.json) and Import WST schedule (.json) are distinct entries under Import / Export. The header uses swap_vert; export entries have download icons and import has upload, matching Google Calendar's sync icon style. The page-course reader uses the pageview icon and Search page tooltip.
 
 Import accepts one version-1 WST JSON file containing exactly one saved schedule. It adds a new record with a fresh ID, retaining the original name or appending the first free (1), (2), etc. Existing snapshots, the working draft, preferred schedule and display/account settings are not replaced. Re-importing the same file adds another named copy. The existing 10-plan limit and file validation remain. Export a single selected plan to produce a compatible .wst.json file; an all-plan backup remains a separate export and is not accepted by this single-plan import.
 
@@ -30,7 +30,7 @@ Files are generated locally as SVG/canvas PNG and high-resolution image-PDF, wit
 
 ## Validation
 
-See phase-3-testing.md for evidence and manual acceptance. The private saved-course fixture used locally for visual checks is not committed. No actual Workday registration or Google Calendar write was performed. The pull request remains a draft until manual acceptance and merge.
+See phase-3-testing.md for evidence and manual acceptance. The private saved-course fixture used locally for visual checks is not committed. No actual Workday registration or Google Calendar write was performed. Real-account Workday, Firefox runtime, native file-picker, screen-reader and Google account/calendar acceptance checks remain pending after merge.
 
 
 ## Scoped UI polish (3.0.8)

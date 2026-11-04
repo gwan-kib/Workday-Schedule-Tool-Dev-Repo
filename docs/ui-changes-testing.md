@@ -5,7 +5,7 @@ Reload the updated extension and refresh Workday. These checks cover visible cha
 | Test | What to look for |
 | --- | --- |
 | Widget logo | The existing extension logo appears immediately to the left of the widget title as an embedded image, with no broken-image symbol. It should load in Chrome and Firefox, stay aligned with the title and leave the header controls usable. |
-| Export label | Open Export: the calendar-download action reads **Download .ics file**. |
+| Export label | Open Import / Export: the calendar-download action reads **Export calander file (.ics)**. |
 | Quiet navigation | Navigate to another Workday page with the widget open. The page-change message no longer appears; your working courses remain available and Refresh still imports the current page. |
 | Save tooltips | Hover or Tab-focus each enabled save icon: its tooltip appears below the button and slides downward into view, stays inside the widget, and is not hidden by the header or course-list controls. |
 | Calendar header alignment | In Schedule view, the status chip sits at the left on the same row as the centered schedule name/term pill. It must not create a separate row above the heading, overlap long names, or move the Week 1 / Week 2 controls outside schedule-controls. |
