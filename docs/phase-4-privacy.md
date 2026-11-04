@@ -1,6 +1,6 @@
 # Phase 4 privacy and permissions audit
 
-Audited source: version 3.0.13. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
+Audited source: version 3.0.14. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
 
 | Destination | When | Fields sent | Retention in the extension |
 | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ Firefox retains required `websiteContent` because automatic lookups transmit cou
 
 ## Diagnostics
 
-Production logging defaults off. Settings → Report a problem permits session-only opt-in and a local redacted JSON download. The logger discards free-form messages, Error objects, API/DOM payloads, URLs and arbitrary fields, even in diagnostic mode. The bounded ring contains only code-defined scope/event IDs and severity (up to 100 events), plus format/extension version and enabled state. It contains no times, course names, instructor names, block text, URLs, tokens or account fields. Turning the option off clears the ring; reload resets the option. Developer `debugLog({ global: true })` follows the same sanitization, and a per-call `on: true` cannot bypass a disabled master switch. No report is automatically transmitted.
+Production logging defaults off. Help → Report a problem permits session-only opt-in and a local redacted JSON download. The logger discards free-form messages, Error objects, API/DOM payloads, URLs and arbitrary fields, even in diagnostic mode. The bounded ring contains only code-defined scope/event IDs and severity (up to 100 events), plus format/extension version and enabled state. It contains no times, course names, instructor names, block text, URLs, tokens or account fields. Turning the option off clears the ring; reload resets the option. Developer `debugLog({ global: true })` follows the same sanitization, and a per-call `on: true` cannot bypass a disabled master switch. No report is automatically transmitted.
 
 ## Ready-to-use store disclosure
 

@@ -1,6 +1,6 @@
-# Phase 4 — revised features and manual tests (3.0.13)
+# Phase 4 — revised features and manual tests (3.0.14)
 
-Work is on `gwan/phase-4` in the main repository and PR #79. Reload the existing unpacked extension from `C:\Users\gwant\Dev\Projects\Workday-Schedule-Tool-Dev-Repo\build\chrome`, refresh Workday, and confirm **3.0.13**. Keep the same extension identity. Firefox uses `build/firefox` and supports ICS only.
+This guide covers Phase 4 in PR #79 in the main repository. Reload the existing unpacked extension from `C:\Users\gwant\Dev\Projects\Workday-Schedule-Tool-Dev-Repo\build\chrome`, refresh Workday, and confirm **3.0.14**. Keep the same extension identity. Firefox uses `build/firefox` and supports ICS only.
 
 The original light appearance and fixed timetable spacing have been restored. Dark/system themes and spacing controls were removed. Issues #57, #58 and #62 remain outside Phase 4; the removed theme/density scope in #55 is also no longer part of the PR. Latest-available OVERALL grade navigation, privacy disclosures and redacted diagnostics remain.
 
@@ -21,7 +21,7 @@ The original light appearance and fixed timetable spacing have been restored. Da
 | JSON and visual exports | Quick Save a plan containing blocks and notes. Export/import its JSON, then download PNG/PDF. | Saved-plan files retain the attached blocks/notes and omit Workday IDs/links and account credentials. The global reusable library is not included in shared schedule files. PNG/PDF include the current displayed blocks; PDF is still two image-based pages. Imported portable plans cannot reopen omitted Workday links. |
 | Calendar privacy | Export ICS, or preview Chrome Google sync, from a draft containing a block (even before Quick Save). Test default, Include and Cancel. | Each export defaults to courses only. Explicit inclusion uses the current draft's blocks. Cancel creates no file or calendar write. Google still requires preview and final confirmation. Firefox remains ICS-only. |
 | Grade navigation | Wait for an Average button, then click it. | Opens the newest available course-wide UBCGrades `-OVERALL` page, e.g. `https://ubcgrades.com/#UBCO-2025W-COSC-310-OVERALL` when that is the latest available offering. No fabricated source is opened for missing data. |
-| Report a problem | Settings → Report a problem. Turn on Record what happens, repeat the problem, then Download bug report and attach the file when contacting the email address in Help. | Three short nontechnical steps replace the previous Privacy & diagnostics section. Download is enabled only while recording; the file stays on the computer and is not sent automatically. Turning recording off clears it; refreshing turns it off. |
+| Report a problem | Help → Report a problem. Turn on Record what happens, repeat the problem, then Download bug report and attach the file when contacting the email address in Help. | Three short nontechnical steps replace the previous Privacy & diagnostics section. Download is enabled only while recording; the file stays on the computer and is not sent automatically. Turning recording off clears it; refreshing turns it off. |
 
 ## Verification
 
@@ -35,3 +35,5 @@ Real-account Workday/Google flows, Firefox runtime/consent, native downloads and
 An origin-only web-accessible-resource match is required for Chrome to accept the manifest. The invalid `/ubc/*` resource match was reproduced as a failed real unpacked load, then corrected to `https://wd10.myworkday.com/*` without widening content-script injection. A fresh isolated Chromium profile loads the actual Chrome package, starts its background worker, opens the actual extension popup and automatically injects the panel on a routed UBC Workday test page. No real Workday/Google account is used.
 
 The explicit-save regression checks that draft creation/editing does not add a template automatically, exact matches hide Save for reuse, changed details reveal it, and library changes refresh course-view buttons. The problem-report guide uses three short steps and plain labels; the underlying report remains local and sanitized.
+
+The actual unpacked 3.0.14 Chrome package also verifies that Report a problem appears under Help, is absent from Settings, keeps recording enabled when switching pages, downloads WST-bug-report.json locally and disables downloading when recording is turned off. Its worker, Workday panel and popup load without script errors.

@@ -1,12 +1,12 @@
 import { enableDiagnostics, diagnosticSummary } from "../../utilities/debugTool.js";
 export function mountBugReportSettings(ui) {
-  const root=ui.root||document, mount=root.querySelector('.settings-section--display');
+  const root=ui.root||document, mount=root.querySelector('.help-panel');
   if(!mount) return;
-  const section=document.createElement("section");section.className="settings-section bug-report-help";
+  const section=document.createElement("section");section.className="bug-report-help";
   const heading=document.createElement("h3");heading.textContent="Report a problem";
   const intro=document.createElement("p");intro.textContent="Something not working? These steps help you send the developer a useful report.";
   const steps=document.createElement("ol");
-  for(const instruction of ["Turn on Record what happens below.","Try the action that went wrong again.","Click Download bug report. Attach the file when emailing the address in Help, and explain what you expected and what happened. A screenshot can help too."]) {
+  for(const instruction of ["Turn on Record what happens below.","Try the action that went wrong again.","Click Download bug report. Attach the file when emailing the address above, and explain what you expected and what happened. A screenshot can help too."]) {
     const item=document.createElement("li");item.textContent=instruction;steps.append(item);
   }
   const note=document.createElement("p");note.textContent="The report leaves out names and personal schedule details. It saves to your computer and is not sent automatically. Refreshing this page stops the recording.";
@@ -24,5 +24,5 @@ export function mountBugReportSettings(ui) {
     const url=URL.createObjectURL(new Blob([JSON.stringify(diagnosticSummary(),null,2)],{type:"application/json"}));
     const link=document.createElement("a");link.href=url;link.download="WST-bug-report.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   });
-  controls.append(label,download,state);section.append(heading,intro,steps,controls,note);mount.after(section);
+  controls.append(label,download,state);section.append(heading,intro,steps,controls,note);mount.append(section);
 }

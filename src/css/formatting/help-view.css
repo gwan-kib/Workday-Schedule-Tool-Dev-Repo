@@ -77,3 +77,8 @@
   outline: 2px solid var(--hex-brand-main-3);
   outline-offset: 2px;
 }
+
+.widget-panel[data-panel="help-panel"] .bug-report-help h3 {
+  margin: 18px 0 6px;
+  font-size: 14px;
+}

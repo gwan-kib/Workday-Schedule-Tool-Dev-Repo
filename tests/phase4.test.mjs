@@ -200,8 +200,8 @@ test("Save for reuse appears only without an exact content match, regardless of 
   draw({...b,title:"Changed title"});assert.equal([...ui.tableBody.querySelectorAll('button')].filter(n=>n.textContent==="Save for reuse").length,1);dom.window.close();
 });
 test("problem-report help uses short plain steps and enables a local report only after recording opt-in",async()=>{
-  const dom=new JSDOM('<section class="settings-section--display"></section>');globalThis.document=dom.window.document;
+  const dom=new JSDOM('<div class="settings-panel"><section class="settings-section--display"></section></div><div class="help-panel"></div>');globalThis.document=dom.window.document;
   const {mountBugReportSettings}=await import("../src/mainPanel/settings/bugReport.js");mountBugReportSettings({root:document});
-  assert.equal(document.querySelector('h3').textContent,"Report a problem");assert.equal(document.querySelectorAll('ol li').length,3);assert.ok(!document.body.textContent.includes("Privacy & diagnostics"));
+  assert.ok(document.querySelector('.help-panel > .bug-report-help'));assert.equal(document.querySelector('.settings-panel .bug-report-help'),null);assert.equal(document.querySelector('h3').textContent,"Report a problem");assert.equal(document.querySelectorAll('ol li').length,3);assert.ok(!document.body.textContent.includes("Privacy & diagnostics"));
   const button=document.querySelector('button'),toggle=document.querySelector('input');assert.equal(button.textContent,"Download bug report");assert.equal(button.disabled,true);toggle.checked=true;toggle.dispatchEvent(new dom.window.Event('change'));assert.equal(button.disabled,false);toggle.checked=false;toggle.dispatchEvent(new dom.window.Event('change'));assert.equal(button.disabled,true);dom.window.close();
 });

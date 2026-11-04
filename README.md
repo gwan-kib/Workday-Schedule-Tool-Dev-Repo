@@ -146,4 +146,4 @@ Choose **Save for reuse** to keep a block's current details under **Saved person
 
 Lead Developer and Contributors use larger, equally sized responsive credit cards so their names and social links fit. See [the feature and manual testing guide](docs/phase-4-testing.md).
 
-Saved personal blocks have an **Edit** action for changing the reusable template without changing any existing schedule instances. Settings → **Report a problem** gives three short steps: turn on **Record what happens**, try the problem again, then **Download bug report** and attach it when contacting the address in Help. Nothing is uploaded automatically.
+Saved personal blocks have an **Edit** action for changing the reusable template without changing any existing schedule instances. Help → **Report a problem** gives three short steps: turn on **Record what happens**, try the problem again, then **Download bug report** and attach it when contacting the address in Help. Nothing is uploaded automatically.
