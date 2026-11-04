@@ -1,6 +1,6 @@
-# Phase 4 — revised features and manual tests (3.0.10)
+# Phase 4 — revised features and manual tests (3.0.11)
 
-Work is on `gwan/phase-4` in the main repository and PR #79. Reload the existing unpacked extension from `C:\Users\gwant\Dev\Projects\Workday-Schedule-Tool-Dev-Repo\build\chrome`, refresh Workday, and confirm **3.0.10**. Keep the same extension identity. Firefox uses `build/firefox` and supports ICS only.
+Work is on `gwan/phase-4` in the main repository and PR #79. Reload the existing unpacked extension from `C:\Users\gwant\Dev\Projects\Workday-Schedule-Tool-Dev-Repo\build\chrome`, refresh Workday, and confirm **3.0.11**. Keep the same extension identity. Firefox uses `build/firefox` and supports ICS only.
 
 The original light appearance and fixed timetable spacing have been restored. Dark/system themes and spacing controls were removed. Issues #57, #58 and #62 remain outside Phase 4; the removed theme/density scope in #55 is also no longer part of the PR. Latest-available OVERALL grade navigation, privacy disclosures and redacted diagnostics remain.
 
@@ -26,3 +26,8 @@ The original light appearance and fixed timetable spacing have been restored. Da
 120 automated tests pass, including reusable-library persistence/deduplication, independent copies, current-draft editing, course cards, save status, block Undo/Redo and the unchanged grade/privacy/export regressions. The isolated Chromium fixture verifies block-only unsaved drafts and Save As New, adding saved blocks to two plans, copy independence, Quick Save/Cancel, course-card editing/removal, Undo/Redo, conflicts, working-block ICS inclusion, the popup library, absence of appearance controls, original 25px rows and equal credit-card widths. No script errors or real registration/calendar writes occur.
 
 Real-account Workday/Google flows, Firefox runtime/consent, native downloads and store publication remain manual release checks. This is not a full accessibility audit.
+
+
+## Unpacked Chrome load regression
+
+An origin-only web-accessible-resource match is required for Chrome to accept the manifest. The invalid `/ubc/*` resource match was reproduced as a failed real unpacked load, then corrected to `https://wd10.myworkday.com/*` without widening content-script injection. A fresh isolated Chromium profile loads the actual Chrome package, starts its background worker, opens the actual extension popup and automatically injects the panel on a routed UBC Workday test page. No real Workday/Google account is used.

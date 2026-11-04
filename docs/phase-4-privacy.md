@@ -1,6 +1,6 @@
 # Phase 4 privacy and permissions audit
 
-Audited source: version 3.0.10. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
+Audited source: version 3.0.11. This describes application behavior and provides store-disclosure wording; it does not claim that a store listing has been published or approved.
 
 | Destination | When | Fields sent | Retention in the extension |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Signing out clears local signed-in state and pending preview and attempts to cle
 
 ## Permissions
 
-Both manifests inject only on `https://wd10.myworkday.com/ubc/*` and restrict accessible resources to that tenant. Workday host access is narrowed from all `*.myworkday.com` hosts to `wd10.myworkday.com`. Browser host permissions are origin-wide: a path in `host_permissions` is not a security boundary; content-script matching and section URL validation enforce the UBC path. RMP host access supports the background GraphQL request; Chrome Google API access supports confirmed Calendar sync. UBCGrades requests use its CORS-enabled API from the content context; no new broad host grant is added. `storage` supports saved plans/preferences; Chrome alone retains `identity` for its OAuth flow. No cookies, browsing-history, tabs, clipboard or telemetry permission is added.
+Both manifests inject only on `https://wd10.myworkday.com/ubc/*`. Web-accessible resource matches are `https://wd10.myworkday.com/*`: Chrome requires origin-level resource access and rejects tenant paths in this field. Only the declared extension assets are exposed on this origin; script injection and section URL validation remain restricted to UBC. Workday host access is narrowed from all `*.myworkday.com` hosts to `wd10.myworkday.com`. Browser host permissions are origin-wide: a path in `host_permissions` is not a security boundary; content-script matching and section URL validation enforce the UBC path. RMP host access supports the background GraphQL request; Chrome Google API access supports confirmed Calendar sync. UBCGrades requests use its CORS-enabled API from the content context; no new broad host grant is added. `storage` supports saved plans/preferences; Chrome alone retains `identity` for its OAuth flow. No cookies, browsing-history, tabs, clipboard or telemetry permission is added.
 
 Firefox retains required `websiteContent` because automatic lookups transmit course/instructor content derived from Workday. It retains its existing Gecko ID and Firefox 140 minimum. This phase removes obsolete Firefox Google/identity grants; it does not add an OAuth flow or claim a full accessibility audit.
 

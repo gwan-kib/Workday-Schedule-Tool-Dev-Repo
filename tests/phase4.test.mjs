@@ -77,6 +77,9 @@ test("browser packages inject only on the supported UBC tenant; Firefox has no G
     const manifest=JSON.parse(await readFile(new URL(`../manifest.${browser}.json`,import.meta.url)));
     assert.deepEqual(manifest.content_scripts[0].matches,["https://wd10.myworkday.com/ubc/*"]);
     assert.ok(!manifest.host_permissions.some(p=>p.includes("*.myworkday")));
+    // WAR matches use origins only; a tenant path prevents Chrome from loading.
+    for (const resource of manifest.web_accessible_resources)
+      for (const pattern of resource.matches || []) assert.equal(new URL(pattern).pathname,"/*","Web-accessible resources require an origin-level match");
     if(browser==="firefox") {assert.ok(!manifest.permissions.includes("identity"));assert.ok(!manifest.host_permissions.some(p=>p.includes("googleapis")));}
   }
 });

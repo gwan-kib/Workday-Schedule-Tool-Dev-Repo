@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UBC Workday - Schedule Tool",
-  "version": "3.0.10",
+  "version": "3.0.11",
   "description": "A tool to make planning for your semester easier.",
   "browser_specific_settings": {
     "gecko": {
@@ -69,7 +69,7 @@
         "dist/panel.html"
       ],
       "matches": [
-        "https://wd10.myworkday.com/ubc/*"
+        "https://wd10.myworkday.com/*"
       ]
     }
   ]
