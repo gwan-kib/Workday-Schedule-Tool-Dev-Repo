@@ -1,3 +1,5 @@
+import { openOptimizer } from "./optimizerDialog.js";
+import { openScheduleShare, openIncomingShare } from "./shareDialog.js";
 import { scheduleItems } from "../../core/personalBlocks.js";
 import { renderSchedule } from "./scheduleView.js";
 import { node } from "./plannerOverview.js";
@@ -53,7 +55,7 @@ export function plannerDialog(ui, title, variant = "") {
     status.dataset.tone = tone;
     status.textContent = message;
   };
-  const observers = [],
+  const observers = new Set(),
     cleanup = [];
   const close = () => {
     observers.forEach((u) => u.scheduleResizeObserver?.disconnect());
@@ -126,14 +128,23 @@ export function plannerDialog(ui, title, variant = "") {
       selectedScheduleWeek: week,
       personalBlocks,
     };
-    observers.push(previewUi);
+    previewUi.dispose = () => {
+      previewUi.scheduleResizeObserver?.disconnect();
+      observers.delete(previewUi);
+      controls.remove();
+      heading.remove();
+      grid.remove();
+    };
+    observers.add(previewUi);
     renderSchedule(previewUi, courses, null, "am/pm");
     return previewUi;
   };
   return { dialog, content, actions, status, setStatus, run, close, preview, cleanup };
 }
 
-export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }) {
+export function mountPlanner(ui, {
+  getState, saveSchedules, editPersonalBlocks, getOptimizerDraft, applySuggestion, importSharedSchedule,
+}) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
   const error = (e) =>
@@ -153,13 +164,35 @@ export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }
       safe(() => openExport()),
     ),
   );
+  if (getOptimizerDraft && applySuggestion) {
+    toolbar.append(button("Find schedule suggestions", safe(() =>
+      openOptimizer(plannerDialog(ui, "Find schedule suggestions"), {
+        getDraft: getOptimizerDraft,
+        apply: applySuggestion,
+      }),
+    )));
+  }
+
+  const openIncoming = (link) => openIncomingShare(
+    plannerDialog(ui, "Open shared schedule"), { link, importSchedule: importSharedSchedule },
+  );
+  const openShare = () => openScheduleShare(plannerDialog(ui, "Share schedule"), {
+    courses: structuredClone(getState().courses),
+    personalBlocks: structuredClone(getState().personalBlocks || []),
+  });
   ui.exportMenu?.addEventListener("click", (event) => {
     const action = event.target.closest("[data-planner-action]")?.dataset
       .plannerAction;
-    if (!["backup", "import"].includes(action)) return;
+    const handler = {
+      backup: () => openBackup("backup"),
+      import: () => openBackup("import"),
+      share: openShare,
+      "open-share": () => openIncoming(),
+    }[action];
+    if (!handler) return;
     ui.exportDropdown?.classList.remove("is-open");
     ui.exportButton?.setAttribute("aria-expanded", "false");
-    safe(() => openBackup(action))();
+    safe(handler)();
   });
 
   function openComparison() {
@@ -403,5 +436,5 @@ export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }
     });
   }
 
-  return {};
+  return { openIncoming: (link) => safe(() => openIncoming(link))() };
 }

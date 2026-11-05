@@ -6,6 +6,8 @@ import { renderPersonalBlockCards } from "./mainPanel/courses/personalBlockCards
 import { validatePersonalBlocks, calendarExportItems } from "./core/personalBlocks.js";
 import { mountPlanner } from "./mainPanel/schedules/plannerController.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
+import { planScheduleImport } from "./core/scheduleBackup.js";
+import { normalizeCourseGroupKey } from "./mainPanel/settings/courseColorSettings.js";
 import { getScheduleSaveState } from "./core/scheduleSaveState.js";
 import { renderScheduleHeading } from "./mainPanel/schedules/scheduleHeading.js";
 import { syncPreviewText } from "./exportLogic/googleCalendar/syncPreviewText.js";
@@ -905,8 +907,48 @@ debugLog({ local: { content: false } });
       }, 100),
     );
     mountBugReportSettings(ui);
-    mountPlanner(ui, {
+    const getOptimizerDraft = () => structuredClone({
+      source: STATE.currentSavedScheduleId || STATE.syncPlanId,
+      courses: STATE.courses,
+      personalBlocks: STATE.personalBlocks,
+    });
+    const planner = mountPlanner(ui, {
       editPersonalBlocks,
+      getOptimizerDraft,
+      applySuggestion: (courses, expected) => {
+        if (saveInProgress || undoInProgress || JSON.stringify(expected) !== JSON.stringify(getOptimizerDraft()))
+          throw new Error("The draft changed. Find suggestions again before applying.");
+        const before = captureScheduleChange(STATE);
+        const colors = new Map(STATE.courses.filter(course => course.manualColorIndex)
+          .map(course => [normalizeCourseGroupKey(course), course.manualColorIndex]));
+        store.load(courses.map(course => {
+          const color = colors.get(normalizeCourseGroupKey(course));
+          return color ? { ...course, manualColorIndex: color } : course;
+        }));
+        courseColorController.assignCourseColors(STATE.courses);
+        recordChange(before, "Apply schedule suggestion");
+        renderAll();
+        setActiveView("schedule-panel");
+        showFooterAlert("Suggestion applied to your working schedule.", { tone: "success" });
+      },
+      importSharedSchedule: async (incoming) => {
+        if (!storageReady || saveInProgress || undoInProgress)
+          throw new Error("Saved schedules are busy or unavailable. Retry once they finish loading.");
+        saveInProgress = true;
+        renderSaveState();
+        try {
+          const latest = await loadSavedSchedules();
+          const before = captureScheduleChange({ ...STATE, savedSchedules: latest });
+          const result = planScheduleImport(latest, incoming);
+          await updateSavedSchedules(result.schedules);
+          recordChange(before, "Import shared schedule");
+          renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
+          return result.imported;
+        } finally {
+          saveInProgress = false;
+          renderSaveState();
+        }
+      },
       getState: () => STATE,
       saveSchedules: async (next) => {
         const before = captureScheduleChange(STATE);
@@ -941,6 +983,18 @@ debugLog({ local: { content: false } });
     await loadCoursesFromPage();
     renderAll();
     setActiveView(STATE.view.panel);
+    if (window === window.top) {
+      const showIncomingShare = (link) => {
+        if (ui.mainPanel.classList.contains("is-hidden")) toggleMainPanel();
+        void planner.openIncoming(link);
+      };
+      globalThis.wstOpenShare = showIncomingShare;
+      if (globalThis.wstIncomingShare !== undefined) {
+        const link = globalThis.wstIncomingShare;
+        delete globalThis.wstIncomingShare;
+        showIncomingShare(link);
+      }
+    }
     // The popup or another Workday tab can rename, update or delete this source.
     const onSavedSchedulesChanged = async (changes, area) => {
       if (area !== "local") return;
