@@ -13,6 +13,7 @@ import {
   SHARE_PREFIX,
 } from "../src/core/scheduleShare.js";
 import { optimizeSchedules } from "../src/core/scheduleOptimizer.js";
+import { catalogSectionLink, readCourseCatalog } from "../src/api/courseCatalog.js";
 import { loadOptimizerOptions } from "../src/extraction/optimizerOptions.js";
 import { planScheduleImport } from "../src/core/scheduleBackup.js";
 import { course, line } from "./fixtures/courses.mjs";
@@ -75,28 +76,66 @@ test("a bounded many-section search returns distinct deterministic ties", async 
   assert.deepEqual(first.suggestions.map(s => s.key), reverse.suggestions.map(s => s.key));
 });
 
-test("Workday options keep confirmed bundles intact and skip unavailable choices", async () => {
-  const url = id => "https://wd10.myworkday.com/ubc/d/inst/1$15194/15194$" + id + ".htmld";
-  const lecture = section("TEST_O 101", "001", "Tue", "10:00 a.m. - 11:00 a.m.");
-  const lab = section("TEST_O 101", "L01", "Tue", "11:00 a.m. - 12:00 p.m.", { instructionalFormat: "Lab" });
-  const differentTerm = { ...lecture, meetingLines: [line("Tue", "11:00 a.m. - 12:00 p.m.", "2027-01-04 - 2027-04-12")] };
-  const calls = [];
-  const fetchSection = async link => {
-    calls.push(link);
-    if (link === url(1)) return lecture;
-    if (link === url(2)) return lab;
-    if (link === url(4)) return differentTerm;
-    throw new Error("Unavailable");
+test("automatic discovery uses the draft, same campus and term, and keeps unresolved linked activities", async () => {
+  const lecture = section("DATA_O 311", "101", "Tue", "10:00 a.m. - 11:00 a.m.");
+  const lab = section("DATA_O 311", "L02", "Fri", "11:00 a.m. - 12:00 p.m.", { instructionalFormat: "Lab" });
+  const standalone = section("ENGL_O 109", "001", "Fri", "9:00 a.m. - 10:00 a.m.");
+  const missing = section("ANTH_O 170", "001", "Thu", "9:00 a.m. - 10:00 a.m.");
+  const term = "2026-27 Winter Term 1 (UBC-O)";
+  const entry = (section, extra = {}) => ({
+    section, term, title: "Public catalog course", format: "Lecture", mode: "In person",
+    status: "Open", startDate: "2026-09-08", endDate: "2026-12-09", days: ["m"],
+    startTime: 32400, endTime: 36000, varies: false,
+    ...extra,
+  });
+  const listings = {
+    "DATA_O 311": [entry("101"), entry("L01", { format: "Laboratory" }), entry("L02", { format: "Laboratory" })],
+    "ENGL_O 109": [entry("001"), entry("002", { link: "https://courses.students.ubc.ca/courses/english/english-2026-sec-002" }),
+      entry("003", { status: "Closed" }), entry("004", { varies: true }),
+      entry("005", { term: "2026-27 Winter Term 2 (UBC-O)", startDate: "2027-01-04", endDate: "2027-04-12" })],
   };
-  const result = await loadOptimizerOptions([url(1) + " " + url(2) + "\n" + url(1) + " " + url(3)],
-    [lecture, lab, differentTerm], { fetchSection });
-  assert.deepEqual(result.groups, [[[lecture, lab]]]);
-  assert.deepEqual(result.fixed, [differentTerm]);
-  assert.equal(result.unavailable, 1);
-  assert.equal(calls.length, 3);
-  await assert.rejects(() => loadOptimizerOptions([url(1)], [lecture, lab], { fetchSection }), /required components/);
-  await assert.rejects(() => loadOptimizerOptions([url(1) + " " + url(4)], [], { fetchSection }), /same course, term/);
-  await assert.rejects(() => loadOptimizerOptions(["https://example.test/private"], [], { fetchSection }), /Section links/);
+  const seen = [];
+  const options = await loadOptimizerOptions([lecture, lab, standalone, missing], {
+    loadCatalog: async code => {
+      seen.push(code);
+      if (!listings[code]) throw new Error("Unavailable");
+      return listings[code];
+    },
+  });
+  assert.deepEqual(seen.sort(), ["ANTH_O 170", "DATA_O 311", "ENGL_O 109"]);
+  assert.deepEqual(options.fixed, [lecture, lab, missing]);
+  assert.deepEqual(options.groups[0].map(([course]) => course.section_number), ["001", "002"]);
+  assert.match(options.report[0].note, /pairing/);
+  assert.match(options.report[2].note, /could not be retrieved/);
+  const result = await optimizeSchedules({ ...options, priorities: ["friday"] });
+  const changed = result.suggestions.find(s => s.courses.some(c => c.code === standalone.code && c.section_number === "002"));
+  assert.ok(changed);
+  assert.deepEqual(changed.courses.filter(c => c.code === lecture.code), [lecture, lab]);
+});
+
+test("the public catalog follows validated pages and refuses an incomplete or foreign next link", async () => {
+  const code = "DATA_O 311";
+  const reference = { type: "node--course", id: "course" };
+  const row = id => ({
+    id, type: "node--section",
+    attributes: { field_section_number: id, field_time_varies: false },
+    relationships: { field_course: { data: reference } },
+  });
+  const included = [{ ...reference, attributes: { field_course_code: code, title: "Machine Learning" } }];
+  const result = await readCourseCatalog(code, { loadPage: async url => {
+    assert.equal(url.origin, "https://courses.students.ubc.ca");
+    assert.equal(url.searchParams.get("filter[field_course.field_course_code]"), code);
+    const offset = url.searchParams.get("page[offset]");
+    if (offset === "50") return { data: [row("L02")], included };
+    const next = new URL(url);
+    next.searchParams.set("page[offset]", "50");
+    return { data: [row("101")], included, links: { next: { href: next.href } } };
+  } });
+  assert.deepEqual(result.map(section => section.section), ["101", "L02"]);
+  await assert.rejects(() => readCourseCatalog(code, { loadPage: async () => ({
+    data: [row("101")], included, links: { next: { href: "https://example.test/catalog" } },
+  }) }), /invalid section page/);
+  assert.equal(catalogSectionLink("https://courses.students.ubc.ca.evil.test/courses/a/b"), "");
 });
 
 test("share links and files carry the preview fields and import as independent copies", async () => {

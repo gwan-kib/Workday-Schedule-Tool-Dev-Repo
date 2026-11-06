@@ -1,87 +1,166 @@
-import { courseDateRange } from "../core/meetings.js";
-import { trustedSectionLink } from "./trustedWorkday.js";
-import { fetchCourseFromWorkdayLink } from "./singleCourseImport.js";
+import { catalogCourseCode, requestCourseCatalog } from "../api/courseCatalog.js";
+import { courseDateRange, dateNumber, normalizeSchedule } from "../core/meetings.js";
+import { createLimiter } from "../utilities/network.js";
+import { createCourseObject } from "./singleCourseImport.js";
 
-export const MAX_OPTIMIZER_GROUPS = 12;
-const MAX_SECTION_LINKS = 60;
-const codeKey = course => course.code.trim().replace(/\s+/g, " ").toUpperCase();
-const formatKey = course => (course.instructionalFormat ||
-  (course.isLab ? "Lab" : course.isSeminar ? "Seminar" : course.isDiscussion ? "Discussion" : "Lecture"))
-  .trim().toLowerCase().replace(/^laboratory$/, "lab");
+const MAX_COURSES = 24;
+const catalogDays = new Map([
+  ["m", "Mon"], ["t", "Tue"], ["w", "Wed"], ["th", "Thu"],
+  ["f", "Fri"], ["sa", "Sat"], ["su", "Sun"],
+]);
+const formatKey = value => String(value || "").trim().toLowerCase().replace(/^lab$/, "laboratory");
+const sectionKey = value => String(value || "").trim().toUpperCase();
+const fitsCampus = (term, code) => typeof term === "string" &&
+  term.endsWith(code.includes("_O ") ? "(UBC-O)" : "(UBC-V)");
 
-export async function loadOptimizerOptions(textGroups, draft, {
-  fetchSection = fetchCourseFromWorkdayLink,
+function overlaps(a, b) {
+  return dateNumber(a.startDate) !== null && dateNumber(a.endDate) !== null &&
+    dateNumber(b.startDate) !== null && dateNumber(b.endDate) !== null &&
+    a.startDate <= b.endDate && b.startDate <= a.endDate;
+}
+
+function knownRange(course) {
+  const range = courseDateRange(course);
+  return range.startDate ? range : { startDate: course.startDate, endDate: course.endDate };
+}
+
+function identifyOffering(course, rows, code) {
+  const range = knownRange(course);
+  const period = typeof course.academicPeriod === "string" ? course.academicPeriod.trim() : "";
+  const format = formatKey(course.instructionalFormat);
+  const matches = rows.filter(row =>
+    fitsCampus(row.term, code) &&
+    sectionKey(row.section) === sectionKey(course.section_number) &&
+    (!format || formatKey(row.format) === format) &&
+    (fitsCampus(period, code) ? row.term === period : overlaps(range, row)),
+  );
+  const terms = new Set(matches.map(row => row.term));
+  return terms.size === 1 ? matches[0].term : "";
+}
+
+function catalogTime(seconds) {
+  if (!Number.isInteger(seconds) || seconds < 0 || seconds >= 86400 || seconds % 60) return "";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = String((seconds / 60) % 60).padStart(2, "0");
+  return (hours % 12 || 12) + ":" + minutes + (hours >= 12 ? " p.m." : " a.m.");
+}
+
+function optionCourse(code, row) {
+  const { section, title, format, term, mode, instructors, days, startDate, endDate } = row;
+  if (row.status !== "Open" || row.varies || row.hasRestrictions || !mode ||
+    !Array.isArray(days) || !days.length || days.some(day => !catalogDays.has(day))) return null;
+  if (typeof section !== "string" || !section.trim() || typeof title !== "string" || !format) return null;
+
+  const start = catalogTime(row.startTime);
+  const end = catalogTime(row.endTime);
+  if (!start || !end || dateNumber(startDate) === null || dateNumber(endDate) === null) return null;
+  const line = startDate + " - " + endDate + " | " + days.map(day => catalogDays.get(day)).join(" ") + " | " + start + " - " + end;
+  const course = {
+    ...createCourseObject({
+      sectionDetails: { code, section_number: section, title },
+      instructionalFormat: format,
+      meetingLines: [line],
+      instructors: Array.isArray(instructors) ? instructors.filter(name => typeof name === "string") : [],
+      isOnline: mode === "Online",
+    }),
+    academicPeriod: term,
+    deliveryMode: mode,
+    catalogSectionLink: row.link,
+  };
+  return normalizeSchedule([course]).unknownCourses.length ? null : course;
+}
+
+export async function loadOptimizerOptions(draft, {
+  loadCatalog = requestCourseCatalog,
   signal,
 } = {}) {
-  if (!textGroups.length || textGroups.length > MAX_OPTIMIZER_GROUPS)
-    throw new Error("Add between 1 and 12 required course groups.");
-  const links = new Set();
-  const groups = textGroups.map((text, groupIndex) => {
-    const lines = text.trim().split(/\r?\n/).filter(line => line.trim());
-    if (!lines.length) throw new Error("Add a Workday Section link to group " + (groupIndex + 1) + ".");
-    return lines.map((line, index) => {
-      const option = line.trim().split(/\s+/).map(trustedSectionLink);
-      if (option.some(link => !link) || new Set(option).size !== option.length)
-        throw new Error("Check the Workday Section links in group " + (groupIndex + 1) + ", option " + (index + 1) + ".");
-      option.forEach(link => links.add(link));
-      return option;
-    });
-  });
-  if (groups.flat(2).length > MAX_SECTION_LINKS)
-    throw new Error("Use at most 60 section links per search.");
+  const fixed = [];
+  const groups = [];
+  const report = [];
+  const byCode = new Map();
 
-  const loaded = new Map(await Promise.all([...links].map(async link => {
+  for (const course of draft) {
+    const code = catalogCourseCode(course.code);
+    if (!code) {
+      fixed.push(course);
+      report.push({ label: course.code, note: "Kept as loaded because the UBC course code could not be matched." });
+      continue;
+    }
+    if (!byCode.has(code)) byCode.set(code, []);
+    byCode.get(code).push(course);
+  }
+
+  if (byCode.size > MAX_COURSES)
+    throw new Error("Search up to 24 courses at a time. Load a smaller working schedule and retry.");
+
+  const limit = createLimiter(3);
+  const listings = await Promise.all([...byCode].map(([code]) => limit(async () => {
+    signal?.throwIfAborted();
     try {
-      const course = await fetchSection(link, { signal });
-      return [link, course?.code && course?.section_number ? course : null];
+      return await loadCatalog(code);
     } catch {
-      return [link, null];
+      return null;
     }
   })));
   signal?.throwIfAborted();
 
-  const replaced = new Set();
-  const seenCodes = new Set();
-  let unavailable = 0;
-  const options = groups.map((group, groupIndex) => {
-    const choices = group.map(option => option.map(link => loaded.get(link))).filter(option => {
-      if (option.every(Boolean)) return true;
-      unavailable++;
-      return false;
-    });
-    const label = "Group " + (groupIndex + 1);
-    if (!choices.length) throw new Error(label + " has no available options. Sign in and check its current Workday Section links.");
+  for (const [index, [code, courses]] of [...byCode].entries()) {
+    const rows = listings[index];
+    if (!rows) {
+      fixed.push(...courses);
+      report.push({ label: code, note: "Kept as loaded because the UBC section listing could not be retrieved." });
+      continue;
+    }
 
-    const [first] = choices;
-    const code = codeKey(first[0]);
-    if (seenCodes.has(code)) throw new Error("Put all options for " + first[0].code + " in one group.");
-    seenCodes.add(code);
+    const terms = courses.map(course => identifyOffering(course, rows, code));
+    if (terms.some(term => !term)) {
+      fixed.push(...courses);
+      report.push({ label: code, note: "Kept as loaded because the original section and term could not be matched." });
+      continue;
+    }
 
-    const formats = first.map(formatKey).sort();
-    const range = courseDateRange({ meetingLines: first.flatMap(course => course.meetingLines || []) });
-    const sameTerm = course => {
-      const dates = courseDateRange(course);
-      return !range.startDate || !dates.startDate ||
-        (dates.startDate <= range.endDate && range.startDate <= dates.endDate);
-    };
-    for (const choice of choices) {
-      const ranges = choice.map(courseDateRange).filter(dates => dates.startDate);
-      const starts = ranges.map(dates => dates.startDate).sort();
-      const ends = ranges.map(dates => dates.endDate).sort();
-      const disjoint = starts.length > 1 && starts.at(-1) > ends[0];
-      if (disjoint || choice.some(course => codeKey(course) !== code || !sameTerm(course)) ||
-        JSON.stringify(choice.map(formatKey).sort()) !== JSON.stringify(formats)) {
-        throw new Error(label + " must contain options for the same course, term and required components.");
+    for (const term of new Set(terms)) {
+      const loaded = courses.filter((_, i) => terms[i] === term);
+      const sections = rows.filter(row => row.term === term);
+      const label = code + " · " + term;
+      const count = sections.length + (sections.length === 1 ? " listed section. " : " listed sections. ");
+      const formats = new Set(sections.map(row => formatKey(row.format)));
+
+      // A public listing can confirm a single activity choice. It does not
+      // establish which separately listed lectures, labs or seminars can pair.
+      const unknownTerm = rows.some(row => !row.term &&
+        loaded.some(course => overlaps(knownRange(course), row)));
+      if (loaded.length !== 1 || formats.size !== 1 || formats.has("") || unknownTerm ||
+        sections.some(row => row.hasRestrictions)) {
+        fixed.push(...loaded);
+        report.push({ label, note: count + "Kept your current sections because pairing or restrictions could not be verified." });
+        continue;
       }
-    }
 
-    for (const course of draft) {
-      if (codeKey(course) !== code || !sameTerm(course)) continue;
-      if (!formats.includes(formatKey(course)))
-        throw new Error(label + " must include the required components already in your draft for " + course.code + ".");
-      replaced.add(course);
+      const [current] = loaded;
+      const options = [[current]];
+      const used = new Set([sectionKey(current.section_number)]);
+      const ambiguous = new Set(sections.filter((row, i) =>
+        sections.some((other, j) => i !== j && sectionKey(other.section) === sectionKey(row.section)),
+      ).map(row => sectionKey(row.section)));
+      for (const row of sections) {
+        const key = sectionKey(row.section);
+        if (used.has(key) || ambiguous.has(key)) continue;
+        const course = optionCourse(code, row);
+        if (!course) continue;
+        used.add(key);
+        options.push([course]);
+      }
+      if (options.length > 1) groups.push(options);
+      else fixed.push(current);
+      const alternatives = options.length - 1;
+      report.push({
+        label,
+        note: count + (alternatives
+          ? alternatives + (alternatives === 1 ? " usable alternative." : " usable alternatives.")
+          : "Kept as loaded because no other open section had a verified meeting time."),
+      });
     }
-    return choices;
-  });
-  return { groups: options, fixed: draft.filter(course => !replaced.has(course)), unavailable };
+  }
+  return { groups, fixed, report };
 }

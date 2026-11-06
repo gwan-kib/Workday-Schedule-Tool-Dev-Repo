@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UBC Workday - Schedule Tool",
-  "version": "3.0.15",
+  "version": "3.0.16",
   "description": "A tool to make planning for your semester easier.",
   "browser_specific_settings": {
     "gecko": {
@@ -19,6 +19,7 @@
   ],
   "host_permissions": [
     "https://wd10.myworkday.com/ubc/*",
+    "https://courses.students.ubc.ca/*",
     "https://www.ratemyprofessors.com/*"
   ],
   "icons": {

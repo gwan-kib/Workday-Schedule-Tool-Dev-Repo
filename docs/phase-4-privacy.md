@@ -50,3 +50,7 @@ Real-account Chrome/Firefox network inspection, actual browser-store consent/dis
 Saved reusable blocks can be edited in place; existing schedule instances remain independent. Diagnostics controls now explain their troubleshooting purpose and the enable → reproduce → download sequence. The download action is disabled until the user opts in for the current page session; it remains a local download with no automatic transmission.
 
 The former in-app Privacy & diagnostics section has been replaced at maintainer request by short problem-report instructions, Record what happens and Download bug report controls. The full data-flow disclosures remain in this document and the README/store-disclosure draft. The simplified UI does not change automatic lookup or calendar behavior.
+
+## Phase 5 optimizer data flow
+
+When the user chooses **Find suggestions**, the extension sends each validated course code to the public UBC Course Schedule to retrieve its sections. The catalog request omits credentials, student identifiers, Workday links, the rest of the schedule, personal blocks and preferences. Results are cached in the background for five minutes. The browser packages grant access to `courses.students.ubc.ca` for this request. The optimizer ranks and applies the suggestions on the device.

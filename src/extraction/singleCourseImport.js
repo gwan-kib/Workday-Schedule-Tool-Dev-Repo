@@ -158,7 +158,7 @@ function parseSectionTitleText(titleText, courseText = "") {
   return direct;
 }
 
-function createCourseObject({
+export function createCourseObject({
   sectionDetails,
   instructors = [],
   instructionalFormat = "",
