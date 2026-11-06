@@ -3,10 +3,30 @@ import { courseDateRange } from "./meetings.js";
 import { MAX_PERSONAL_BLOCKS, validatePersonalBlocks } from "./personalBlocks.js";
 import { formatMeetingLineForPanel } from "../extraction/meetingPatternsInfo.js";
 
-export const SHARE_PAGE = "https://wd10.myworkday.com/ubc/home.htmld";
+export const SHARE_PAGE = "https://wd10.myworkday.com/ubc/d/home.htmld";
+const LEGACY_SHARE_PAGE = "https://wd10.myworkday.com/ubc/home.htmld";
+const SHARE_LANDING_PATHS = new Set(["/ubc/d/home.htmld", "/ubc/home.htmld", "/ubc/d/gateway.htmld"]);
 export const SHARE_PREFIX = "#wst-share-v1=";
 export const MAX_SHARE_LINK = 4096;
 export const MAX_SHARE_FILE = 512 * 1024;
+
+export function isShareLanding(value) {
+  try {
+    const url = new URL(value);
+    return url.origin === "https://wd10.myworkday.com" && SHARE_LANDING_PATHS.has(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+export function shareLinkToken(input) {
+  const text = typeof input === "string" ? input.trim() : "";
+  if (text.length > MAX_SHARE_LINK) return "";
+  const prefix = [SHARE_PAGE, LEGACY_SHARE_PAGE].map(page => page + SHARE_PREFIX)
+    .find(value => text.startsWith(value));
+  const token = prefix ? text.slice(prefix.length) : "";
+  return /^[A-Za-z0-9_-]+$/.test(token) ? token : "";
+}
 
 const FORMAT = "ubc-workday-shared-schedule";
 const encoder = new TextEncoder();
@@ -91,13 +111,8 @@ export async function encodeSharedLink(text) {
 }
 
 export async function decodeSharedLink(input) {
-  const text = input.trim();
-  const prefix = SHARE_PAGE + SHARE_PREFIX;
-  if (text.length > MAX_SHARE_LINK || !text.startsWith(prefix))
-    throw new Error("Paste a valid WST share link or choose a shared schedule file.");
-  const token = text.slice(prefix.length);
-  if (!/^[A-Za-z0-9_-]+$/.test(token))
-    throw new Error("The WST share link is incomplete or invalid.");
+  const token = shareLinkToken(input);
+  if (!token) throw new Error("Paste a valid WST share link or choose a shared schedule file.");
 
   let data;
   try {
@@ -127,7 +142,7 @@ export async function decodeSharedLink(input) {
   return parseSharedSchedule(data);
 }
 
-export function sharedScheduleForImport(payload) {
+export function sharedScheduleForImport(payload, name = "Shared schedule") {
   const courses = payload.courses.map(course => {
     const first = formatMeetingLineForPanel(course.meetingLines[0] || "");
     const format = course.instructionalFormat || "";
@@ -145,7 +160,7 @@ export function sharedScheduleForImport(payload) {
   });
   return {
     id: "shared",
-    name: "Shared schedule",
+    name,
     savedAt: new Date().toISOString(),
     courses,
     personalBlocks: payload.personalBlocks.map(block => ({ ...block, id: crypto.randomUUID() })),

@@ -36,6 +36,7 @@ test("share links and files carry the preview fields and import as independent c
   const link = await encodeSharedLink(text);
   assert.ok(link.startsWith(SHARE_PAGE + SHARE_PREFIX));
   const decoded = await decodeSharedLink(link);
+  assert.deepEqual(await decodeSharedLink(link.replace("/ubc/d/home.htmld", "/ubc/home.htmld")), decoded);
   assert.equal(decoded.courses[0].title, "Café 室");
   assert.equal(decoded.courses[0].instructor, source.instructor);
   assert.match(decoded.courses[0].meetingLines[0], /Room: 101/);

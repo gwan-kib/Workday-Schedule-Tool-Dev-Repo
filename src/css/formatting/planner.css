@@ -110,7 +110,10 @@
   .planner-toolbar button, .planner-dialog button, .schedule-saved-action.notes { transition: none; }
 }
 
-.planner-dialog button[hidden] { display: none; }
+.planner-dialog [hidden] { display: none; }
+.planner-dialog--shared-import { width: min(760px, calc(100vw - 32px)); }
+.planner-dialog--shared-import .planner-preview-grid { max-height: min(44vh, 420px); }
+.planner-dialog--shared-import .planner-dialog-actions { position: sticky; bottom: 0; z-index: 1; }
 .planner-dialog textarea {
   box-sizing: border-box; display: block; width: 100%; min-height: 64px; resize: vertical;
   padding: 8px 10px; border: 1px solid var(--hex-brand-accent-5); border-radius: 10px;

@@ -1,3 +1,4 @@
+import { registerShareInbox } from "./utilities/shareInbox.js";
 import { queryProfRating, RMP_MESSAGE_TYPE } from "./api/rateMyProfessor/rmpApi.js";
 import {
   CALENDAR_MESSAGE_TYPE,
@@ -11,6 +12,7 @@ import { debugFor, debugLog } from "./utilities/debugTool.js";
 
 const debug = debugFor("background");
 debugLog({ local: { background: false } });
+registerShareInbox();
 
 // Handles background data fetch requests from content scripts. Input: runtime message. Output: async response payload.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

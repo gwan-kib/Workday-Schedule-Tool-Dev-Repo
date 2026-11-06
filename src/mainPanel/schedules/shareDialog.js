@@ -20,7 +20,7 @@ function button(text, click) {
   return control;
 }
 
-function showPreview(d, host, payload) {
+function showPreview(d, host, payload, { calendarFirst = false } = {}) {
   host.append(node("h3", "Schedule preview"));
   const list = node("ul", null, "planner-feature-details");
   for (const course of payload.courses) {
@@ -48,10 +48,17 @@ function showPreview(d, host, payload) {
     if (block.exceptions.length) item.append(node("p", "Skip dates: " + block.exceptions.join(", ")));
     list.append(item);
   }
-  host.append(list);
+  const calendar = node("div");
+  if (calendarFirst) {
+    const details = node("details", null, "planner-change-list");
+    details.append(node("summary", "Course and block details"), list);
+    host.append(calendar, details);
+  } else {
+    host.append(list, calendar);
+  }
   const courses = structuredClone(payload.courses);
   assignCourseColors(courses);
-  return d.preview(host, courses, "Shared schedule", new Set(), 1, payload.personalBlocks);
+  return d.preview(calendar, courses, "Shared schedule", new Set(), 1, payload.personalBlocks);
 }
 
 export function openScheduleShare(d, draft) {
@@ -96,7 +103,7 @@ export function openScheduleShare(d, draft) {
           }
         });
         output.append(wrap, copy);
-        d.setStatus("Link ready. Recipients can open it or paste it into Open shared schedule.");
+        d.setStatus("Link ready. It opens Workday Home and shows a save preview for recipients with the extension.");
       } else {
         d.setStatus("This schedule is too large for a share link. Download the JSON file to share it.", "info");
       }
@@ -137,6 +144,9 @@ export function openScheduleShare(d, draft) {
 }
 
 export function openIncomingShare(d, { link, importSchedule }) {
+  const fromLink = link !== undefined;
+  const sources = node("div", null, "planner-feature-fields");
+  sources.hidden = fromLink;
   const url = node("textarea");
   url.rows = 2;
   url.maxLength = MAX_SHARE_LINK;
@@ -147,32 +157,51 @@ export function openIncomingShare(d, { link, importSchedule }) {
   file.accept = ".json,application/json";
   const fileLabel = node("label", null, "planner-field planner-import-file");
   fileLabel.append(node("span", "Or choose a WST share file", "planner-field-label"), file);
+
+  const name = node("input");
+  name.type = "text";
+  name.maxLength = 200;
+  name.required = true;
+  const nameLabel = node("label", null, "planner-field");
+  nameLabel.hidden = true;
+  nameLabel.append(node("span", "Schedule name", "planner-field-label"), name);
   const review = node("section", null, "planner-feature-fields");
   let current, preview, generation = 0, saving = false;
-  const add = button("Add to saved schedules", d.run(async () => {
+
+  const add = button("Save schedule", d.run(async () => {
     if (!current || saving) return;
+    const chosenName = name.value.trim();
+    if (!chosenName) {
+      name.focus();
+      throw new Error("Enter a name for this schedule.");
+    }
     saving = true;
-    url.disabled = file.disabled = read.disabled = true;
+    name.disabled = url.disabled = file.disabled = read.disabled = true;
     try {
-      const imported = await importSchedule(sharedScheduleForImport(current));
-      reset();
-      d.setStatus("Added “" + imported.name + "” to saved schedules.");
+      const imported = await importSchedule(sharedScheduleForImport(current, chosenName));
+      if (fromLink) d.close();
+      else {
+        reset();
+        d.setStatus("Saved “" + imported.name + "” in My Schedules.");
+      }
     } finally {
       saving = false;
-      url.disabled = file.disabled = read.disabled = false;
+      name.disabled = url.disabled = file.disabled = read.disabled = false;
     }
   }));
   add.className = "planner-primary";
   add.hidden = true;
+
   const reset = () => {
     generation++;
     current = null;
-    add.hidden = true;
+    nameLabel.hidden = add.hidden = true;
     preview?.dispose();
     preview = undefined;
     review.replaceChildren();
     d.setStatus("");
   };
+
   const readPreview = async load => {
     if (saving) return;
     reset();
@@ -180,17 +209,26 @@ export function openIncomingShare(d, { link, importSchedule }) {
     try {
       const payload = await load();
       if (request !== generation || !d.dialog.isConnected) return;
-      preview = showPreview(d, review, payload);
+      preview = showPreview(d, review, payload, { calendarFirst: true });
       current = payload;
-      add.hidden = false;
-      d.setStatus("Review the schedule before adding a new saved copy.", "info");
+      name.value = "Shared schedule";
+      nameLabel.hidden = add.hidden = false;
+      name.focus({ preventScroll: true });
+      name.select();
     } catch (error) {
-      if (request === generation) d.setStatus(error.message, "error");
+      if (request !== generation) return;
+      sources.hidden = false;
+      d.setStatus(error.message, "error");
     }
   };
 
   const read = button("Preview link", () => void readPreview(() => decodeSharedLink(url.value)));
   url.addEventListener("input", reset);
+  name.addEventListener("keydown", event => {
+    if (event.key !== "Enter" || event.isComposing) return;
+    event.preventDefault();
+    add.click();
+  });
   file.addEventListener("change", () => {
     const chosen = file.files?.[0];
     file.value = "";
@@ -200,15 +238,15 @@ export function openIncomingShare(d, { link, importSchedule }) {
       return parseSharedSchedule(await chosen.text());
     });
   });
+  sources.append(urlLabel, read, fileLabel);
   d.content.append(
-    node("p", "Preview a shared timetable and add it as a new saved schedule for comparison.", "planner-hint"),
-    urlLabel,
-    read,
-    fileLabel,
+    node("p", "Preview the calendar and choose a name to save your own copy.", "planner-hint"),
+    sources,
+    nameLabel,
     review,
   );
-  d.actions.append(add);
-  if (link !== undefined) {
+  d.actions.append(button("Cancel", d.close), add);
+  if (fromLink) {
     url.value = link;
     void readPreview(() => decodeSharedLink(link));
   }

@@ -163,9 +163,14 @@ export function mountPlanner(ui, {
       safe(() => openExport()),
     ),
   );
-  const openIncoming = (link) => openIncomingShare(
-    plannerDialog(ui, "Open shared schedule"), { link, importSchedule: importSharedSchedule },
-  );
+  let incomingDialog;
+  const openIncoming = (link) => {
+    incomingDialog?.close();
+    const dialog = plannerDialog(ui, link === undefined ? "Open shared schedule" : "Save shared schedule", "shared-import");
+    incomingDialog = dialog;
+    dialog.cleanup.push(() => { incomingDialog = undefined; });
+    openIncomingShare(dialog, { link, importSchedule: importSharedSchedule });
+  };
   const openShare = () => openScheduleShare(plannerDialog(ui, "Share schedule"), {
     courses: structuredClone(getState().courses),
     personalBlocks: structuredClone(getState().personalBlocks || []),
