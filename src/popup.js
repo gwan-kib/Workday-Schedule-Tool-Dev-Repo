@@ -1,7 +1,8 @@
 import { scheduleItems } from "./core/personalBlocks.js";
 import { openPersonalBlocks } from "./mainPanel/schedules/personalBlocks.js";
 import { openScheduleNotes, createScheduleNotesButton } from "./mainPanel/schedules/scheduleNotes.js";
-import { exportTimetable, exportAppearance } from "./exportLogic/exportTimetable.js";
+import { exportAppearance } from "./exportLogic/exportTimetable.js";
+import { openTimetableExport } from "./mainPanel/schedules/plannerController.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
 import {
   applyCourseColorAssignments,
@@ -219,30 +220,23 @@ async function boot() {
 
   const tools = document.createElement("div");
   tools.className = "planner-toolbar";
-  const orientationLabel = document.createElement("label");
-  orientationLabel.className = "planner-field";
-  const orientationText = document.createElement("span");
-  orientationText.className = "planner-field-label";
-  orientationText.textContent = "Download layout";
-  const orientation = document.createElement("select");
-  orientation.setAttribute("aria-label", "Export orientation");
-  for (const value of ["landscape", "portrait"]) {
-    const option = document.createElement("option"); option.value = value; option.textContent = value === "landscape" ? "Landscape" : "Portrait";
-    orientation.appendChild(option);
-  }
-  orientationLabel.append(orientationText, orientation);
-  tools.appendChild(orientationLabel);
   for (const format of ["png", "pdf"]) {
-    const button = document.createElement("button"); button.type = "button"; button.textContent = `Download ${format.toUpperCase()}`;
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      button.setAttribute("aria-busy", "true");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Download " + format.toUpperCase();
+    button.addEventListener("click", () => {
       try {
         const schedule = popupState.schedules.find(s => s.id === popupState.activeScheduleId);
-        await exportTimetable(scheduleItems(schedule?.courses || [],schedule?.personalBlocks || []), format, { name: schedule?.name, orientation: orientation.value, week: ui.selectedScheduleWeek || 1, timeFormat: popupState.timeFormat, ...exportAppearance(document.documentElement) });
-        ui.footerNotes.showTemporary(`${format.toUpperCase()} download ready.`, { tone: "success" });
-      } catch (error) { ui.footerNotes.showTemporary(error.message, { tone: "warn" }); }
-      finally { button.disabled = false; button.removeAttribute("aria-busy"); }
+        const items = scheduleItems(schedule?.courses || [], schedule?.personalBlocks || []);
+        openTimetableExport(ui, items, format, {
+          name: schedule?.name,
+          week: ui.selectedScheduleWeek || 1,
+          timeFormat: popupState.timeFormat,
+          ...exportAppearance(document.documentElement),
+        });
+      } catch (error) {
+        ui.footerNotes.showTemporary(error.message, { tone: "warn" });
+      }
     });
     tools.appendChild(button);
   }

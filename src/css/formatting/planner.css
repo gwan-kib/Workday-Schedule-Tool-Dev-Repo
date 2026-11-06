@@ -80,8 +80,19 @@
 .planner-comparison-heading h3 { margin: 0; overflow-wrap: anywhere; font-size: 15px; }
 .planner-comparison-column > .schedule-term-pill { display: none; }
 .planner-preview-grid { min-width: 0; overflow: auto; max-height: 52vh; padding: 8px; }
-.planner-downloads { display: flex; flex-wrap: wrap; gap: 10px; }
-.planner-downloads button { flex: 1; min-height: 52px; font-weight: 700; }
+.planner-dialog--timetable-export { width: min(740px, calc(100vw - 32px)); }
+.planner-export-preview {
+  display: grid; gap: 16px; max-height: 48vh; overflow: auto; padding: 10px;
+  background: var(--hex-brand-accent-2); border: 1px solid var(--hex-brand-accent-4); border-radius: 10px;
+}
+.planner-export-preview:focus-visible { outline: 3px solid var(--hex-brand-main-3); outline-offset: 2px; }
+.planner-export-preview:empty { display: none; }
+.planner-export-page { margin: 0; min-width: 0; }
+.planner-export-page figcaption { margin-bottom: 6px; font-size: 12px; font-weight: 700; }
+.planner-export-page img {
+  display: block; width: 100%; height: auto;
+  background: white; box-shadow: 0 1px 5px #20275730;
+}
 .planner-import-file { padding: 16px; border: 1px dashed var(--hex-brand-accent-5); border-radius: 12px; background: var(--hex-brand-accent-2); }
 .planner-dialog input[type="file"] { width: 100%; padding: 0; border: 0; background: transparent; }
 .planner-dialog input[type="file"]::file-selector-button { border: 1px solid var(--hex-brand-accent-4); border-radius: 8px; padding: 9px 12px; margin-right: 10px; color: var(--hex-brand-main-1); background: var(--hex-neutral-1); font: inherit; cursor: pointer; }

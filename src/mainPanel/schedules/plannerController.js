@@ -13,6 +13,7 @@ import {
 import {
   downloadBlob,
   exportTimetable,
+  timetableExportPreview,
   timetableFilename,
   exportAppearance,
 } from "../../exportLogic/exportTimetable.js";
@@ -133,6 +134,78 @@ export function plannerDialog(ui, title, variant = "") {
   return { dialog, content, actions, status, setStatus, run, close, preview, cleanup };
 }
 
+export function openTimetableExport(ui, courses, format, options) {
+  const label = "Download " + format.toUpperCase();
+  const d = plannerDialog(ui, label, "timetable-export");
+  const snapshot = structuredClone(courses);
+  const orientation = format === "pdf"
+    ? select("Orientation", [["landscape", "Landscape"], ["portrait", "Portrait"]])
+    : null;
+  const exportOptions = () => ({ ...options, orientation: orientation?.input.value });
+  const pages = node("div", null, "planner-export-preview");
+  pages.tabIndex = 0;
+  pages.setAttribute("role", "region");
+  pages.setAttribute("aria-label", "Export preview");
+
+  const urls = [];
+  const release = () => urls.splice(0).forEach(url => URL.revokeObjectURL(url));
+  d.cleanup.push(release);
+  const download = button(label, d.run(async () => {
+    const selected = exportOptions();
+    if (orientation) orientation.input.disabled = true;
+    try {
+      await exportTimetable(snapshot, format, selected);
+      d.setStatus(format.toUpperCase() + " download ready.");
+    } finally {
+      if (orientation) orientation.input.disabled = false;
+    }
+  }));
+  download.className = "planner-primary";
+
+  function renderPreview() {
+    pages.replaceChildren();
+    release();
+    download.disabled = true;
+    d.setStatus("");
+    try {
+      const rendered = timetableExportPreview(snapshot, format, exportOptions());
+      rendered.forEach(({ source, width, height }, index) => {
+        const caption = format === "png" ? "Timetable"
+          : index === 0 ? "Page 1 · Timetable" : "Page 2 · Course details";
+        const figure = node("figure", null, "planner-export-page");
+        const image = node("img");
+        image.alt = caption;
+        image.width = width;
+        image.height = height;
+        image.addEventListener("error", () => {
+          if (!image.isConnected) return;
+          download.disabled = true;
+          d.setStatus("Could not load the timetable preview.", "error");
+        });
+        const url = URL.createObjectURL(new Blob([source], { type: "image/svg+xml" }));
+        urls.push(url);
+        image.src = url;
+        figure.append(node("figcaption", caption), image);
+        pages.append(figure);
+      });
+      pages.scrollTop = 0;
+      download.disabled = false;
+    } catch (error) {
+      pages.replaceChildren();
+      release();
+      d.setStatus(error.message, "error");
+    }
+  }
+
+  if (orientation) {
+    d.content.append(orientation.wrap);
+    orientation.input.addEventListener("change", renderPreview);
+  }
+  d.content.append(pages);
+  d.actions.append(download);
+  renderPreview();
+}
+
 export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
@@ -148,18 +221,15 @@ export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }
       "Compare saved plans",
       safe(() => openComparison()),
     ),
-    button(
-      "Download PNG / PDF",
-      safe(() => openExport()),
-    ),
   );
   ui.exportMenu?.addEventListener("click", (event) => {
     const action = event.target.closest("[data-planner-action]")?.dataset
       .plannerAction;
-    if (!["backup", "import"].includes(action)) return;
+    const isTimetable = action === "png" || action === "pdf";
+    if (!isTimetable && action !== "backup" && action !== "import") return;
     ui.exportDropdown?.classList.remove("is-open");
     ui.exportButton?.setAttribute("aria-expanded", "false");
-    safe(() => openBackup(action))();
+    safe(() => isTimetable ? openExport(action) : openBackup(action))();
   });
 
   function openComparison() {
@@ -280,40 +350,15 @@ export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }
     draw();
   }
 
-  function openExport() {
-    const d = plannerDialog(ui, "Download timetable"),
-      orientation = select("Orientation", [
-        ["landscape", "Landscape"],
-        ["portrait", "Portrait"],
-      ]);
-    d.content.append(
-      node(
-        "p",
-        "PNG downloads the timetable only. PDF includes the timetable and one page of course details.",
-      ),
-      orientation.wrap,
-    );
-    const downloads = node("div", null, "planner-downloads");
-    d.content.append(downloads);
-    for (const format of ["png", "pdf"])
-      downloads.append(
-        button(
-          `Download ${format.toUpperCase()}`,
-          d.run(async () => {
-            const state = getState(),
-              target = ui.root.host || ui.mainPanel,
-              appearance = exportAppearance(target);
-            await exportTimetable(scheduleItems(state.courses, state.personalBlocks || []), format, {
-              name: state.currentScheduleName || "Working Schedule",
-              orientation: orientation.input.value,
-              ...appearance,
-              week: ui.selectedScheduleWeek || 1,
-              timeFormat: state.view?.timeFormat || "am/pm",
-            });
-            d.setStatus(`${format.toUpperCase()} download ready.`);
-          }),
-        ),
-      );
+  function openExport(format) {
+    const state = getState();
+    const target = ui.root?.host || ui.mainPanel;
+    openTimetableExport(ui, scheduleItems(state.courses, state.personalBlocks || []), format, {
+      name: state.currentScheduleName || "Working Schedule",
+      ...exportAppearance(target),
+      week: ui.selectedScheduleWeek || 1,
+      timeFormat: state.view?.timeFormat || "am/pm",
+    });
   }
 
   function openBackup(action) {
