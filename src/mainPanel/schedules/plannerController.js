@@ -1,10 +1,8 @@
-import { openScheduleShare, openIncomingShare } from "./shareDialog.js";
 import { scheduleItems } from "../../core/personalBlocks.js";
 import { renderSchedule } from "./scheduleView.js";
 import { node } from "./plannerOverview.js";
 import { compareSchedules, sectionLabel } from "../../core/planner.js";
 import { courseIdentity } from "../../core/meetings.js";
-import { dismissPendingShare } from "../../utilities/shareInbox.js";
 import { storageGet } from "../../utilities/storage.js";
 import {
   BACKUP_SETTINGS,
@@ -55,7 +53,7 @@ export function plannerDialog(ui, title, variant = "") {
     status.dataset.tone = tone;
     status.textContent = message;
   };
-  const observers = new Set(),
+  const observers = [],
     cleanup = [];
   const close = () => {
     observers.forEach((u) => u.scheduleResizeObserver?.disconnect());
@@ -128,23 +126,14 @@ export function plannerDialog(ui, title, variant = "") {
       selectedScheduleWeek: week,
       personalBlocks,
     };
-    previewUi.dispose = () => {
-      previewUi.scheduleResizeObserver?.disconnect();
-      observers.delete(previewUi);
-      controls.remove();
-      heading.remove();
-      grid.remove();
-    };
-    observers.add(previewUi);
+    observers.push(previewUi);
     renderSchedule(previewUi, courses, null, "am/pm");
     return previewUi;
   };
   return { dialog, content, actions, status, setStatus, run, close, preview, cleanup };
 }
 
-export function mountPlanner(ui, {
-  getState, saveSchedules, editPersonalBlocks, importSharedSchedule,
-}) {
+export function mountPlanner(ui, { getState, saveSchedules, editPersonalBlocks }) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
   const error = (e) =>
@@ -159,42 +148,15 @@ export function mountPlanner(ui, {
       "Compare saved plans",
       safe(() => openComparison()),
     ),
-    button(
-      "Download PNG / PDF",
-      safe(() => openExport()),
-    ),
   );
-  let incomingDialog, incomingLink;
-  const openIncoming = (link) => {
-    if (incomingDialog && incomingLink === link) return;
-    incomingDialog?.close();
-    const dialog = plannerDialog(ui, link === undefined ? "Open shared schedule" : "Save shared schedule", "shared-import");
-    incomingDialog = dialog;
-    incomingLink = link;
-    dialog.cleanup.push(() => {
-      incomingDialog = undefined;
-      incomingLink = undefined;
-      if (link !== undefined) void dismissPendingShare(link);
-    });
-    openIncomingShare(dialog, { link, importSchedule: importSharedSchedule });
-  };
-  const openShare = () => openScheduleShare(plannerDialog(ui, "Share schedule"), {
-    courses: structuredClone(getState().courses),
-    personalBlocks: structuredClone(getState().personalBlocks || []),
-  });
   ui.exportMenu?.addEventListener("click", (event) => {
     const action = event.target.closest("[data-planner-action]")?.dataset
       .plannerAction;
-    const handler = {
-      backup: () => openBackup("backup"),
-      import: () => openBackup("import"),
-      share: openShare,
-      "open-share": () => openIncoming(),
-    }[action];
-    if (!handler) return;
+    const isTimetable = action === "png" || action === "pdf";
+    if (!isTimetable && action !== "backup" && action !== "import") return;
     ui.exportDropdown?.classList.remove("is-open");
     ui.exportButton?.setAttribute("aria-expanded", "false");
-    safe(handler)();
+    safe(() => isTimetable ? openExport(action) : openBackup(action))();
   });
 
   function openComparison() {
@@ -315,8 +277,9 @@ export function mountPlanner(ui, {
     draw();
   }
 
-  function openExport() {
-    const d = plannerDialog(ui, "Download timetable"),
+  function openExport(format) {
+    const label = "Download " + format.toUpperCase();
+    const d = plannerDialog(ui, label),
       orientation = select("Orientation", [
         ["landscape", "Landscape"],
         ["portrait", "Portrait"],
@@ -324,31 +287,26 @@ export function mountPlanner(ui, {
     d.content.append(
       node(
         "p",
-        "PNG downloads the timetable only. PDF includes the timetable and one page of course details.",
+        format === "png"
+          ? "Download the timetable as an image."
+          : "Download the timetable and a page of course details.",
       ),
       orientation.wrap,
     );
     const downloads = node("div", null, "planner-downloads");
     d.content.append(downloads);
-    for (const format of ["png", "pdf"])
-      downloads.append(
-        button(
-          `Download ${format.toUpperCase()}`,
-          d.run(async () => {
-            const state = getState(),
-              target = ui.root.host || ui.mainPanel,
-              appearance = exportAppearance(target);
-            await exportTimetable(scheduleItems(state.courses, state.personalBlocks || []), format, {
-              name: state.currentScheduleName || "Working Schedule",
-              orientation: orientation.input.value,
-              ...appearance,
-              week: ui.selectedScheduleWeek || 1,
-              timeFormat: state.view?.timeFormat || "am/pm",
-            });
-            d.setStatus(`${format.toUpperCase()} download ready.`);
-          }),
-        ),
-      );
+    downloads.append(button(label, d.run(async () => {
+      const state = getState();
+      const target = ui.root.host || ui.mainPanel;
+      await exportTimetable(scheduleItems(state.courses, state.personalBlocks || []), format, {
+        name: state.currentScheduleName || "Working Schedule",
+        orientation: orientation.input.value,
+        ...exportAppearance(target),
+        week: ui.selectedScheduleWeek || 1,
+        timeFormat: state.view?.timeFormat || "am/pm",
+      });
+      d.setStatus(format.toUpperCase() + " download ready.");
+    })));
   }
 
   function openBackup(action) {
@@ -438,5 +396,5 @@ export function mountPlanner(ui, {
     });
   }
 
-  return { openIncoming: (link) => safe(() => openIncoming(link))() };
+  return {};
 }

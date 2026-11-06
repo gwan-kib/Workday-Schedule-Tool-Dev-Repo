@@ -49,7 +49,7 @@ export function validatePersonalBlocks(value = []) {
   return blocks;
 }
 export const personalBlockCourses = (blocks = []) => validatePersonalBlocks(blocks).map(blockCourse);
-// Shared by timetable and conflict consumers.
+// Shared by timetable/conflict consumers and future optimizer constraints.
 export const scheduleItems = (courses = [], blocks = []) => [...courses, ...personalBlockCourses(blocks)];
 export function calendarExportItems(courses, blocks, includePersonal = false) {
   return includePersonal ? scheduleItems(courses, blocks) : [...courses];
