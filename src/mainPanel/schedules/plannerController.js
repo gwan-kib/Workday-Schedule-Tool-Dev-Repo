@@ -4,6 +4,7 @@ import { renderSchedule } from "./scheduleView.js";
 import { node } from "./plannerOverview.js";
 import { compareSchedules, sectionLabel } from "../../core/planner.js";
 import { courseIdentity } from "../../core/meetings.js";
+import { dismissPendingShare } from "../../utilities/shareInbox.js";
 import { storageGet } from "../../utilities/storage.js";
 import {
   BACKUP_SETTINGS,
@@ -163,12 +164,18 @@ export function mountPlanner(ui, {
       safe(() => openExport()),
     ),
   );
-  let incomingDialog;
+  let incomingDialog, incomingLink;
   const openIncoming = (link) => {
+    if (incomingDialog && incomingLink === link) return;
     incomingDialog?.close();
     const dialog = plannerDialog(ui, link === undefined ? "Open shared schedule" : "Save shared schedule", "shared-import");
     incomingDialog = dialog;
-    dialog.cleanup.push(() => { incomingDialog = undefined; });
+    incomingLink = link;
+    dialog.cleanup.push(() => {
+      incomingDialog = undefined;
+      incomingLink = undefined;
+      if (link !== undefined) void dismissPendingShare(link);
+    });
     openIncomingShare(dialog, { link, importSchedule: importSharedSchedule });
   };
   const openShare = () => openScheduleShare(plannerDialog(ui, "Share schedule"), {

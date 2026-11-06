@@ -5,18 +5,24 @@ import { formatMeetingLineForPanel } from "../extraction/meetingPatternsInfo.js"
 
 export const SHARE_PAGE = "https://wd10.myworkday.com/ubc/d/home.htmld";
 const LEGACY_SHARE_PAGE = "https://wd10.myworkday.com/ubc/home.htmld";
-const SHARE_LANDING_PATHS = new Set(["/ubc/d/home.htmld", "/ubc/home.htmld", "/ubc/d/gateway.htmld"]);
 export const SHARE_PREFIX = "#wst-share-v1=";
 export const MAX_SHARE_LINK = 4096;
 export const MAX_SHARE_FILE = 512 * 1024;
 
-export function isShareLanding(value) {
+export function workdaySharePath(value) {
   try {
     const url = new URL(value);
-    return url.origin === "https://wd10.myworkday.com" && SHARE_LANDING_PATHS.has(url.pathname);
+    if (url.origin === "https://wd10.myworkday.com" && url.pathname.startsWith("/ubc/"))
+      return url.pathname;
   } catch {
-    return false;
+    // Unrecognized URLs cannot exchange pending shares.
   }
+  return "";
+}
+
+export function isSharePage(value) {
+  const path = workdaySharePath(value);
+  return Boolean(path) && !/^\/ubc\/(?:d\/)?(?:login|logout|saml|oauth)/i.test(path);
 }
 
 export function shareLinkToken(input) {

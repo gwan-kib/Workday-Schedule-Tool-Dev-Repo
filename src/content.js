@@ -6,8 +6,8 @@ import { renderPersonalBlockCards } from "./mainPanel/courses/personalBlockCards
 import { validatePersonalBlocks, calendarExportItems } from "./core/personalBlocks.js";
 import { mountPlanner } from "./mainPanel/schedules/plannerController.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
-import { isShareLanding } from "./core/scheduleShare.js";
-import { takePendingShare } from "./utilities/shareInbox.js";
+import { isSharePage } from "./core/scheduleShare.js";
+import { readPendingShare } from "./utilities/shareInbox.js";
 import { planScheduleImport } from "./core/scheduleBackup.js";
 import { getScheduleSaveState } from "./core/scheduleSaveState.js";
 import { renderScheduleHeading } from "./mainPanel/schedules/scheduleHeading.js";
@@ -962,19 +962,20 @@ debugLog({ local: { content: false } });
     try { ui.reusableBlocks=await loadReusableBlocks(STATE.savedSchedules.flatMap(s => s.personalBlocks || [])); }
     catch (error) { showActionError(error); }
     renderSavedSchedules(ui, STATE.savedSchedules, STATE.currentSavedScheduleId);
-    await loadCoursesFromPage();
-    renderAll();
-    setActiveView(STATE.view.panel);
-    if (window === window.top && isShareLanding(location.href)) {
-      const pendingLink = await takePendingShare();
-      const link = globalThis.wstIncomingShare ?? pendingLink;
+    let incomingLink;
+    if (window === window.top && isSharePage(location.href)) {
+      const pendingLink = await readPendingShare();
+      incomingLink = globalThis.wstIncomingShare ?? pendingLink;
       delete globalThis.wstIncomingShare;
       globalThis.wstOpenShare = (nextLink) => {
         if (ui.mainPanel.classList.contains("is-hidden")) toggleMainPanel();
         void planner.openIncoming(nextLink);
       };
-      if (link !== undefined) globalThis.wstOpenShare(link);
     }
+    if (incomingLink === undefined) await loadCoursesFromPage();
+    renderAll();
+    setActiveView(STATE.view.panel);
+    if (incomingLink !== undefined) globalThis.wstOpenShare(incomingLink);
     // The popup or another Workday tab can rename, update or delete this source.
     const onSavedSchedulesChanged = async (changes, area) => {
       if (area !== "local") return;
