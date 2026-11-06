@@ -341,5 +341,3 @@ h3 {
 
 .popup-content > .planner-overview-host .planner-overview { margin: 10px 0; }
 .popup-content > .planner-toolbar { margin: 10px 0; width: 100%; justify-content: center; }
-.popup-content > .planner-toolbar .planner-field { flex: 1 1 100%; text-align: left; }
-.popup-content > .planner-toolbar .planner-field select { width: 100%; }

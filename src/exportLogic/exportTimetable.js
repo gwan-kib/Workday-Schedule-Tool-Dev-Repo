@@ -444,36 +444,35 @@ export function jpegPdf(images, width, height, pageSizes = []) {
   );
   return new Blob(chunks, { type: "application/pdf" });
 }
-export async function exportTimetable(courses, format, options = {}) {
+export function timetableExportPreview(courses, format, options = {}) {
   if (!courses.length) throw new Error("Add or load courses before exporting.");
-  if (!["png", "pdf"].includes(format))
+  if (format !== "png" && format !== "pdf")
     throw new Error("Unsupported export format.");
+
   const result = timetablePages(courses, options);
+  if (format === "png") {
+    const { scheduleWidth: width, scheduleHeight: height, scheduleSvg: source } = result;
+    if (Math.max(width, height) * 2 > 30000)
+      throw new Error("This timetable is too large for a PNG. Try PDF instead.");
+    return [{ source, width, height }];
+  }
+  return result.pages.map((source, index) => ({ source, ...result.pageSizes[index] }));
+}
+
+export async function exportTimetable(courses, format, options = {}) {
+  const pages = timetableExportPreview(courses, format, options);
+  const first = pages[0];
   let blob;
   if (format === "png") {
-    if (Math.max(result.scheduleWidth, result.scheduleHeight) * 2 > 30000)
-      throw new Error(
-        "This timetable is too large for a PNG. Try PDF instead.",
-      );
-    blob = await blobFromCanvas(
-      await svgCanvas(
-        result.scheduleSvg,
-        result.scheduleWidth,
-        result.scheduleHeight,
-      ),
-    );
+    blob = await blobFromCanvas(await svgCanvas(first.source, first.width, first.height));
   } else {
     const images = [];
-    for (let i = 0; i < result.pages.length; i++) {
-      const size = result.pageSizes[i],
-        canvas = await svgCanvas(result.pages[i], size.width, size.height);
-      images.push(
-        new Uint8Array(
-          await (await blobFromCanvas(canvas, "image/jpeg")).arrayBuffer(),
-        ),
-      );
+    for (const { source, width, height } of pages) {
+      const canvas = await svgCanvas(source, width, height);
+      const jpeg = await blobFromCanvas(canvas, "image/jpeg");
+      images.push(new Uint8Array(await jpeg.arrayBuffer()));
     }
-    blob = jpegPdf(images, result.width, result.height, result.pageSizes);
+    blob = jpegPdf(images, first.width, first.height, pages);
   }
   downloadBlob(blob, `${timetableFilename(courses, options.name)}.${format}`);
   return blob;
