@@ -158,7 +158,7 @@ function parseSectionTitleText(titleText, courseText = "") {
   return direct;
 }
 
-export function createCourseObject({
+function createCourseObject({
   sectionDetails,
   instructors = [],
   instructionalFormat = "",
@@ -272,13 +272,13 @@ export function validateWorkdayCourseLink(value) {
 }
 
 // Loads a Workday course link and parses it with the same course shape used by schedule imports.
-export async function fetchCourseFromWorkdayLink(link, { signal } = {}) {
+export async function fetchCourseFromWorkdayLink(link) {
   const validation = validateWorkdayCourseLink(link);
   if (!validation.ok) throw new Error(validation.error);
 
   debug.log({ id: "fetchCourseFromWorkdayLink.start" }, "Fetching Workday course JSON link", { url: validation.url });
   let response;
-  try { response = await fetchReliable(validation.url, { credentials: "include", signal }); }
+  try { response = await fetchReliable(validation.url, { credentials: "include" }); }
   catch (error) {
     if ([401, 403].includes(error.status)) throw Object.assign(new Error("Sign into UBC Workday in this tab, then retry the section link."), { status: error.status });
     if (error.status === 404) throw Object.assign(new Error("This section is no longer available. Find its current Section link in Workday."), { status: error.status });

@@ -7,7 +7,6 @@ import { validatePersonalBlocks, calendarExportItems } from "./core/personalBloc
 import { mountPlanner } from "./mainPanel/schedules/plannerController.js";
 import { storageGet, storageSet } from "./utilities/storage.js";
 import { planScheduleImport } from "./core/scheduleBackup.js";
-import { normalizeCourseGroupKey } from "./mainPanel/settings/courseColorSettings.js";
 import { getScheduleSaveState } from "./core/scheduleSaveState.js";
 import { renderScheduleHeading } from "./mainPanel/schedules/scheduleHeading.js";
 import { syncPreviewText } from "./exportLogic/googleCalendar/syncPreviewText.js";
@@ -907,30 +906,8 @@ debugLog({ local: { content: false } });
       }, 100),
     );
     mountBugReportSettings(ui);
-    const getOptimizerDraft = () => structuredClone({
-      source: STATE.currentSavedScheduleId || STATE.syncPlanId,
-      courses: STATE.courses,
-      personalBlocks: STATE.personalBlocks,
-    });
     const planner = mountPlanner(ui, {
       editPersonalBlocks,
-      getOptimizerDraft,
-      applySuggestion: (courses, expected) => {
-        if (saveInProgress || undoInProgress || JSON.stringify(expected) !== JSON.stringify(getOptimizerDraft()))
-          throw new Error("The draft changed. Find suggestions again before applying.");
-        const before = captureScheduleChange(STATE);
-        const colors = new Map(STATE.courses.filter(course => course.manualColorIndex)
-          .map(course => [normalizeCourseGroupKey(course), course.manualColorIndex]));
-        store.load(courses.map(course => {
-          const color = colors.get(normalizeCourseGroupKey(course));
-          return color ? { ...course, manualColorIndex: color } : course;
-        }));
-        courseColorController.assignCourseColors(STATE.courses);
-        recordChange(before, "Apply schedule suggestion");
-        renderAll();
-        setActiveView("schedule-panel");
-        showFooterAlert("Suggestion applied to your working schedule.", { tone: "success" });
-      },
       importSharedSchedule: async (incoming) => {
         if (!storageReady || saveInProgress || undoInProgress)
           throw new Error("Saved schedules are busy or unavailable. Retry once they finish loading.");

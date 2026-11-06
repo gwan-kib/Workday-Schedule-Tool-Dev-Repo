@@ -1,4 +1,3 @@
-import { CATALOG_MESSAGE_TYPE, loadCourseCatalog } from "./api/courseCatalog.js";
 import { queryProfRating, RMP_MESSAGE_TYPE } from "./api/rateMyProfessor/rmpApi.js";
 import {
   CALENDAR_MESSAGE_TYPE,
@@ -30,17 +29,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   })();
 
-  return true;
-});
-
-// Public catalog calls omit credentials and send only a validated course code.
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type !== CATALOG_MESSAGE_TYPE) return undefined;
-  if (!sender.url?.startsWith("https://wd10.myworkday.com/ubc/")) return undefined;
-  void loadCourseCatalog(message.code).then(
-    sections => sendResponse({ ok: true, sections }),
-    () => sendResponse({ ok: false }),
-  );
   return true;
 });
 

@@ -117,12 +117,9 @@
   color: var(--hex-brand-main-1); background: var(--hex-neutral-1); font: inherit;
 }
 .planner-dialog input[type="checkbox"] { min-height: 0; }
-.planner-check-label, .planner-priority-list label { display: flex; gap: 8px; align-items: center; }
+.planner-check-label { display: flex; gap: 8px; align-items: center; }
 .planner-feature-fields { display: grid; gap: 12px; min-width: 0; margin: 0; }
 .planner-feature-fields > button { justify-self: start; }
-fieldset.planner-feature-fields { padding: 12px; border: 1px solid var(--hex-brand-accent-4); border-radius: 10px; }
 .planner-dialog h3 { margin: 0; font-size: 15px; }
-.planner-priority-list, .planner-feature-details { display: grid; gap: 8px; margin: 0; padding-inline-start: 24px; }
-.planner-priority-list label { display: inline-flex; margin-inline-end: 8px; }
-.planner-priority-list button { margin-inline-end: 4px !important; }
+.planner-feature-details { display: grid; gap: 8px; margin: 0; padding-inline-start: 24px; }
 .planner-feature-details p { margin: 4px 0; font-size: 12px; }

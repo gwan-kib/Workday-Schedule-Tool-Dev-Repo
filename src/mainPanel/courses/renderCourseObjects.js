@@ -1,4 +1,3 @@
-import { catalogSectionLink } from "../../api/courseCatalog.js";
 import { courseWorkdayLink } from "../../extraction/trustedWorkday.js";
 import { courseIdentity } from "../../core/meetings.js";
 import {
@@ -212,7 +211,6 @@ export function renderCourseObjects(
     const conflictMessage = conflictPartners.length ? `Schedule conflict with: ${conflictPartners.join(", ")}` : "";
     const showConflictIcon = conflictPartners.length > 0;
 
-    const catalogLink = catalogSectionLink(course.catalogSectionLink);
     card.innerHTML = `
       <div class="course-card__top">
         <div class="course-card__code">
@@ -280,13 +278,7 @@ export function renderCourseObjects(
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">link</span>
                 </button>`
-              : catalogLink
-                ? `<a class="course-card__link-button wd-hover-tooltip"
-                      href="${escHTML(catalogLink)}" target="_blank" rel="noopener noreferrer"
-                      aria-label="Open UBC catalog section" data-tooltip="Visit UBC catalog section ↗">
-                      <span class="material-symbols-rounded" aria-hidden="true">link</span>
-                    </a>`
-                : ""
+              : ""
           }
         </div>
         <div class="course-card__instructor-wrap">

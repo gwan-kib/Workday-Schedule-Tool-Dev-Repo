@@ -1,4 +1,3 @@
-import { openOptimizer } from "./optimizerDialog.js";
 import { openScheduleShare, openIncomingShare } from "./shareDialog.js";
 import { scheduleItems } from "../../core/personalBlocks.js";
 import { renderSchedule } from "./scheduleView.js";
@@ -143,7 +142,7 @@ export function plannerDialog(ui, title, variant = "") {
 }
 
 export function mountPlanner(ui, {
-  getState, saveSchedules, editPersonalBlocks, getOptimizerDraft, applySuggestion, importSharedSchedule,
+  getState, saveSchedules, editPersonalBlocks, importSharedSchedule,
 }) {
   const toolbar = node("div", null, "planner-toolbar");
   ui.scheduleGrid.before(toolbar);
@@ -164,15 +163,6 @@ export function mountPlanner(ui, {
       safe(() => openExport()),
     ),
   );
-  if (getOptimizerDraft && applySuggestion) {
-    toolbar.append(button("Find schedule suggestions", safe(() =>
-      openOptimizer(plannerDialog(ui, "Find schedule suggestions"), {
-        getDraft: getOptimizerDraft,
-        apply: applySuggestion,
-      }),
-    )));
-  }
-
   const openIncoming = (link) => openIncomingShare(
     plannerDialog(ui, "Open shared schedule"), { link, importSchedule: importSharedSchedule },
   );
